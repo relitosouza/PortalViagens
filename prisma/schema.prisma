@@ -9,3 +9,74 @@ generator client {
 datasource db {
   provider = "sqlite"
 }
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  password     String
+  role         String        // DEMANDANTE | SECOL | SEGOV | SF
+  cpfBloqueado Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  solicitacoes Solicitacao[]
+}
+
+model Solicitacao {
+  id                   String         @id @default(cuid())
+  nomeCompleto         String
+  matricula            String
+  cpf                  String
+  dataNascimento       DateTime
+  celular              String
+  emailServidor        String
+  justificativaPublica String
+  nexoCargo            String
+  destino              String
+  dataIda              DateTime
+  dataVolta            DateTime
+  justificativaLocal   String
+  fichaOrcamentaria    String
+  status               String         @default("RASCUNHO")
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  userId               String
+  user                 User           @relation(fields: [userId], references: [id])
+  anexos               Anexo[]
+  steps                WorkflowStep[]
+  prestacao            Prestacao?
+}
+
+model WorkflowStep {
+  id            String      @id @default(cuid())
+  solicitacaoId String
+  etapa         String
+  atorRole      String
+  atorNome      String
+  decisao       String?
+  observacao    String?
+  createdAt     DateTime    @default(now())
+  solicitacao   Solicitacao @relation(fields: [solicitacaoId], references: [id])
+}
+
+model Prestacao {
+  id            String      @id @default(cuid())
+  solicitacaoId String      @unique
+  relatorio     String?
+  prazoFinal    DateTime
+  enviadoEm     DateTime?
+  bloqueado     Boolean     @default(false)
+  solicitacao   Solicitacao @relation(fields: [solicitacaoId], references: [id])
+  anexos        Anexo[]
+}
+
+model Anexo {
+  id            String       @id @default(cuid())
+  nome          String
+  path          String
+  tipo          String
+  createdAt     DateTime     @default(now())
+  solicitacaoId String?
+  solicitacao   Solicitacao? @relation(fields: [solicitacaoId], references: [id])
+  prestacaoId   String?
+  prestacao     Prestacao?   @relation(fields: [prestacaoId], references: [id])
+}
