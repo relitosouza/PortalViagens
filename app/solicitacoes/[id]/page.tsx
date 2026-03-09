@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { WorkflowTimeline } from '@/components/WorkflowTimeline'
+import { AcoesWorkflow } from '@/components/AcoesWorkflow'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 
@@ -172,8 +173,7 @@ export default async function DetalheSolicitacaoPage({
           <WorkflowTimeline status={sol.status} steps={sol.steps} />
         </section>
 
-        {/* Placeholder para ações do workflow (Task 6) */}
-        <div id="acoes-workflow-placeholder" />
+        <AcoesWorkflow solicitacaoId={sol.id} status={sol.status} userRole={role} />
 
         {/* Prestação de Contas — para DEMANDANTE após conclusão */}
         {sol.status === 'CONCLUIDA' && role === 'DEMANDANTE' && (
