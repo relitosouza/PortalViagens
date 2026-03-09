@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { handleSignOut } from './actions'
+import { AlertasPrestacao } from '@/components/AlertasPrestacao'
 
 const STATUS_LABELS: Record<string, string> = {
   RASCUNHO: 'Rascunho',
@@ -88,6 +89,8 @@ export default async function DashboardPage() {
             </Link>
           )}
         </div>
+
+        {role === 'DEMANDANTE' && <AlertasPrestacao userId={userId} />}
 
         <div className="space-y-3">
           {solicitacoes.length === 0 && (

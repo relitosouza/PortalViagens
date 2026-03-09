@@ -10,7 +10,7 @@ export async function POST(
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-  const user = session.user as any
+  const user = session.user as { id: string; role: string; name?: string | null; email?: string | null }
   if (user.role !== 'DEMANDANTE') {
     return NextResponse.json({ error: 'Apenas DEMANDANTE pode enviar prestação de contas' }, { status: 403 })
   }

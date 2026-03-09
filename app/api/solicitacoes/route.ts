@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(solicitacao, { status: 201 })
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 

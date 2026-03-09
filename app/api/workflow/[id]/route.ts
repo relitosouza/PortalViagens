@@ -35,7 +35,7 @@ export async function POST(
   if (!session?.user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   const { id } = await params
-  const user = session.user as any
+  const user = session.user as { id: string; role: string; name?: string | null }
   const role: string = user.role
   const userName: string = user.name ?? ''
 
