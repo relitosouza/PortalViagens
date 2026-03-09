@@ -1,0 +1,15 @@
+{
+  "planPath": "docs/plans/2026-03-09-aprovacao-viagens.md",
+  "tasks": [
+    {"id": 1, "subject": "Task 1: Setup do projeto Next.js + Prisma + NextAuth", "status": "pending"},
+    {"id": 2, "subject": "Task 2: Schema Prisma e seed de usuários", "status": "pending", "blockedBy": [1]},
+    {"id": 3, "subject": "Task 3: Layout base, autenticação e dashboard por role", "status": "pending", "blockedBy": [2]},
+    {"id": 4, "subject": "Task 4: Formulário Nova Solicitação (4 passos)", "status": "pending", "blockedBy": [3]},
+    {"id": 5, "subject": "Task 5: Tela de detalhe da solicitação + timeline do workflow", "status": "pending", "blockedBy": [4]},
+    {"id": 6, "subject": "Task 6: API de workflow (ações por etapa)", "status": "pending", "blockedBy": [5]},
+    {"id": 7, "subject": "Task 7: Upload de arquivos e log de e-mails", "status": "pending", "blockedBy": [3]},
+    {"id": 8, "subject": "Task 8: Prestação de Contas pós-viagem", "status": "pending", "blockedBy": [6, 7]},
+    {"id": 9, "subject": "Task 9: Regras de negócio e toques finais", "status": "pending", "blockedBy": [8]}
+  ],
+  "lastUpdated": "2026-03-09T12:00:00Z"
+}
