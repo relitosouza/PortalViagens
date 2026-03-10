@@ -23,6 +23,10 @@ async function main() {
       create: { ...u, password: await bcrypt.hash('senha123', 10) },
     })
   }
+  await prisma.configuracaoSistema.upsert({ where: { chave: 'DIAS_UTEIS_ANTECEDENCIA_MINIMA' }, update: {}, create: { chave: 'DIAS_UTEIS_ANTECEDENCIA_MINIMA', valor: '15', descricao: 'Antecedência mínima em dias úteis para nova solicitação' } })
+  await prisma.configuracaoSistema.upsert({ where: { chave: 'DIAS_UTEIS_PRAZO_PRESTACAO' }, update: {}, create: { chave: 'DIAS_UTEIS_PRAZO_PRESTACAO', valor: '5', descricao: 'Prazo em dias úteis para prestação de contas após retorno' } })
+  await prisma.configuracaoSistema.upsert({ where: { chave: 'DIAS_ALERTA_VENCIMENTO' }, update: {}, create: { chave: 'DIAS_ALERTA_VENCIMENTO', valor: '2', descricao: 'Dias antes do vencimento para enviar alerta de prestação' } })
+  await prisma.configuracaoSistema.upsert({ where: { chave: 'UPLOAD_MAX_MB' }, update: {}, create: { chave: 'UPLOAD_MAX_MB', valor: '10', descricao: 'Tamanho máximo de upload em megabytes' } })
   console.log('Seed concluído. Senha padrão: senha123')
 }
 

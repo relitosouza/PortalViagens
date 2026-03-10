@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { logEmail } from '@/lib/email-log'
+import { getConfigInt } from '@/lib/config'
 
 // Esta rota deve ser chamada periodicamente (ex: diariamente por um cron job externo ou Vercel Cron)
 // GET /api/cron/verificar-prestacoes
@@ -45,9 +46,10 @@ export async function GET() {
     bloqueados.push(p.solicitacao.nomeCompleto)
   }
 
-  // 2. Alertar servidores com prazo se encerrando em 2 dias
+  // 2. Alertar servidores com prazo se encerrando em N dias
+  const diasAlerta = await getConfigInt('DIAS_ALERTA_VENCIMENTO')
   const em2Dias = new Date(agora)
-  em2Dias.setDate(em2Dias.getDate() + 2)
+  em2Dias.setDate(em2Dias.getDate() + diasAlerta)
 
   const prestacoesproximas = await prisma.prestacao.findMany({
     where: {

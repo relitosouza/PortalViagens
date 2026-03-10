@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { logEmail } from '@/lib/email-log'
 import { addDiasUteis } from '@/lib/utils/diasUteis'
+import { getConfigInt } from '@/lib/config'
 
 // Tabela de transições de estado — REGRA DE SEGREGAÇÃO DE FUNÇÕES implementada aqui
 // SECOL não pode fazer o passo de SEGOV e vice-versa
@@ -83,7 +84,8 @@ export async function POST(
 
   // Lógica especial para etapa de EXECUÇÃO aprovada (conclusão)
   if (transicao.etapa === 'EXECUCAO' && decisao === 'APROVADO') {
-    const prazoFinal = addDiasUteis(new Date(sol.dataVolta), 5)
+    const prazoPrestacao = await getConfigInt('DIAS_UTEIS_PRAZO_PRESTACAO')
+    const prazoFinal = addDiasUteis(new Date(sol.dataVolta), prazoPrestacao)
 
     await prisma.prestacao.upsert({
       where: { solicitacaoId: sol.id },
@@ -94,7 +96,7 @@ export async function POST(
     logEmail({
       para: sol.emailServidor,
       assunto: '[Viagens Osasco] ✅ Viagem aprovada — acesse seus vouchers',
-      corpo: `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} foi APROVADA e os vouchers estão disponíveis no sistema.\n\nPrazo para prestação de contas: ${prazoFinal.toLocaleDateString('pt-BR')} (5 dias úteis após o retorno).\n\nAcesse o sistema: http://localhost:3000/solicitacoes/${sol.id}`,
+      corpo: `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} foi APROVADA e os vouchers estão disponíveis no sistema.\n\nPrazo para prestação de contas: ${prazoFinal.toLocaleDateString('pt-BR')} (${prazoPrestacao} dias úteis após o retorno).\n\nAcesse o sistema: http://localhost:3000/solicitacoes/${sol.id}`,
       tipo: 'VOUCHER_APROVACAO',
     })
   }

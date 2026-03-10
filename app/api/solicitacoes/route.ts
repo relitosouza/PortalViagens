@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { calcularDiasUteisAte } from '@/lib/utils/diasUteis'
+import { getConfigInt } from '@/lib/config'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -23,12 +24,13 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json()
 
-  // Validar antecedência de 15 dias úteis (Art. 1º)
+  // Validar antecedência mínima de dias úteis (Art. 1º)
+  const minAntecedencia = await getConfigInt('DIAS_UTEIS_ANTECEDENCIA_MINIMA')
   const dataIda = new Date(body.dataIda)
   const diasUteis = calcularDiasUteisAte(dataIda)
-  if (diasUteis < 15) {
+  if (diasUteis < minAntecedencia) {
     return NextResponse.json({
-      error: `Antecedência insuficiente: apenas ${diasUteis} dia(s) útil(is). Mínimo exigido: 15 dias úteis (Art. 1º).`
+      error: `Antecedência insuficiente: apenas ${diasUteis} dia(s) útil(is). Mínimo exigido: ${minAntecedencia} dias úteis (Art. 1º).`
     }, { status: 422 })
   }
 

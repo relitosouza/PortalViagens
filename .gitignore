@@ -48,3 +48,4 @@ dev.db
 dev.db-journal
 uploads/
 docs/plans/*.tasks.json
+.worktrees/
