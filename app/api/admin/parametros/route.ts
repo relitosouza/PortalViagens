@@ -18,10 +18,24 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
+  const VALID_CHAVES = [
+    'DIAS_UTEIS_ANTECEDENCIA_MINIMA',
+    'DIAS_UTEIS_PRAZO_PRESTACAO',
+    'DIAS_ALERTA_VENCIMENTO',
+    'UPLOAD_MAX_MB',
+  ]
+
   const updates: { chave: string; valor: string }[] = await req.json()
 
   for (const { chave, valor } of updates) {
-    await prisma.configuracaoSistema.update({ where: { chave }, data: { valor } })
+    if (!VALID_CHAVES.includes(chave)) {
+      return NextResponse.json({ error: `Parâmetro inválido: "${chave}"` }, { status: 400 })
+    }
+    const num = parseInt(valor, 10)
+    if (isNaN(num) || num <= 0) {
+      return NextResponse.json({ error: `Valor inválido para "${chave}": deve ser um número inteiro positivo` }, { status: 400 })
+    }
+    await prisma.configuracaoSistema.update({ where: { chave }, data: { valor: String(num) } })
   }
 
   return NextResponse.json({ ok: true })

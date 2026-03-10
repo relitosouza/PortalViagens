@@ -13,8 +13,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const body = await req.json()
   const data: Record<string, unknown> = {}
 
+  const VALID_ROLES = ['DEMANDANTE', 'SECOL', 'SEGOV', 'SF', 'ADMIN', 'INATIVO']
   if (body.name !== undefined) data.name = body.name
-  if (body.role !== undefined) data.role = body.role
+  if (body.role !== undefined) {
+    if (!VALID_ROLES.includes(body.role)) {
+      return NextResponse.json({ error: 'Role inválido' }, { status: 400 })
+    }
+    data.role = body.role
+  }
   if (body.cpfBloqueado !== undefined) data.cpfBloqueado = body.cpfBloqueado
   if (body.password) data.password = await bcrypt.hash(body.password, 10)
 
