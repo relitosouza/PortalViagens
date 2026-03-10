@@ -4,8 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
-
-const MAX_SIZE = 10 * 1024 * 1024 // 10MB
+import { getConfigInt } from '@/lib/config'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -21,6 +20,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Nenhum arquivo enviado' }, { status: 400 })
   }
 
+  const uploadMaxMb = await getConfigInt('UPLOAD_MAX_MB')
+  const MAX_SIZE = uploadMaxMb * 1024 * 1024
+
   const uploadDir = path.join(process.cwd(), 'uploads')
   await mkdir(uploadDir, { recursive: true })
 
@@ -30,7 +32,7 @@ export async function POST(req: NextRequest) {
     // Validar tamanho
     if (file.size > MAX_SIZE) {
       return NextResponse.json({
-        error: `Arquivo "${file.name}" excede o limite de 10MB`
+        error: `Arquivo "${file.name}" excede o limite de ${uploadMaxMb}MB`
       }, { status: 400 })
     }
 
