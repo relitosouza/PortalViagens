@@ -8,9 +8,13 @@ export const authConfig: NextAuthConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user
       const isLoginPage = nextUrl.pathname === '/login'
+      const isAdminRoute = nextUrl.pathname.startsWith('/admin')
 
       if (!isLoggedIn && !isLoginPage) return false
       if (isLoggedIn && isLoginPage) {
+        return Response.redirect(new URL('/dashboard', nextUrl))
+      }
+      if (isAdminRoute && auth?.user?.role !== 'ADMIN') {
         return Response.redirect(new URL('/dashboard', nextUrl))
       }
       return true
