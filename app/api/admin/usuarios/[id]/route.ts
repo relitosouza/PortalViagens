@@ -3,14 +3,11 @@ import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 
-function adminOnly(session: Awaited<ReturnType<typeof auth>>) {
-  return !session?.user || session.user.role !== 'ADMIN'
-}
-
 // PATCH - update user (name, role, password, cpfBloqueado)
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
-  if (adminOnly(session)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const u = session?.user as { role?: string } | undefined
+  if (!u || u.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { id } = await params
   const body = await req.json()
@@ -28,7 +25,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 // DELETE - deactivate (soft delete by setting role to INATIVO)
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
-  if (adminOnly(session)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const u = session?.user as { role?: string } | undefined
+  if (!u || u.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { id } = await params
   // Deactivate by setting a special role that blocks login
