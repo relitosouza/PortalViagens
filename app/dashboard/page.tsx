@@ -123,10 +123,12 @@ export default async function DashboardPage() {
               <span className="material-symbols-outlined text-[20px]">description</span>
               <span className="text-sm font-medium">Relatórios</span>
             </a>
-            <a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors" href="#">
-              <span className="material-symbols-outlined text-[20px]">settings</span>
-              <span className="text-sm font-medium">Configurações</span>
-            </a>
+            {role === 'ADMIN' && (
+              <Link className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors" href="/admin">
+                <span className="material-symbols-outlined text-[20px]">settings</span>
+                <span className="text-sm font-medium">Configurações</span>
+              </Link>
+            )}
           </nav>
 
           {/* Bottom actions */}

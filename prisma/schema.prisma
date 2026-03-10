@@ -15,10 +15,18 @@ model User {
   name         String
   email        String        @unique
   password     String
-  role         String        // DEMANDANTE | SECOL | SEGOV | SF
+  role         String        // DEMANDANTE | SECOL | SEGOV | SF | ADMIN
   cpfBloqueado Boolean       @default(false)
+  ativo        Boolean       @default(true)
   createdAt    DateTime      @default(now())
   solicitacoes Solicitacao[]
+}
+
+model ConfiguracaoSistema {
+  chave     String   @id
+  valor     String
+  descricao String
+  updatedAt DateTime @updatedAt
 }
 
 model Solicitacao {
