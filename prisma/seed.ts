@@ -10,6 +10,7 @@ const prisma = new PrismaClient({ adapter })
 
 async function main() {
   const usuarios = [
+    { name: 'Ricardo Master', email: 'ricardo@osasco.sp.gov.br', role: 'ADMIN' },
     { name: 'Maria Silva', email: 'demandante@osasco.sp.gov.br', role: 'DEMANDANTE' },
     { name: 'João Santos', email: 'secol@osasco.sp.gov.br', role: 'SECOL' },
     { name: 'Ana Gabinete', email: 'segov@osasco.sp.gov.br', role: 'SEGOV' },

@@ -1,0 +1,18 @@
+[
+  {
+    "para": "ricardo@osasco.sp.gov.br",
+    "assunto": "[Viagens Osasco] ✅ Viagem aprovada — acesse seus vouchers",
+    "corpo": "Prezado(a) ricardo,\n\nSua solicitação de viagem para Ribeirão Preto foi APROVADA e os vouchers estão disponíveis no sistema.\n\nPrazo para prestação de contas: 06/05/2026 (5 dias úteis após o retorno).\n\nAcesse o sistema: http://localhost:3000/solicitacoes/cmmjy0p3c0000t0uftuwklnbj",
+    "tipo": "VOUCHER_APROVACAO",
+    "id": "1773107302334-roycqizii3q",
+    "timestamp": "2026-03-10T01:48:22.334Z"
+  },
+  {
+    "para": "ricardo@osasco.sp.gov.br",
+    "assunto": "[Viagens Osasco] Cotação concluída — aguardando análise de viabilidade",
+    "corpo": "Prezado(a) ricardo,\n\nA cotação da sua viagem para Ribeirão Preto foi concluída pela SECOL. A solicitação aguarda agora a análise de viabilidade pela SEGOV.",
+    "tipo": "COTACAO_CONCLUIDA",
+    "id": "1773107115198-w7yvh40dr4k",
+    "timestamp": "2026-03-10T01:45:15.198Z"
+  }
+]

@@ -2,6 +2,10 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { WorkflowTimeline } from '@/components/WorkflowTimeline'
 import { AcoesWorkflow } from '@/components/AcoesWorkflow'
+import { SecolCotacaoClient } from '@/components/SecolCotacaoClient'
+import { SegovViabilidadeClient } from '@/components/SegovViabilidadeClient'
+import { SecolEmissaoClient } from '@/components/SecolEmissaoClient'
+import { SfExecucaoClient } from '@/components/SfExecucaoClient'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 
@@ -50,6 +54,106 @@ export default async function DetalheSolicitacaoPage({
 
   // DEMANDANTE só pode ver suas próprias solicitações
   if (role === 'DEMANDANTE' && sol.userId !== userId) notFound()
+
+  // SEGOV viabilidade — layout dedicado
+  if (role === 'SEGOV' && sol.status === 'AGUARDANDO_VIABILIDADE') {
+    return (
+      <SegovViabilidadeClient
+        sol={{
+          id: sol.id,
+          nomeCompleto: sol.nomeCompleto,
+          destino: sol.destino,
+          dataIda: sol.dataIda.toISOString(),
+          dataVolta: sol.dataVolta.toISOString(),
+          justificativaPublica: sol.justificativaPublica,
+          nexoCargo: sol.nexoCargo,
+          fichaOrcamentaria: sol.fichaOrcamentaria,
+          user: { name: sol.user.name ?? '' },
+          steps: sol.steps.map(s => ({
+            id: s.id,
+            etapa: s.etapa,
+            atorNome: s.atorNome,
+            decisao: s.decisao,
+            observacao: s.observacao,
+            createdAt: s.createdAt.toISOString(),
+          })),
+        }}
+        userName={session.user.name ?? 'SEGOV'}
+      />
+    )
+  }
+
+  // SF execução orçamentária — layout dedicado
+  if (role === 'SF' && sol.status === 'AGUARDANDO_EXECUCAO') {
+    return (
+      <SfExecucaoClient
+        sol={{
+          id: sol.id,
+          nomeCompleto: sol.nomeCompleto,
+          cpf: sol.cpf,
+          destino: sol.destino,
+          dataIda: sol.dataIda.toISOString(),
+          dataVolta: sol.dataVolta.toISOString(),
+          fichaOrcamentaria: sol.fichaOrcamentaria,
+          user: { name: sol.user.name ?? '' },
+          steps: sol.steps.map(s => ({
+            etapa: s.etapa,
+            atorNome: s.atorNome,
+            decisao: s.decisao,
+            createdAt: s.createdAt.toISOString(),
+          })),
+        }}
+        userName={session.user.name ?? 'SF'}
+      />
+    )
+  }
+
+  // SECOL emissão OS — layout dedicado
+  if (role === 'SECOL' && sol.status === 'AGUARDANDO_EMISSAO') {
+    return (
+      <SecolEmissaoClient
+        sol={{
+          id: sol.id,
+          nomeCompleto: sol.nomeCompleto,
+          destino: sol.destino,
+          dataIda: sol.dataIda.toISOString(),
+          dataVolta: sol.dataVolta.toISOString(),
+          fichaOrcamentaria: sol.fichaOrcamentaria,
+          emailServidor: sol.emailServidor,
+          user: { name: sol.user.name ?? '' },
+          steps: sol.steps.map(s => ({
+            etapa: s.etapa,
+            atorNome: s.atorNome,
+            decisao: s.decisao,
+            observacao: s.observacao,
+            createdAt: s.createdAt.toISOString(),
+          })),
+        }}
+        userName={session.user.name ?? 'SECOL'}
+      />
+    )
+  }
+
+  // SECOL cotação — layout dedicado
+  if (role === 'SECOL' && sol.status === 'AGUARDANDO_COTACAO') {
+    return (
+      <SecolCotacaoClient
+        sol={{
+          id: sol.id,
+          nomeCompleto: sol.nomeCompleto,
+          destino: sol.destino,
+          dataIda: sol.dataIda.toISOString(),
+          dataVolta: sol.dataVolta.toISOString(),
+          justificativaPublica: sol.justificativaPublica,
+          nexoCargo: sol.nexoCargo,
+          indicacaoVoo: sol.indicacaoVoo,
+          indicacaoHospedagem: sol.indicacaoHospedagem,
+          user: { name: sol.user.name ?? '' },
+        }}
+        userName={session.user.name ?? 'SECOL'}
+      />
+    )
+  }
 
   const statusCor = STATUS_CORES[sol.status] ?? 'bg-gray-100 text-gray-600'
 

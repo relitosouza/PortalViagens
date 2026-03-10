@@ -22,14 +22,18 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
+  const isRascunho = body.rascunho === true
 
-  // Validar antecedência de 15 dias úteis (Art. 1º)
   const dataIda = new Date(body.dataIda)
-  const diasUteis = calcularDiasUteisAte(dataIda)
-  if (diasUteis < 15) {
-    return NextResponse.json({
-      error: `Antecedência insuficiente: apenas ${diasUteis} dia(s) útil(is). Mínimo exigido: 15 dias úteis (Art. 1º).`
-    }, { status: 422 })
+
+  if (!isRascunho) {
+    // Validar antecedência de 15 dias úteis (Art. 1º)
+    const diasUteis = calcularDiasUteisAte(dataIda)
+    if (diasUteis < 15) {
+      return NextResponse.json({
+        error: `Antecedência insuficiente: apenas ${diasUteis} dia(s) útil(is). Mínimo exigido: 15 dias úteis (Art. 1º).`
+      }, { status: 422 })
+    }
   }
 
   const solicitacao = await prisma.solicitacao.create({
@@ -47,7 +51,9 @@ export async function POST(req: NextRequest) {
       dataVolta: new Date(body.dataVolta),
       justificativaLocal: body.justificativaLocal,
       fichaOrcamentaria: body.fichaOrcamentaria,
-      status: 'AGUARDANDO_COTACAO',
+      indicacaoVoo: body.indicacaoVoo ?? null,
+      indicacaoHospedagem: body.indicacaoHospedagem ?? null,
+      status: isRascunho ? 'RASCUNHO' : 'AGUARDANDO_COTACAO',
       userId: user.id,
     }
   })

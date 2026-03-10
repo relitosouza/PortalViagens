@@ -36,6 +36,8 @@ model Solicitacao {
   dataVolta            DateTime
   justificativaLocal   String
   fichaOrcamentaria    String
+  indicacaoVoo         String?
+  indicacaoHospedagem  String?
   status               String         @default("RASCUNHO")
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
