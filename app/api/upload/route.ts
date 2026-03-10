@@ -34,8 +34,16 @@ export async function POST(req: NextRequest) {
       }, { status: 400 })
     }
 
+    // Validar extensão contra lista permitida
+    const ALLOWED_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.xls', '.xlsx']
+    const ext = path.extname(file.name).toLowerCase()
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      return NextResponse.json({
+        error: `Tipo de arquivo não permitido: "${ext}". Permitidos: ${ALLOWED_EXTENSIONS.join(', ')}`
+      }, { status: 400 })
+    }
+
     // Sanitizar nome do arquivo
-    const ext = path.extname(file.name)
     const baseName = path.basename(file.name, ext).replace(/[^a-zA-Z0-9-_]/g, '_')
     const filename = `${Date.now()}-${baseName}${ext}`
 

@@ -1,0 +1,31 @@
+
+> viagens-osasco@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.12
+   - Environments: .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 1800ms
+   Linting and checking validity of types ...
+
+./app/layout.tsx
+13:9  Warning: Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font  @next/next/no-page-custom-font
+17:9  Warning: A font-display parameter is missing (adding `&display=optional` is recommended). See: https://nextjs.org/docs/messages/google-font-display  @next/next/google-font-display
+17:9  Warning: Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font  @next/next/no-page-custom-font
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+Failed to compile.
+
+./prisma.config.ts:13:5
+Type error: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+
+[0m [90m 11 |[39m   }[33m,[39m
+ [90m 12 |[39m   datasource[33m:[39m {
+[31m[1m>[22m[39m[90m 13 |[39m     url[33m:[39m process[33m.[39menv[[32m"DATABASE_URL"[39m][33m,[39m
+ [90m    |[39m     [31m[1m^[22m[39m
+ [90m 14 |[39m   }[33m,[39m
+ [90m 15 |[39m })[33m;[39m
+ [90m 16 |[39m[0m
+Next.js build worker exited with code: 1 and signal: null

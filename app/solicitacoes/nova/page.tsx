@@ -54,7 +54,11 @@ export default function NovaSolicitacaoPage() {
 
   async function enviar(rascunho: boolean) {
     if (!rascunho && !validar()) return
-    rascunho ? setSalvando(true) : setEnviando(true)
+    if (rascunho) {
+      setSalvando(true)
+    } else {
+      setEnviando(true)
+    }
     setErro('')
 
     try {
@@ -64,32 +68,33 @@ export default function NovaSolicitacaoPage() {
         body: JSON.stringify({ ...form, rascunho })
       })
       const text = await res.text()
-      let data: any = {}
+      let data: Record<string, unknown> = {}
       try { data = JSON.parse(text) } catch { /* ignore */ }
 
       if (!res.ok) {
-        setErro(data.error || `Erro do servidor (${res.status}): ${text.slice(0, 100)}`)
+        setErro(typeof data.error === 'string' ? data.error : `Erro do servidor (${res.status}): ${text.slice(0, 100)}`)
         return
       }
 
       if (arquivos.length > 0) {
         const fd = new FormData()
         arquivos.forEach(f => fd.append('files', f))
-        fd.append('solicitacaoId', data.id)
+        fd.append('solicitacaoId', String(data.id))
         fd.append('tipo', 'CONVITE')
         const uploadRes = await fetch('/api/upload', { method: 'POST', body: fd })
         if (!uploadRes.ok) {
           const upText = await uploadRes.text()
-          let upData: any = {}
+          let upData: Record<string, unknown> = {}
           try { upData = JSON.parse(upText) } catch {}
-          setErro(upData.error || `Erro no envio de arquivos (${uploadRes.status})`)
+          setErro(typeof upData.error === 'string' ? upData.error : `Erro no envio de arquivos (${uploadRes.status})`)
           return
         }
       }
 
       router.push('/dashboard')
-    } catch (err: any) {
-      setErro('Erro de rede ou falha inesperada: ' + err?.message)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setErro('Erro de rede ou falha inesperada: ' + msg)
     } finally {
       setSalvando(false)
       setEnviando(false)

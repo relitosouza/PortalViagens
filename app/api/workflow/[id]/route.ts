@@ -94,7 +94,7 @@ export async function POST(
     logEmail({
       para: sol.emailServidor,
       assunto: '[Viagens Osasco] ✅ Viagem aprovada — acesse seus vouchers',
-      corpo: `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} foi APROVADA e os vouchers estão disponíveis no sistema.\n\nPrazo para prestação de contas: ${prazoFinal.toLocaleDateString('pt-BR')} (5 dias úteis após o retorno).\n\nAcesse o sistema: http://localhost:3000/solicitacoes/${sol.id}`,
+      corpo: `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} foi APROVADA e os vouchers estão disponíveis no sistema.\n\nPrazo para prestação de contas: ${prazoFinal.toLocaleDateString('pt-BR')} (5 dias úteis após o retorno).\n\nAcesse o sistema: ${process.env.APP_URL ?? 'http://localhost:3000'}/solicitacoes/${sol.id}`,
       tipo: 'VOUCHER_APROVACAO',
     })
   }
@@ -104,7 +104,7 @@ export async function POST(
     logEmail({
       para: sol.emailServidor,
       assunto: '[Viagens Osasco] ❌ Solicitação reprovada',
-      corpo: `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} foi REPROVADA.\n\nMotivo: ${observacao || 'Não informado'}\n\nPara mais informações, acesse o sistema: http://localhost:3000/solicitacoes/${sol.id}`,
+      corpo: `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} foi REPROVADA.\n\nMotivo: ${observacao || 'Não informado'}\n\nPara mais informações, acesse o sistema: ${process.env.APP_URL ?? 'http://localhost:3000'}/solicitacoes/${sol.id}`,
       tipo: 'REPROVACAO',
     })
   }

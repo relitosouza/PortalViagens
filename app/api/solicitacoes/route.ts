@@ -71,7 +71,26 @@ export async function GET() {
   const solicitacoes = await prisma.solicitacao.findMany({
     where,
     orderBy: { createdAt: 'desc' },
-    include: { user: { select: { name: true } } }
+    select: {
+      id: true,
+      nomeCompleto: true,
+      matricula: true,
+      destino: true,
+      dataIda: true,
+      dataVolta: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      userId: true,
+      justificativaPublica: true,
+      nexoCargo: true,
+      justificativaLocal: true,
+      fichaOrcamentaria: true,
+      indicacaoVoo: true,
+      indicacaoHospedagem: true,
+      // cpf, dataNascimento, celular, emailServidor omitidos da listagem
+      user: { select: { name: true } }
+    }
   })
 
   return NextResponse.json(solicitacoes)

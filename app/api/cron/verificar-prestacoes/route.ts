@@ -1,10 +1,20 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { logEmail } from '@/lib/email-log'
 
 // Esta rota deve ser chamada periodicamente (ex: diariamente por um cron job externo ou Vercel Cron)
+// Requer cabeçalho: Authorization: Bearer <CRON_SECRET>
 // GET /api/cron/verificar-prestacoes
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const cronSecret = process.env.CRON_SECRET
+  if (!cronSecret) {
+    return NextResponse.json({ error: 'Servidor mal configurado' }, { status: 500 })
+  }
+  const auth = req.headers.get('authorization')
+  if (auth !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  }
+
   const agora = new Date()
 
   // 1. Bloquear CPFs com prazo vencido e sem prestação enviada
@@ -38,7 +48,7 @@ export async function GET() {
     logEmail({
       para: p.solicitacao.emailServidor,
       assunto: '[Viagens Osasco] 🚫 BLOQUEIO — Prestação de contas em atraso',
-      corpo: `Prezado(a) ${p.solicitacao.nomeCompleto},\n\nO prazo para prestação de contas da viagem a ${p.solicitacao.destino} venceu em ${p.prazoFinal.toLocaleDateString('pt-BR')}.\n\n⚠️ Seu CPF foi BLOQUEADO para novas solicitações de viagem.\n\nAcesse o sistema para enviar o relatório e desbloquear seu CPF: http://localhost:3000/solicitacoes/${p.solicitacaoId}/prestacao`,
+      corpo: `Prezado(a) ${p.solicitacao.nomeCompleto},\n\nO prazo para prestação de contas da viagem a ${p.solicitacao.destino} venceu em ${p.prazoFinal.toLocaleDateString('pt-BR')}.\n\n⚠️ Seu CPF foi BLOQUEADO para novas solicitações de viagem.\n\nAcesse o sistema para enviar o relatório e desbloquear seu CPF: ${process.env.APP_URL ?? 'http://localhost:3000'}/solicitacoes/${p.solicitacaoId}/prestacao`,
       tipo: 'BLOQUEIO_CPF',
     })
 
@@ -64,7 +74,7 @@ export async function GET() {
     logEmail({
       para: p.solicitacao.emailServidor,
       assunto: '[Viagens Osasco] ⏰ Prazo de prestação de contas se encerrando',
-      corpo: `Prezado(a) ${p.solicitacao.nomeCompleto},\n\nVocê tem até ${p.prazoFinal.toLocaleDateString('pt-BR')} para enviar o relatório de atividades da viagem a ${p.solicitacao.destino}.\n\nEvite o bloqueio do seu CPF: http://localhost:3000/solicitacoes/${p.solicitacaoId}/prestacao`,
+      corpo: `Prezado(a) ${p.solicitacao.nomeCompleto},\n\nVocê tem até ${p.prazoFinal.toLocaleDateString('pt-BR')} para enviar o relatório de atividades da viagem a ${p.solicitacao.destino}.\n\nEvite o bloqueio do seu CPF: ${process.env.APP_URL ?? 'http://localhost:3000'}/solicitacoes/${p.solicitacaoId}/prestacao`,
       tipo: 'ALERTA_PRAZO',
     })
     alertados.push(p.solicitacao.nomeCompleto)

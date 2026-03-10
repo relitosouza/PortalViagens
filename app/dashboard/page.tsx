@@ -58,7 +58,7 @@ export default async function DashboardPage() {
   const role: string = user.role
   const userId: string = user.id
 
-  let where: any = {}
+  let where: Record<string, unknown> = {}
   if (role === 'DEMANDANTE') {
     where = { userId, status: { in: ROLE_STATUS_MAP[role] } }
   } else if (role !== 'ADMIN') {
