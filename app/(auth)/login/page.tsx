@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -34,8 +35,13 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-blue-50">
       <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-white text-2xl font-bold">V</span>
+          <div className="flex justify-center mb-4">
+            <Image
+              src="/brasao-osasco.png"
+              alt="Brasão de Osasco"
+              width={80}
+              height={80}
+            />
           </div>
           <h1 className="text-2xl font-bold text-blue-900">Prefeitura de Osasco</h1>
           <p className="text-gray-500 text-sm mt-1">Sistema de Aprovação de Viagens</p>
