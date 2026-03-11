@@ -6,12 +6,49 @@ import ParametrosSection from './components/ParametrosSection'
 
 type EmailLog = { id: string; para: string; assunto: string; corpo: string; timestamp: string; tipo: string }
 
-const ROLE_BADGE: Record<string, string> = {
-  ADMIN: 'bg-primary/10 text-primary',
-  SECOL: 'bg-green-100 text-green-700',
-  SEGOV: 'bg-purple-100 text-purple-700',
-  SF: 'bg-orange-100 text-orange-700',
-  DEMANDANTE: 'bg-blue-100 text-blue-700',
+interface User {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string;
+  cpfBloqueado: boolean;
+  ativo: boolean;
+  createdAt: Date;
+}
+
+interface BlockedUser {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string;
+}
+
+interface SolicitacaoSummary {
+  nomeCompleto: string;
+  destino: string;
+  dataVolta: Date | null;
+}
+
+interface PrestacaoPendente {
+  id: string;
+  enviadoEm: Date | null;
+  prazoFinal: Date;
+  solicitacao: SolicitacaoSummary;
+}
+
+interface ConfiguracaoSistema {
+  id: string;
+  chave: string;
+  valor: string;
+}
+
+interface WorkflowStep {
+  id: string;
+  createdAt: Date;
+  solicitacao: {
+    destino: string;
+    nomeCompleto: string;
+  };
 }
 
 const ETAPA_LABELS: Record<string, string> = {
@@ -132,7 +169,7 @@ export default async function AdminPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {prestacoesPendentes.map((p: any) => {
+                  {prestacoesPendentes.map((p: PrestacaoPendente) => {
                     const diasAtraso = Math.floor((hoje.getTime() - new Date(p.prazoFinal).getTime()) / 86400000)
                     return (
                       <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-red-100 bg-red-50/20">
@@ -147,7 +184,7 @@ export default async function AdminPage() {
                       </div>
                     )
                   })}
-                  {cpfsBloqueados.filter((u: any) => !prestacoesPendentes.some((p: any) => p.solicitacao.nomeCompleto === u.name)).map((u: any) => (
+                  {cpfsBloqueados.filter((u: BlockedUser) => !prestacoesPendentes.some((p: PrestacaoPendente) => p.solicitacao.nomeCompleto === u.name)).map((u: BlockedUser) => (
                     <div key={u.id} className="flex items-center justify-between p-3 rounded-lg border border-red-100 bg-red-50/20">
                       <div className="flex items-center gap-3">
                         <div className="size-9 bg-red-100 text-red-600 rounded flex items-center justify-center font-bold text-xs uppercase">CPF</div>
@@ -241,7 +278,7 @@ export default async function AdminPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {workflowSteps.map((step: any) => (
+                {workflowSteps.map((step: WorkflowStep & { etapa: string; decisao: string | null; atorRole: string; atorNome: string; observacao: string | null }) => (
                   <div key={step.id} className={`p-4 rounded-xl bg-slate-50 border-l-4 ${step.decisao === 'REPROVADO' ? 'border-red-400' : 'border-primary'}`}>
                     <div className="flex justify-between items-start mb-2">
                       <span className={`text-xs font-bold uppercase ${step.decisao === 'REPROVADO' ? 'text-red-500' : 'text-primary'}`}>
