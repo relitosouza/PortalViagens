@@ -158,20 +158,24 @@ export default async function DetalheSolicitacaoPage({
   const statusCor = STATUS_CORES[sol.status] ?? 'bg-gray-100 text-gray-600'
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-blue-800 text-white px-6 py-4">
-        <div className="max-w-3xl mx-auto flex items-center gap-4">
-          <Link href="/dashboard" className="text-blue-200 hover:text-white text-sm transition-colors">
-            ← Voltar
-          </Link>
-          <h1 className="font-bold">Solicitação de Viagem</h1>
-          <span className={`ml-auto text-xs px-3 py-1 rounded-full font-medium ${statusCor}`}>
-            {STATUS_LABELS[sol.status] ?? sol.status}
-          </span>
+    <main className="p-8 space-y-6 max-w-4xl mx-auto w-full">
+      {/* Page Title / Header Info */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6 mb-6">
+        <div>
+          <nav className="flex items-center gap-2 text-sm text-slate-500 mb-1">
+            <Link href="/dashboard" className="hover:text-blue-600 transition-colors">Processos</Link>
+            <span className="material-symbols-outlined text-xs">chevron_right</span>
+            <span className="text-slate-900 font-medium tracking-tight">Protocolo #{sol.id.slice(-8).toUpperCase()}</span>
+          </nav>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+            Detalhes da Solicitação
+          </h2>
         </div>
-      </header>
-
-      <main className="max-w-3xl mx-auto p-6 space-y-5">
+        <div className={`px-4 py-2 rounded-xl border-2 font-black uppercase text-xs tracking-widest flex items-center gap-2 ${statusCor}`}>
+          <span className="material-symbols-outlined text-[20px]">info</span>
+          {STATUS_LABELS[sol.status] ?? sol.status}
+        </div>
+      </div>
         {/* Dados do Servidor */}
         <section className="bg-white rounded-2xl shadow-sm p-6">
           <h2 className="font-semibold text-gray-700 border-b pb-2 mb-4">Dados do Servidor</h2>
@@ -315,6 +319,5 @@ export default async function DetalheSolicitacaoPage({
           Solicitação criada em {new Date(sol.createdAt).toLocaleDateString('pt-BR')} por {sol.user.name}
         </p>
       </main>
-    </div>
   )
 }

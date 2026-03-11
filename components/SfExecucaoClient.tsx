@@ -74,72 +74,13 @@ export function SfExecucaoClient({ sol, userName }: Props) {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#f6f6f8]">
-
-      {/* Sidebar */}
-      <aside className="w-72 bg-white border-r border-slate-200 flex flex-col fixed h-full z-20">
-        <div className="p-6 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-blue-600/10 flex items-center justify-center text-blue-600">
-            <span className="material-symbols-outlined text-3xl">location_city</span>
-          </div>
-          <div>
-            <h1 className="font-bold text-lg leading-none">Osasco Travel</h1>
-            <p className="text-xs text-slate-500">Gestão de Viagens</p>
-          </div>
-        </div>
-
-        <nav className="flex-1 px-4 py-4 space-y-1">
-          <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
-            <span className="material-symbols-outlined">description</span>
-            <span className="text-sm font-medium">Solicitação</span>
-          </Link>
-          <a className="flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors" href="#">
-            <span className="material-symbols-outlined">sell</span>
-            <span className="text-sm font-medium">Cotação</span>
-          </a>
-          <a className="flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors" href="#">
-            <span className="material-symbols-outlined">verified_user</span>
-            <span className="text-sm font-medium">Aprovação SEGOV</span>
-          </a>
-          <a className="flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors" href="#">
-            <span className="material-symbols-outlined">content_copy</span>
-            <span className="text-sm font-medium">Formalização</span>
-          </a>
-          <a className="flex items-center gap-3 px-3 py-2.5 bg-blue-600/10 text-blue-600 rounded-lg" href="#">
-            <span className="material-symbols-outlined">account_balance</span>
-            <span className="text-sm font-semibold">Execução SF</span>
-          </a>
-          <a className="flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors" href="#">
-            <span className="material-symbols-outlined">bar_chart</span>
-            <span className="text-sm font-medium">Relatórios</span>
-          </a>
-        </nav>
-
-        <div className="p-4 border-t border-slate-200">
-          <div className="flex items-center gap-3 px-2">
-            <div className="w-8 h-8 rounded-full bg-blue-600/10 flex items-center justify-center">
-              <span className="material-symbols-outlined text-blue-600 text-sm">person</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold truncate">{userName}</p>
-              <p className="text-[10px] text-slate-500 truncate">Secretaria de Finanças</p>
-            </div>
-            <Link href="/dashboard">
-              <span className="material-symbols-outlined text-slate-400 text-sm cursor-pointer hover:text-slate-700">logout</span>
-            </Link>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main */}
-      <main className="flex-1 ml-72 p-8">
-
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-slate-500 mb-6">
-          <Link href="/dashboard" className="hover:text-blue-600 transition-colors">Processos</Link>
-          <span className="material-symbols-outlined text-xs">chevron_right</span>
-          <span className="text-slate-900 font-medium">Etapa 4: Execução Orçamentária</span>
-        </nav>
+    <div className="p-8">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-2 text-sm text-slate-500 mb-6">
+        <Link href="/dashboard" className="hover:text-blue-600 transition-colors">Processos</Link>
+        <span className="material-symbols-outlined text-xs">chevron_right</span>
+        <span className="text-slate-900 font-medium font-bold uppercase tracking-tight">Etapa 4: Execução Orçamentária</span>
+      </nav>
 
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
@@ -338,7 +279,6 @@ export function SfExecucaoClient({ sol, userName }: Props) {
             prestação de contas (5 dias úteis após o retorno).
           </p>
         </div>
-      </main>
     </div>
   )
 }

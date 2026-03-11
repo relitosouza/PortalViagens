@@ -125,29 +125,8 @@ export function SecolCotacaoClient({ sol, userName }: Props) {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-[#f6f6f8]">
+    <div className="p-8">
 
-      {/* Header */}
-      <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3 sticky top-0 z-50">
-        <div className="flex items-center gap-4">
-          <span className="material-symbols-outlined text-blue-600 text-4xl">account_balance</span>
-          <div>
-            <h2 className="text-lg font-bold leading-tight tracking-tight">SECOL</h2>
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Prefeitura de Osasco</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-8">
-          <nav className="hidden md:flex items-center gap-6">
-            <Link href="/dashboard" className="text-sm font-medium hover:text-blue-600 transition-colors">Início</Link>
-            <Link href="/dashboard" className="text-sm font-medium hover:text-blue-600 transition-colors">Viagens</Link>
-          </nav>
-          <div className="h-10 w-10 rounded-full bg-blue-600/10 flex items-center justify-center border border-blue-600/20">
-            <span className="material-symbols-outlined text-blue-600">person</span>
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-8">
 
         {/* Breadcrumb & Header */}
         <div className="mb-8">
@@ -497,18 +476,6 @@ export function SecolCotacaoClient({ sol, userName }: Props) {
 
           </div>
         </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="mt-auto border-t border-slate-200 bg-white px-6 py-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500 font-medium">
-          <p>© {new Date().getFullYear()} Prefeitura de Osasco - Secretaria de Administração (SECOL)</p>
-          <div className="flex gap-6">
-            <a className="hover:text-blue-600" href="#">Ajuda &amp; Suporte</a>
-            <a className="hover:text-blue-600" href="#">Termos de Uso</a>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }

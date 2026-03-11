@@ -22,7 +22,7 @@ const ETAPA_LABELS: Record<string, string> = {
 }
 
 export default async function AdminPage() {
-  // Fetch data in parallel
+  // ... (data fetching stays same)
   const [usuarios, cpfsBloqueados, prestacoesPendentes, parametros, workflowSteps, totalSolicitacoes] = await Promise.all([
     prisma.user.findMany({ orderBy: { createdAt: 'desc' }, select: { id: true, name: true, email: true, role: true, cpfBloqueado: true, ativo: true, createdAt: true } }),
     prisma.user.findMany({ where: { cpfBloqueado: true }, select: { id: true, name: true, email: true, role: true } }),
@@ -51,17 +51,18 @@ export default async function AdminPage() {
   const totalCpfsBloqueados = cpfsBloqueados.length
 
   return (
-    <div className="p-8">
-      <div className="max-w-6xl mx-auto space-y-10">
-
-        {/* Header Section */}
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Configurações &amp; Administração</h1>
-          <p className="text-slate-500">Gerencie regras operacionais, compliance e monitoramento do sistema de viagens.</p>
+    <div className="p-8 space-y-8 max-w-7xl mx-auto w-full">
+      <header className="flex items-center justify-between border-b border-slate-200 pb-4 mb-6 sticky top-0 bg-[#f6f6f8]/80 backdrop-blur-md z-10 -mx-8 px-8 -mt-8">
+        <div className="flex items-center gap-4">
+          <h2 className="text-xl font-bold text-slate-900 leading-none">Painel de Administração</h2>
+          <span className="px-2 py-1 rounded bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-widest">
+            Acesso Restrito
+          </span>
         </div>
+      </header>
 
-        {/* System Status Cards */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6" id="status">
+      {/* System Status Cards */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-6" id="status">
           <div className="bg-white p-5 rounded-xl border border-slate-200 flex items-center gap-4">
             <div className="size-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
               <span className="material-symbols-outlined">group</span>
@@ -266,7 +267,6 @@ export default async function AdminPage() {
           </div>
         </section>
 
-      </div>
     </div>
   )
 }

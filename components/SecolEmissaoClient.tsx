@@ -115,70 +115,15 @@ export function SecolEmissaoClient({ sol, userName }: Props) {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#f6f6f8]">
-
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-slate-200 bg-white flex flex-col fixed h-full z-20">
-        <div className="p-6 flex items-center gap-3">
-          <div className="bg-blue-600 rounded-lg p-2 flex items-center justify-center text-white">
-            <span className="material-symbols-outlined">flight_takeoff</span>
-          </div>
-          <div>
-            <h1 className="text-sm font-bold leading-tight">Osasco Travel</h1>
-            <p className="text-xs text-slate-500">Gestão de Viagens</p>
-          </div>
+    <div className="p-8 space-y-6">
+      <header className="flex items-center justify-between border-b border-slate-200 pb-4 mb-6 sticky top-0 bg-[#f6f6f8]/80 backdrop-blur-md z-10 -mx-8 px-8 -mt-8">
+        <div className="flex items-center gap-4">
+          <h2 className="text-xl font-bold text-slate-900 leading-none">Etapa 3: Formalização e Emissão</h2>
+          <span className="px-2 py-1 rounded bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-widest">
+            Aguardando SECOL
+          </span>
         </div>
-
-        <nav className="flex-1 px-4 space-y-1">
-          <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
-            <span className="material-symbols-outlined text-[20px]">description</span>
-            Solicitação
-          </Link>
-          <a className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors" href="#">
-            <span className="material-symbols-outlined text-[20px]">payments</span>
-            Cotação
-          </a>
-          <a className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors" href="#">
-            <span className="material-symbols-outlined text-[20px]">verified_user</span>
-            Aprovação SEGOV
-          </a>
-          <a className="flex items-center gap-3 px-3 py-2 text-sm font-bold text-blue-600 bg-blue-600/10 rounded-lg" href="#">
-            <span className="material-symbols-outlined text-[20px]">assignment_turned_in</span>
-            Formalização
-          </a>
-          <a className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors" href="#">
-            <span className="material-symbols-outlined text-[20px]">bar_chart</span>
-            Relatórios
-          </a>
-        </nav>
-
-        <div className="p-4 border-t border-slate-200">
-          <div className="flex items-center gap-3 p-2">
-            <div className="size-8 rounded-full bg-blue-600/10 flex items-center justify-center">
-              <span className="material-symbols-outlined text-blue-600 text-sm">person</span>
-            </div>
-            <div className="overflow-hidden">
-              <p className="text-xs font-bold truncate">{userName}</p>
-              <p className="text-[10px] text-slate-500 truncate">SECOL</p>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main */}
-      <main className="ml-64 flex-1 flex flex-col">
-
-        {/* Header */}
-        <header className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-8 sticky top-0 z-10">
-          <div className="flex items-center gap-2 text-slate-500 text-sm">
-            <span>Processos</span>
-            <span className="material-symbols-outlined text-xs">chevron_right</span>
-            <span className="text-slate-900 font-medium">Etapa 3: Formalização e Emissão</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500">{userName} · SECOL</span>
-          </div>
-        </header>
+      </header>
 
         <div className="p-8 max-w-5xl mx-auto w-full space-y-6">
 
@@ -416,7 +361,6 @@ export function SecolEmissaoClient({ sol, userName }: Props) {
             </div>
           </div>
         </div>
-      </main>
     </div>
   )
 }

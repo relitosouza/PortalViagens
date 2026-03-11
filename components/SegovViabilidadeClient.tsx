@@ -91,72 +91,15 @@ export function SegovViabilidadeClient({ sol, userName }: Props) {
   ]
 
   return (
-    <div className="flex min-h-screen bg-[#f6f6f8]">
-
-      {/* Sidebar */}
-      <aside className="w-72 bg-white border-r border-slate-200 flex flex-col fixed h-full z-20">
-        <div className="p-6 flex items-center gap-3">
-          <div className="bg-blue-600 size-10 rounded-lg flex items-center justify-center text-white">
-            <span className="material-symbols-outlined">account_balance</span>
-          </div>
-          <div>
-            <h1 className="text-slate-900 font-bold text-sm leading-tight">Portal de Gestão</h1>
-            <p className="text-blue-600 text-xs font-medium">SEGOV - Osasco</p>
-          </div>
+    <div className="p-8 space-y-6">
+      <header className="flex items-center justify-between border-b border-slate-200 pb-4 mb-6 sticky top-0 bg-[#f6f6f8]/80 backdrop-blur-md z-10 -mx-8 px-8 -mt-8">
+        <div className="flex items-center gap-4">
+          <h2 className="text-xl font-bold text-slate-900 leading-none">Análise de Viabilidade</h2>
+          <span className="px-2 py-1 rounded bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-widest">
+            Aguardando SEGOV
+          </span>
         </div>
-
-        <nav className="flex-1 px-4 space-y-1">
-          <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
-            <span className="material-symbols-outlined">description</span>
-            <span className="text-sm font-medium">Solicitação</span>
-          </Link>
-          <a className="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors" href="#">
-            <span className="material-symbols-outlined">calculate</span>
-            <span className="text-sm font-medium">Cotação</span>
-          </a>
-          <a className="flex items-center gap-3 px-3 py-2 bg-blue-600/10 text-blue-600 rounded-lg" href="#">
-            <span className="material-symbols-outlined">check_circle</span>
-            <span className="text-sm font-semibold">Viabilidade</span>
-          </a>
-          <a className="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors" href="#">
-            <span className="material-symbols-outlined">verified_user</span>
-            <span className="text-sm font-medium">Formalização</span>
-          </a>
-        </nav>
-
-        <div className="p-4 border-t border-slate-200 space-y-1">
-          <a className="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors" href="#">
-            <span className="material-symbols-outlined">settings</span>
-            <span className="text-sm font-medium">Configurações</span>
-          </a>
-          <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-            <span className="material-symbols-outlined">logout</span>
-            <span className="text-sm font-medium">Sair</span>
-          </Link>
-        </div>
-      </aside>
-
-      {/* Main */}
-      <main className="ml-72 flex-1 flex flex-col">
-
-        {/* Header */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10">
-          <div className="flex items-center gap-4">
-            <h2 className="text-lg font-bold text-slate-900">Análise de Viabilidade</h2>
-            <span className="px-2 py-1 rounded bg-amber-100 text-amber-700 text-[10px] font-bold uppercase tracking-wider">
-              Aguardando SEGOV
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm font-bold text-slate-900">{userName}</p>
-              <p className="text-xs text-slate-500">Gabinete do Secretário</p>
-            </div>
-            <div className="size-10 rounded-full bg-blue-600/10 border border-blue-600/20 flex items-center justify-center">
-              <span className="material-symbols-outlined text-blue-600">person</span>
-            </div>
-          </div>
-        </header>
+      </header>
 
         {/* Content */}
         <div className="p-8 space-y-6 max-w-6xl">
@@ -380,7 +323,6 @@ export function SegovViabilidadeClient({ sol, userName }: Props) {
             Prefeitura Municipal de Osasco - Gabinete do Secretário de Governo (SEGOV) © {new Date().getFullYear()}
           </p>
         </footer>
-      </main>
     </div>
   )
 }
