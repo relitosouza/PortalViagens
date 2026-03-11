@@ -28,7 +28,9 @@ export const authConfig: NextAuthConfig = {
     },
     session({ session, token }) {
       if (session.user) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (session.user as any).role = token.role;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (session.user as any).id = token.id;
       }
       return session

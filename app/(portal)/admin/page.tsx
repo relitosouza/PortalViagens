@@ -132,7 +132,7 @@ export default async function AdminPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {prestacoesPendentes.map(p => {
+                  {prestacoesPendentes.map((p: any) => {
                     const diasAtraso = Math.floor((hoje.getTime() - new Date(p.prazoFinal).getTime()) / 86400000)
                     return (
                       <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-red-100 bg-red-50/20">
@@ -147,7 +147,7 @@ export default async function AdminPage() {
                       </div>
                     )
                   })}
-                  {cpfsBloqueados.filter(u => !prestacoesPendentes.some(p => p.solicitacao.nomeCompleto === u.name)).map(u => (
+                  {cpfsBloqueados.filter((u: any) => !prestacoesPendentes.some((p: any) => p.solicitacao.nomeCompleto === u.name)).map((u: any) => (
                     <div key={u.id} className="flex items-center justify-between p-3 rounded-lg border border-red-100 bg-red-50/20">
                       <div className="flex items-center gap-3">
                         <div className="size-9 bg-red-100 text-red-600 rounded flex items-center justify-center font-bold text-xs uppercase">CPF</div>
@@ -241,7 +241,7 @@ export default async function AdminPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {workflowSteps.map(step => (
+                {workflowSteps.map((step: any) => (
                   <div key={step.id} className={`p-4 rounded-xl bg-slate-50 border-l-4 ${step.decisao === 'REPROVADO' ? 'border-red-400' : 'border-primary'}`}>
                     <div className="flex justify-between items-start mb-2">
                       <span className={`text-xs font-bold uppercase ${step.decisao === 'REPROVADO' ? 'text-red-500' : 'text-primary'}`}>
