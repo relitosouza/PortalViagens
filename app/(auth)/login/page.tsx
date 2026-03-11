@@ -2,7 +2,6 @@
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -36,7 +35,8 @@ export default function LoginPage() {
       <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src="/brasao-osasco.png"
               alt="Brasão de Osasco"
               width={80}
