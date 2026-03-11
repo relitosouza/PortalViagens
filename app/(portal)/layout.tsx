@@ -33,12 +33,12 @@ export default async function PortalLayout({
   return (
     <div className="flex h-screen overflow-hidden bg-[#f6f6f8] text-slate-900">
       <Sidebar role={role} />
-      <main className="flex-1 flex flex-col overflow-y-auto">
+      <div className="flex-1 flex flex-col min-w-0">
         <Header userName={nomeUsuario} roleLabel={roleLabel} initials={iniciais} />
-        <div className="flex-1">
+        <main className="flex-1 overflow-y-auto">
           {children}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   )
 }

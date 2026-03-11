@@ -18,6 +18,8 @@ const TRANSICOES: Record<string, {
   AGUARDANDO_VIABILIDADE: [
     { etapa: 'VIABILIDADE', decisao: 'APROVADO', proximoStatus: 'AGUARDANDO_EMISSAO', rolePermitido: 'SEGOV' },
     { etapa: 'VIABILIDADE', decisao: 'REPROVADO', proximoStatus: 'REPROVADA', rolePermitido: 'SEGOV' },
+    { etapa: 'VIABILIDADE', decisao: 'AJUSTE_SECOL', proximoStatus: 'AGUARDANDO_COTACAO', rolePermitido: 'SEGOV' },
+    { etapa: 'VIABILIDADE', decisao: 'AJUSTE_DEMANDANTE', proximoStatus: 'RASCUNHO', rolePermitido: 'SEGOV' },
   ],
   AGUARDANDO_EMISSAO: [
     { etapa: 'EMISSAO', decisao: 'APROVADO', proximoStatus: 'AGUARDANDO_EXECUCAO', rolePermitido: 'SECOL' },
@@ -51,15 +53,14 @@ export async function POST(
 
   if (!sol) return NextResponse.json({ error: 'Solicitação não encontrada' }, { status: 404 })
 
-  // Buscar transições possíveis para o status atual
   const transicoesPossiveis = TRANSICOES[sol.status] ?? []
   const transicao = transicoesPossiveis.find(
-    t => t.decisao === decisao && t.rolePermitido === role
+    t => t.decisao === decisao && (t.rolePermitido === role || role === 'ADMIN')
   )
 
   if (!transicao) {
     return NextResponse.json({
-      error: `Ação não permitida para o papel "${role}" no status atual "${sol.status}". Segregação de funções aplicada.`
+      error: `Ação não permitida para o papel "${role}" no status atual "${sol.status}".`
     }, { status: 403 })
   }
 

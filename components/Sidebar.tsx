@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { handleSignOut } from '@/app/(portal)/dashboard/actions'
 
@@ -17,12 +18,13 @@ export function Sidebar({ role }: SidebarProps) {
       <div className="p-6 flex flex-col gap-6 h-full">
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <div className="bg-blue-600/10 rounded-full p-2 flex items-center justify-center">
-            <span className="material-symbols-outlined text-blue-600">account_balance</span>
-          </div>
+          <img 
+            src="/brasao-osasco.png" 
+            alt="Logo Osasco" 
+            className="w-10 h-10 object-contain"
+          />
           <div className="flex flex-col">
-            <h1 className="text-slate-900 text-sm font-bold leading-tight">Prefeitura de Osasco</h1>
-            <p className="text-slate-500 text-xs">Portal do Servidor</p>
+            <h1 className="text-slate-900 text-[10px] font-black leading-tight tracking-tight uppercase">Prefeitura do Município de Osasco</h1>
           </div>
         </div>
 
@@ -75,7 +77,7 @@ export function Sidebar({ role }: SidebarProps) {
 
         {/* Bottom actions */}
         <div className="mt-auto pt-6 border-t border-slate-200 flex flex-col gap-3">
-          {role === 'DEMANDANTE' && (
+          {(role === 'DEMANDANTE' || role === 'ADMIN') && (
             <Link
               href="/solicitacoes/nova"
               className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2.5 text-sm font-bold transition-all shadow-sm"

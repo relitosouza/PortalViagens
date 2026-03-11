@@ -20,7 +20,7 @@ export default async function PrestacaoPage({
   })
 
   if (!sol) notFound()
-  if (sol.userId !== userId) notFound()
+  if (sol.userId !== userId && session.user.role !== 'ADMIN') notFound()
   if (sol.status !== 'CONCLUIDA') redirect(`/solicitacoes/${id}`)
 
   const iniciais = (session.user.name ?? 'U')

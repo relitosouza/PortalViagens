@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -37,12 +37,13 @@ type Solicitacao = {
 type Props = {
   sol: Solicitacao
   userName: string
+  initialQuotes?: string | null
 }
 
 const EMPTY_VOO: Omit<OpcaoVoo, 'id'> = { companhia: '', numeroVoo: '', origem: '', destino: '', horario: '', preco: '' }
 const EMPTY_HOTEL: Omit<OpcaoHotel, 'id'> = { nome: '', quarto: '', noites: 1, precoPorNoite: '' }
 
-export function SecolCotacaoClient({ sol, userName }: Props) {
+export function SecolCotacaoClient({ sol, userName, initialQuotes }: Props) {
   const router = useRouter()
   const [voos, setVoos] = useState<OpcaoVoo[]>([])
   const [hoteis, setHoteis] = useState<OpcaoHotel[]>([])
@@ -55,6 +56,71 @@ export function SecolCotacaoClient({ sol, userName }: Props) {
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
   const [showJustificativa, setShowJustificativa] = useState(false)
+
+  // Restaurar dados da cotação anterior se houver
+  useEffect(() => {
+    if (!initialQuotes) return
+
+    const restoredVoos: OpcaoVoo[] = []
+    const restoredHoteis: OpcaoHotel[] = []
+    let restoredObs = ''
+
+    const lines = initialQuotes.split('\n')
+    let section = ''
+
+    lines.forEach((line, idx) => {
+      if (line.includes('=== OPÇÕES DE VOO ===')) { section = 'VOO'; return }
+      if (line.includes('=== OPÇÕES DE HOSPEDAGEM ===')) { section = 'HOTEL'; return }
+      if (line.includes('=== OBSERVAÇÕES TÉCNICAS ===')) { section = 'OBS'; return }
+
+      if (section === 'VOO' && line.startsWith('[')) {
+        // Formato: [1] LATAM LA3450 | GRU → BSB | 08:30 - 10:15 | R$ 1240,50
+        const parts = line.split('|').map(s => s.trim())
+        if (parts.length >= 4) {
+          const compNum = parts[0].replace(/\[\d+\]\s+/, '')
+          const [comp, ...numArr] = compNum.split(' ')
+          const route = parts[1].split('→')
+          restoredVoos.push({
+            id: Date.now() + idx,
+            companhia: comp || '',
+            numeroVoo: numArr.join(' ') || '',
+            origem: route[0]?.trim() || '',
+            destino: route[1]?.trim() || '',
+            horario: parts[2] || '',
+            preco: parts[3]?.replace('R$', '').trim() || ''
+          })
+        }
+      }
+
+      if (section === 'HOTEL' && line.startsWith('[')) {
+        // Formato: [1] Ibis | Standard | 3 noite(s) × R$ 450,00 = R$ 1350,00
+        const parts = line.split('|').map(s => s.trim())
+        if (parts.length >= 3) {
+          const name = parts[0].replace(/\[\d+\]\s+/, '')
+          const quarto = parts[1]
+          const logistics = parts[2].split('×')
+          const noitesText = logistics[0]?.match(/\d+/)?.[0] || '1'
+          const precoText = logistics[1]?.split('=')[0]?.replace('R$', '').trim() || ''
+          
+          restoredHoteis.push({
+            id: Date.now() + idx,
+            nome: name,
+            quarto: quarto,
+            noites: parseInt(noitesText),
+            precoPorNoite: precoText
+          })
+        }
+      }
+
+      if (section === 'OBS' && line.trim()) {
+        restoredObs += (restoredObs ? '\n' : '') + line
+      }
+    })
+
+    setVoos(restoredVoos)
+    setHoteis(restoredHoteis)
+    setObservacao(restoredObs)
+  }, [initialQuotes])
 
   const dataIda = new Date(sol.dataIda).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
   const dataVolta = new Date(sol.dataVolta).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })

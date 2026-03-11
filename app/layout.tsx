@@ -4,6 +4,9 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'Aprovação de Viagens — Osasco',
   description: 'Sistema de aprovação de despesas com viagem da Prefeitura de Osasco',
+  icons: {
+    icon: '/brasao-osasco.ico',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

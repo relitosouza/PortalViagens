@@ -25,13 +25,25 @@ const ACOES_MAP: Record<string, Record<string, Acao[]>> = {
         label: 'Aprovar Viabilidade',
         decisao: 'APROVADO',
         cor: 'green',
-        descricao: 'Aprova a solicitação com base na conveniência e oportunidade político-financeira.'
+        descricao: 'Aprova a solicitação e avança para emissão de OS.'
+      },
+      {
+        label: 'Voltar para SECOL',
+        decisao: 'AJUSTE_SECOL',
+        cor: 'blue',
+        descricao: 'Retorna o processo para a SECOL realizar nova cotação ou ajustes técnicos.'
+      },
+      {
+        label: 'Voltar para Demandante',
+        decisao: 'AJUSTE_DEMANDANTE',
+        cor: 'blue',
+        descricao: 'Retorna o processo para o Demandante corrigir dados básicos da solicitação.'
       },
       {
         label: 'Reprovar Solicitação',
         decisao: 'REPROVADO',
         cor: 'red',
-        descricao: 'Reprova a solicitação. Informe o motivo no campo de observação.'
+        descricao: 'Reprova a solicitação definitivamente. Informe o motivo.'
       },
     ],
   },
@@ -71,7 +83,9 @@ export function AcoesWorkflow({ solicitacaoId, status, userRole }: Props) {
   const [erro, setErro] = useState('')
   const router = useRouter()
 
-  const acoes = ACOES_MAP[status]?.[userRole] ?? []
+  const acoes = (userRole === 'ADMIN') 
+    ? Object.values(ACOES_MAP[status] ?? {}).flat()
+    : (ACOES_MAP[status]?.[userRole] ?? [])
 
   if (acoes.length === 0) return null
 

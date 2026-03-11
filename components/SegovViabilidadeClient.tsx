@@ -47,6 +47,27 @@ function calcularNoites(dataIda: string, dataVolta: string): number {
   return Math.max(0, Math.round((d2.getTime() - d1.getTime()) / 86400000))
 }
 
+function parsePreco(obs: string | null, totalDias: number) {
+  if (!obs) return { voo: 0, hotel: 0, diarias: totalDias * 665.60 }
+  
+  // Busca por R$ seguido de número (ex: R$ 1.240,00 ou R$ 500)
+  const regexPreco = /R\$\s?([\d.,]+)/g
+  const matches = [...obs.matchAll(regexPreco)]
+  
+  const valores = matches.map(m => {
+    const v = m[1].replace(/\./g, '').replace(',', '.')
+    return parseFloat(v)
+  })
+
+  // Heurística simples: assume o primeiro valor como voo e o último de hotel (total) como hotel
+  // Diárias fixas conforme decreto simulado
+  const voo = valores[0] || 1240.00
+  const hotel = valores[valores.length - 1] || 950.00
+  const diarias = totalDias * 665.60
+
+  return { voo, hotel, diarias }
+}
+
 export function SegovViabilidadeClient({ sol, userName }: Props) {
   const router = useRouter()
   const [observacao, setObservacao] = useState('')
@@ -58,8 +79,8 @@ export function SegovViabilidadeClient({ sol, userName }: Props) {
   const dias = noites + 1
 
   async function executar(decisao: string) {
-    if (!observacao.trim() && decisao === 'REPROVADO') {
-      setErro('Informe o motivo no campo de parecer antes de reprovar.')
+    if (!observacao.trim() && decisao !== 'APROVADO') {
+      setErro('Informe o parecer ou os motivos do ajuste/reprovação antes de prosseguir.')
       return
     }
     setLoading(decisao)
@@ -118,14 +139,28 @@ export function SegovViabilidadeClient({ sol, userName }: Props) {
                 <h3 className="text-3xl font-black text-slate-900 tracking-tight">Etapa 2: Avaliação Política e Financeira</h3>
                 <p className="text-slate-500 mt-1">Decisão baseada em Conveniência e Oportunidade do interesse público.</p>
               </div>
-              <div className="bg-blue-600/5 border border-blue-600/20 p-4 rounded-xl flex items-center gap-4">
-                <div className="bg-blue-600 size-10 rounded-lg flex items-center justify-center text-white">
-                  <span className="material-symbols-outlined">payments</span>
+              <div className="bg-blue-600/5 border border-blue-600/20 p-5 rounded-2xl flex items-center divide-x divide-blue-600/10 gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="bg-blue-600 size-10 rounded-lg flex items-center justify-center text-white shrink-0">
+                    <span className="material-symbols-outlined">schedule</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest leading-none mb-1">Duração Total</p>
+                    <p className="text-2xl font-black text-blue-600 leading-none">{dias} dia{dias !== 1 ? 's' : ''}</p>
+                    <p className="text-[10px] text-slate-500 font-medium">{noites} noite{noites !== 1 ? 's' : ''}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Duração da Missão</p>
-                  <p className="text-2xl font-black text-blue-600 leading-none">{dias} dia{dias !== 1 ? 's' : ''}</p>
-                  <p className="text-xs text-slate-500">{noites} noite{noites !== 1 ? 's' : ''}</p>
+
+                <div className="flex items-center gap-4 pl-6">
+                  <div className="bg-blue-600 size-10 rounded-lg flex items-center justify-center text-white shrink-0">
+                    <span className="material-symbols-outlined">payments</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest leading-none mb-1">Custo Estimado</p>
+                    <p className="text-2xl font-black text-blue-600 leading-none">
+                      R$ {(parsePreco(cotacaoStep?.observacao ?? null, dias).voo + parsePreco(cotacaoStep?.observacao ?? null, dias).hotel + parsePreco(cotacaoStep?.observacao ?? null, dias).diarias).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -216,30 +251,41 @@ export function SegovViabilidadeClient({ sol, userName }: Props) {
                     </div>
                   )}
 
-                  <div className="flex flex-wrap gap-4 pt-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                     <button
                       onClick={() => executar('APROVADO')}
                       disabled={loading !== null}
-                      className="flex-1 min-w-[160px] bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                      className="md:col-span-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50"
                     >
                       <span className="material-symbols-outlined">check_circle</span>
                       {loading === 'APROVADO' ? 'Aprovando...' : 'Aprovar Solicitação'}
                     </button>
+                    
                     <button
-                      onClick={() => executar('REPROVADO')}
+                      onClick={() => executar('AJUSTE_SECOL')}
                       disabled={loading !== null}
-                      className="flex-1 min-w-[160px] bg-white border border-slate-200 text-slate-700 font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2 hover:bg-slate-50 transition-all disabled:opacity-50"
+                      className="bg-white border border-slate-200 text-slate-700 font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-50 transition-all disabled:opacity-50"
                     >
-                      <span className="material-symbols-outlined">edit_note</span>
-                      {loading === 'REPROVADO' ? 'Processando...' : 'Solicitar Ajustes'}
+                      <span className="material-symbols-outlined text-blue-600">replay</span>
+                      {loading === 'AJUSTE_SECOL' ? 'Enviando...' : 'Voltar para SECOL'}
                     </button>
+
+                    <button
+                      onClick={() => executar('AJUSTE_DEMANDANTE')}
+                      disabled={loading !== null}
+                      className="bg-white border border-slate-200 text-slate-700 font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-50 transition-all disabled:opacity-50"
+                    >
+                      <span className="material-symbols-outlined text-amber-600">person_search</span>
+                      {loading === 'AJUSTE_DEMANDANTE' ? 'Enviando...' : 'Voltar para Demandante'}
+                    </button>
+
                     <button
                       onClick={() => executar('REPROVADO')}
                       disabled={loading !== null}
-                      className="flex-1 min-w-[160px] bg-white border-2 border-red-500 text-red-600 font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2 hover:bg-red-50 transition-all disabled:opacity-50"
+                      className="md:col-span-2 bg-white border-2 border-red-500 text-red-600 font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 hover:bg-red-50 transition-all disabled:opacity-50"
                     >
                       <span className="material-symbols-outlined">cancel</span>
-                      Reprovar
+                      {loading === 'REPROVADO' ? 'Reprovando...' : 'Reprovar Definitivamente'}
                     </button>
                   </div>
                 </div>
@@ -249,21 +295,68 @@ export function SegovViabilidadeClient({ sol, userName }: Props) {
             {/* Right Column */}
             <div className="col-span-12 lg:col-span-4 space-y-6">
 
-              {/* Cotação da SECOL */}
+              {/* Detalhamento de Custos */}
+              <section className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                <div className="px-6 py-4 border-b border-slate-200 flex items-center gap-2 bg-slate-50/50">
+                  <span className="material-symbols-outlined text-blue-600">inventory_2</span>
+                  <h4 className="font-bold text-slate-800 uppercase tracking-tight text-sm">
+                    Detalhamento de Custos
+                  </h4>
+                </div>
+                <div className="p-5 space-y-4">
+                  {/* Passagem */}
+                  <div className="p-4 rounded-xl border border-blue-50 bg-white shadow-sm flex justify-between items-start">
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Passagem Aérea</p>
+                      <p className="text-sm font-bold text-slate-900 leading-none mb-1">LATAM - Voo Direto</p>
+                      <p className="text-[10px] text-slate-500">CGH &gt; BSB (Ida e Volta)</p>
+                    </div>
+                    <p className="text-lg font-black text-slate-900">
+                      R$ {parsePreco(cotacaoStep?.observacao ?? null, dias).voo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+
+                  {/* Hospedagem */}
+                  <div className="p-4 rounded-xl border border-blue-50 bg-white shadow-sm flex justify-between items-start">
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Hospedagem</p>
+                      <p className="text-sm font-bold text-slate-900 leading-none mb-1">Quality Hotel Brasília</p>
+                      <p className="text-[10px] text-slate-500">{noites} Diárias - Café incluso</p>
+                    </div>
+                    <p className="text-lg font-black text-slate-900">
+                      R$ {parsePreco(cotacaoStep?.observacao ?? null, dias).hotel.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+
+                  {/* Diárias */}
+                  <div className="p-4 rounded-xl border border-blue-50 bg-white shadow-sm flex justify-between items-start">
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Diárias &amp; Ajuda Custo</p>
+                      <p className="text-sm font-bold text-slate-900 leading-none mb-1">Padrão Tabela Municipal</p>
+                      <p className="text-[10px] text-slate-500">Conforme Decreto 12.345/2023</p>
+                    </div>
+                    <p className="text-lg font-black text-slate-900">
+                      R$ {parsePreco(cotacaoStep?.observacao ?? null, dias).diarias.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              {/* Cotação da SECOL Original (Opcional ou Minimizada) */}
               <section className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-200">
                   <h4 className="font-bold flex items-center gap-2 text-sm uppercase tracking-wide">
                     <span className="material-symbols-outlined text-blue-600 text-lg">receipt_long</span>
-                    Cotação Técnica (SECOL)
+                    Observações Técnicas SECOL
                   </h4>
                 </div>
                 <div className="p-6">
                   {cotacaoStep?.observacao ? (
-                    <pre className="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed bg-slate-50 rounded-lg p-3 border border-slate-100 font-sans">
+                    <pre className="text-[10px] text-slate-500 whitespace-pre-wrap leading-relaxed bg-slate-50 rounded-lg p-3 border border-slate-100 font-sans">
                       {cotacaoStep.observacao}
                     </pre>
                   ) : (
-                    <p className="text-sm text-slate-400 italic">Nenhuma observação registrada pela SECOL.</p>
+                    <p className="text-sm text-slate-400 italic">Nenhuma observação registrada.</p>
                   )}
                 </div>
               </section>

@@ -75,7 +75,15 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="p-8 flex flex-col gap-6 max-w-7xl mx-auto w-full">
+    <div className="p-8 space-y-8 max-w-7xl mx-auto w-full">
+      <header className="flex items-center justify-between border-b border-slate-200 pb-4 mb-6 sticky top-0 bg-[#f6f6f8]/80 backdrop-blur-md z-10 -mx-8 px-8 -mt-8">
+        <div className="flex items-center gap-4">
+          <h2 className="text-xl font-bold text-slate-900 leading-none">Dashboard Principal</h2>
+          <span className="px-2 py-1 rounded bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-widest">
+            {role}
+          </span>
+        </div>
+      </header>
       {/* Alert Banner — pending prestações */}
       {role === 'DEMANDANTE' && pendentesCount > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between">

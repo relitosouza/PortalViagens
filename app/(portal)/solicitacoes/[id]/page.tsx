@@ -28,6 +28,8 @@ const STATUS_CORES: Record<string, string> = {
   REPROVADA: 'bg-red-100 text-red-700',
 }
 
+import { SolicitacaoFormClient } from '@/components/SolicitacaoFormClient'
+
 export default async function DetalheSolicitacaoPage({
   params,
 }: {
@@ -55,8 +57,37 @@ export default async function DetalheSolicitacaoPage({
   // DEMANDANTE só pode ver suas próprias solicitações
   if (role === 'DEMANDANTE' && sol.userId !== userId) notFound()
 
-  // SEGOV viabilidade — layout dedicado
-  if (role === 'SEGOV' && sol.status === 'AGUARDANDO_VIABILIDADE') {
+  // DEMANDANTE em RASCUNHO — formulário de edição
+  if (sol.status === 'RASCUNHO' && (role === 'DEMANDANTE' || role === 'ADMIN')) {
+    return (
+      <div className="p-8">
+        <SolicitacaoFormClient 
+          userName={session.user.name ?? ''}
+          initialData={{
+            id: sol.id,
+            nomeCompleto: sol.nomeCompleto,
+            matricula: sol.matricula,
+            cpf: sol.cpf,
+            dataNascimento: sol.dataNascimento.toISOString().split('T')[0],
+            celular: sol.celular,
+            emailServidor: sol.emailServidor,
+            justificativaPublica: sol.justificativaPublica,
+            nexoCargo: sol.nexoCargo,
+            destino: sol.destino,
+            dataIda: sol.dataIda.toISOString().split('T')[0],
+            dataVolta: sol.dataVolta.toISOString().split('T')[0],
+            justificativaLocal: sol.justificativaLocal,
+            fichaOrcamentaria: sol.fichaOrcamentaria,
+            indicacaoVoo: sol.indicacaoVoo ?? '',
+            indicacaoHospedagem: sol.indicacaoHospedagem ?? '',
+          }}
+        />
+      </div>
+    )
+  }
+
+  // SEGOV viabilidade — layout dedicado (ADMIN também acessa)
+  if ((role === 'SEGOV' || role === 'ADMIN') && sol.status === 'AGUARDANDO_VIABILIDADE') {
     return (
       <SegovViabilidadeClient
         sol={{
@@ -83,8 +114,8 @@ export default async function DetalheSolicitacaoPage({
     )
   }
 
-  // SF execução orçamentária — layout dedicado
-  if (role === 'SF' && sol.status === 'AGUARDANDO_EXECUCAO') {
+  // SF execução orçamentária — layout dedicado (ADMIN também acessa)
+  if ((role === 'SF' || role === 'ADMIN') && sol.status === 'AGUARDANDO_EXECUCAO') {
     return (
       <SfExecucaoClient
         sol={{
@@ -108,8 +139,8 @@ export default async function DetalheSolicitacaoPage({
     )
   }
 
-  // SECOL emissão OS — layout dedicado
-  if (role === 'SECOL' && sol.status === 'AGUARDANDO_EMISSAO') {
+  // SECOL emissão OS — layout dedicado (ADMIN também acessa)
+  if ((role === 'SECOL' || role === 'ADMIN') && sol.status === 'AGUARDANDO_EMISSAO') {
     return (
       <SecolEmissaoClient
         sol={{
@@ -134,8 +165,9 @@ export default async function DetalheSolicitacaoPage({
     )
   }
 
-  // SECOL cotação — layout dedicado
-  if (role === 'SECOL' && sol.status === 'AGUARDANDO_COTACAO') {
+  // SECOL cotação — layout dedicado (ADMIN também acessa)
+  if ((role === 'SECOL' || role === 'ADMIN') && sol.status === 'AGUARDANDO_COTACAO') {
+    const cotacaoAnterior = sol.steps.find(s => s.etapa === 'COTACAO')
     return (
       <SecolCotacaoClient
         sol={{
@@ -151,6 +183,7 @@ export default async function DetalheSolicitacaoPage({
           user: { name: sol.user.name ?? '' },
         }}
         userName={session.user.name ?? 'SECOL'}
+        initialQuotes={cotacaoAnterior?.observacao}
       />
     )
   }
@@ -159,23 +192,20 @@ export default async function DetalheSolicitacaoPage({
 
   return (
     <main className="p-8 space-y-6 max-w-4xl mx-auto w-full">
-      {/* Page Title / Header Info */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6 mb-6">
-        <div>
-          <nav className="flex items-center gap-2 text-sm text-slate-500 mb-1">
+      <header className="flex items-center justify-between border-b border-slate-200 pb-4 mb-6 sticky top-0 bg-[#f6f6f8]/80 backdrop-blur-md z-10 -mx-8 px-8 -mt-8">
+        <div className="flex flex-col">
+          <nav className="flex items-center gap-2 text-[10px] text-slate-500 mb-0.5 uppercase tracking-tighter">
             <Link href="/dashboard" className="hover:text-blue-600 transition-colors">Processos</Link>
-            <span className="material-symbols-outlined text-xs">chevron_right</span>
-            <span className="text-slate-900 font-medium tracking-tight">Protocolo #{sol.id.slice(-8).toUpperCase()}</span>
+            <span className="material-symbols-outlined text-[10px]">chevron_right</span>
+            <span className="text-slate-900 font-bold">Protocolo #{sol.id.slice(-8).toUpperCase()}</span>
           </nav>
-          <h2 className="text-3xl font-black text-slate-900 tracking-tight">
-            Detalhes da Solicitação
-          </h2>
+          <h2 className="text-xl font-bold text-slate-900 leading-none">Detalhes da Solicitação</h2>
         </div>
-        <div className={`px-4 py-2 rounded-xl border-2 font-black uppercase text-xs tracking-widest flex items-center gap-2 ${statusCor}`}>
-          <span className="material-symbols-outlined text-[20px]">info</span>
+        <div className={`px-2 py-1 rounded border font-black uppercase text-[10px] tracking-widest flex items-center gap-1.5 ${statusCor}`}>
+          <span className="material-symbols-outlined text-[14px]">info</span>
           {STATUS_LABELS[sol.status] ?? sol.status}
         </div>
-      </div>
+      </header>
         {/* Dados do Servidor */}
         <section className="bg-white rounded-2xl shadow-sm p-6">
           <h2 className="font-semibold text-gray-700 border-b pb-2 mb-4">Dados do Servidor</h2>
@@ -283,8 +313,8 @@ export default async function DetalheSolicitacaoPage({
 
         <AcoesWorkflow solicitacaoId={sol.id} status={sol.status} userRole={role} />
 
-        {/* Prestação de Contas — para DEMANDANTE após conclusão */}
-        {sol.status === 'CONCLUIDA' && role === 'DEMANDANTE' && (
+        {/* Prestação de Contas — para DEMANDANTE ou ADMIN após conclusão */}
+        {sol.status === 'CONCLUIDA' && (role === 'DEMANDANTE' || role === 'ADMIN') && (
           <section className={`rounded-2xl p-6 border-2 ${sol.prestacao?.enviadoEm ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-300'}`}>
             <h2 className="font-semibold text-amber-800 mb-3">Prestação de Contas — Art. 4º</h2>
             {sol.prestacao?.enviadoEm ? (

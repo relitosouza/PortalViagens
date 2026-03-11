@@ -100,38 +100,20 @@ export function PrestacaoFormClient({ solicitacaoId, destino, dataIda, dataVolta
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-[#f6f6f8]">
-
-      {/* Header */}
-      <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 md:px-40">
-        <div className="flex items-center gap-4 text-blue-600">
-          <div className="size-8 bg-blue-600/10 rounded-lg flex items-center justify-center">
-            <span className="material-symbols-outlined text-blue-600">description</span>
-          </div>
-          <h2 className="text-slate-900 text-lg font-bold leading-tight tracking-tight">SGP - Prestação de Contas</h2>
+    <div className="p-8 space-y-8 max-w-[960px] mx-auto w-full">
+      <header className="flex items-center justify-between border-b border-slate-200 pb-4 mb-6 sticky top-0 bg-[#f6f6f8]/80 backdrop-blur-md z-10 -mx-8 px-8 -mt-8">
+        <div className="flex flex-col">
+          <nav className="flex items-center gap-2 text-[10px] text-slate-500 mb-0.5 uppercase tracking-tighter">
+            <Link href="/dashboard" className="hover:text-blue-600 transition-colors">Processos</Link>
+            <span className="material-symbols-outlined text-[10px]">chevron_right</span>
+            <span className="text-slate-900 font-bold">Protocolo #{protocolo}</span>
+          </nav>
+          <h2 className="text-xl font-bold text-slate-900 leading-none">Relatório de Atividades</h2>
         </div>
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
-            <span className="material-symbols-outlined">arrow_back</span>
-          </Link>
-          <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
-            {iniciais}
-          </div>
+        <div className="px-2 py-1 rounded bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-widest">
+          Etapa Final
         </div>
       </header>
-
-      <main className="px-6 md:px-40 py-8 flex flex-col items-center">
-        <div className="flex flex-col max-w-[960px] w-full gap-8">
-
-          {/* Title */}
-          <div className="flex flex-col gap-2">
-            <h1 className="text-slate-900 text-3xl font-extrabold tracking-tight">
-              Etapa 5: Prestação de Contas e Relatório de Atividades
-            </h1>
-            <p className="text-slate-500 text-base">
-              Preencha os campos abaixo para concluir a prestação de contas da sua última viagem funcional.
-            </p>
-          </div>
 
           {/* Alert */}
           <div className={`border p-4 rounded-xl flex gap-4 items-start ${vencido ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
@@ -280,18 +262,15 @@ export function PrestacaoFormClient({ solicitacaoId, destino, dataIda, dataVolta
               </button>
             </div>
           </div>
-        </div>
-      </main>
-
-      <footer className="mt-auto px-6 md:px-40 py-8 border-t border-slate-200">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-slate-400 text-xs">© {new Date().getFullYear()} Portal do Servidor. Sistema de Gestão de Viagens.</p>
-          <div className="flex gap-6">
-            <a className="text-slate-400 hover:text-blue-600 text-xs transition-colors" href="#">Manual do Usuário</a>
-            <a className="text-slate-400 hover:text-blue-600 text-xs transition-colors" href="#">Suporte Técnico</a>
+        <footer className="mt-auto py-8 border-t border-slate-200">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-slate-400 text-xs">© {new Date().getFullYear()} Portal do Servidor. Sistema de Gestão de Viagens.</p>
+            <div className="flex gap-6">
+              <a className="text-slate-400 hover:text-blue-600 text-xs transition-colors" href="#">Manual do Usuário</a>
+              <a className="text-slate-400 hover:text-blue-600 text-xs transition-colors" href="#">Suporte Técnico</a>
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
     </div>
   )
 }
