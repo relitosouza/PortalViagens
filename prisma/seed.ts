@@ -1,12 +1,5 @@
-import { PrismaClient } from '@prisma/client'
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
+import { prisma } from '../lib/prisma'
 import bcrypt from 'bcryptjs'
-import path from 'path'
-
-// Prisma 7 requires a driver adapter with a URL config object
-const dbUrl = `file:${path.resolve('./dev.db')}`
-const adapter = new PrismaBetterSqlite3({ url: dbUrl })
-const prisma = new PrismaClient({ adapter })
 
 async function main() {
   const usuarios = [
