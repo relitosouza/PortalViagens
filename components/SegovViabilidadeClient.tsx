@@ -145,27 +145,42 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
                 <h3 className="text-3xl font-black text-slate-900 tracking-tight">Etapa 2: Avaliação Política e Financeira</h3>
                 <p className="text-slate-500 mt-1">Decisão baseada em Conveniência e Oportunidade do interesse público.</p>
               </div>
-              <div className="bg-blue-600/5 border border-blue-600/20 p-5 rounded-2xl flex items-center divide-x divide-blue-600/10 gap-6">
-                <div className="flex items-center gap-4">
-                  <div className="bg-blue-600 size-10 rounded-lg flex items-center justify-center text-white shrink-0">
-                    <span className="material-symbols-outlined">schedule</span>
+              <div className="flex gap-4">
+                <div className="bg-blue-600/5 border border-blue-600/20 p-5 rounded-2xl flex items-center divide-x divide-blue-600/10 gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-blue-600 size-10 rounded-lg flex items-center justify-center text-white shrink-0">
+                      <span className="material-symbols-outlined">schedule</span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest leading-none mb-1">Duração Total</p>
+                      <p className="text-2xl font-black text-blue-600 leading-none">{dias} dia{dias !== 1 ? 's' : ''}</p>
+                      <p className="text-[10px] text-slate-500 font-medium">{noites} noite{noites !== 1 ? 's' : ''}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest leading-none mb-1">Duração Total</p>
-                    <p className="text-2xl font-black text-blue-600 leading-none">{dias} dia{dias !== 1 ? 's' : ''}</p>
-                    <p className="text-[10px] text-slate-500 font-medium">{noites} noite{noites !== 1 ? 's' : ''}</p>
+
+                  <div className="flex items-center gap-4 pl-6">
+                    <div className="bg-blue-600 size-10 rounded-lg flex items-center justify-center text-white shrink-0">
+                      <span className="material-symbols-outlined">payments</span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest leading-none mb-1">Custo Estimado</p>
+                      <p className="text-2xl font-black text-blue-600 leading-none">
+                        R$ {(parsePreco(cotacaoStep?.observacao ?? null, dias).voo + parsePreco(cotacaoStep?.observacao ?? null, dias).hotel + parsePreco(cotacaoStep?.observacao ?? null, dias).diarias).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 pl-6">
-                  <div className="bg-blue-600 size-10 rounded-lg flex items-center justify-center text-white shrink-0">
-                    <span className="material-symbols-outlined">payments</span>
+                <div className="bg-red-600/5 border border-red-600/20 p-5 rounded-2xl flex items-center gap-4">
+                  <div className="bg-red-600 size-10 rounded-lg flex items-center justify-center text-white shrink-0">
+                    <span className="material-symbols-outlined">account_balance_wallet</span>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest leading-none mb-1">Custo Estimado</p>
-                    <p className="text-2xl font-black text-blue-600 leading-none">
-                      R$ {(parsePreco(cotacaoStep?.observacao ?? null, dias).voo + parsePreco(cotacaoStep?.observacao ?? null, dias).hotel + parsePreco(cotacaoStep?.observacao ?? null, dias).diarias).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest leading-none mb-1">Saldo do Empenho</p>
+                    <p className="text-2xl font-black text-red-700 leading-none">
+                      R$ {parseFloat(budgetData?.saldoEmpenho || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
+                    <p className="text-[10px] text-red-500 font-medium mt-1">Limite p/ Novas Viagens</p>
                   </div>
                 </div>
               </div>
