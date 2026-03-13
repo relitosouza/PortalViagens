@@ -82,6 +82,42 @@ export async function POST(
     data: { status: transicao.proximoStatus },
   })
 
+  // Lógica especial para etapa de VIABILIDADE aprovada (SEGOV) — DÉBITO DE EMPENHO
+  if (transicao.etapa === 'VIABILIDADE' && decisao === 'APROVADO') {
+    // 1. Buscar cotação técnica anterior
+    const cotacaoStep = await prisma.workflowStep.findFirst({
+      where: { solicitacaoId: sol.id, etapa: 'COTACAO', decisao: 'APROVADO' },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    if (cotacaoStep) {
+      const { calcularNoites, parsePreco } = await import('@/lib/utils/budget-utils')
+      const noites = calcularNoites(sol.dataIda, sol.dataVolta)
+      const dias = noites + 1
+      const { total } = parsePreco(cotacaoStep.observacao, dias)
+
+      // 2. Buscar saldo atual
+      const configSaldo = await prisma.configuracaoSistema.findUnique({ where: { chave: 'SALDO_EMPENHO' } })
+      
+      if (configSaldo) {
+        const saldoAtual = parseFloat(configSaldo.valor)
+        const novoSaldo = Math.max(0, saldoAtual - total)
+        
+        // 3. Atualizar saldo
+        await prisma.configuracaoSistema.update({
+          where: { chave: 'SALDO_EMPENHO' },
+          data: { valor: novoSaldo.toFixed(2) }
+        })
+
+        // 4. Adicionar nota na observação do workflow sobre o débito
+        await prisma.workflowStep.update({
+          where: { id: (await prisma.workflowStep.findFirst({ where: { solicitacaoId: sol.id, etapa: 'VIABILIDADE' }, orderBy: { createdAt: 'desc' } }))?.id ?? '' },
+          data: { observacao: (observacao || '') + `\n\n[DÉBITO AUTOMÁTICO] Valor estimado de R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} debitado do empenho. Novo saldo: R$ ${novoSaldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.` }
+        }).catch(() => {}) // Silencioso se falhar
+      }
+    }
+  }
+
   // Lógica especial para etapa de EXECUÇÃO aprovada (conclusão)
   if (transicao.etapa === 'EXECUCAO' && decisao === 'APROVADO') {
     const prazoFinal = addDiasUteis(new Date(sol.dataVolta), 5)

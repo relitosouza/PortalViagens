@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import BudgetTetoInfo from './BudgetTetoInfo'
 
 type OpcaoVoo = {
   id: number
@@ -38,12 +39,17 @@ type Props = {
   sol: Solicitacao
   userName: string
   initialQuotes?: string | null
+  budgetData?: {
+    numeroEmpenho?: string
+    valorEmpenho?: string
+    saldoEmpenho?: string
+  }
 }
 
 const EMPTY_VOO: Omit<OpcaoVoo, 'id'> = { companhia: '', numeroVoo: '', origem: '', destino: '', horario: '', preco: '' }
 const EMPTY_HOTEL: Omit<OpcaoHotel, 'id'> = { nome: '', quarto: '', noites: 1, precoPorNoite: '' }
 
-export function SecolCotacaoClient({ sol, userName, initialQuotes }: Props) {
+export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }: Props) {
   const router = useRouter()
   const [voos, setVoos] = useState<OpcaoVoo[]>([])
   const [hoteis, setHoteis] = useState<OpcaoHotel[]>([])
@@ -227,6 +233,15 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes }: Props) {
               </button>
             </div>
           </div>
+        </div>
+
+        <div className="mb-8">
+          <BudgetTetoInfo 
+            destacado
+            numeroEmpenho={budgetData?.numeroEmpenho} 
+            valorEmpenho={budgetData?.valorEmpenho} 
+            saldoEmpenho={budgetData?.saldoEmpenho} 
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

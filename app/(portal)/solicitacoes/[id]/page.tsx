@@ -53,6 +53,17 @@ export default async function DetalheSolicitacaoPage({
   })
 
   if (!sol) notFound()
+  
+  // Buscar parâmetros de empenho para alertar SegoV, Secol e Finanças
+  const budgetParams = await prisma.configuracaoSistema.findMany({
+    where: { chave: { in: ['NUMERO_EMPENHO', 'VALOR_EMPENHO', 'SALDO_EMPENHO'] } }
+  })
+  
+  const budgetData = {
+    numeroEmpenho: budgetParams.find(p => p.chave === 'NUMERO_EMPENHO')?.valor,
+    valorEmpenho: budgetParams.find(p => p.chave === 'VALOR_EMPENHO')?.valor,
+    saldoEmpenho: budgetParams.find(p => p.chave === 'SALDO_EMPENHO')?.valor,
+  }
 
   // DEMANDANTE só pode ver suas próprias solicitações
   if (role === 'DEMANDANTE' && sol.userId !== userId) notFound()
@@ -110,6 +121,7 @@ export default async function DetalheSolicitacaoPage({
           })),
         }}
         userName={session.user.name ?? 'SEGOV'}
+        budgetData={budgetData}
       />
     )
   }
@@ -135,6 +147,7 @@ export default async function DetalheSolicitacaoPage({
           })),
         }}
         userName={session.user.name ?? 'SF'}
+        budgetData={budgetData}
       />
     )
   }
@@ -184,6 +197,7 @@ export default async function DetalheSolicitacaoPage({
         }}
         userName={session.user.name ?? 'SECOL'}
         initialQuotes={cotacaoAnterior?.observacao}
+        budgetData={budgetData}
       />
     )
   }

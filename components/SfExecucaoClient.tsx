@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import BudgetTetoInfo from './BudgetTetoInfo'
 
 type WorkflowStep = {
   etapa: string
@@ -25,6 +26,11 @@ type Solicitacao = {
 type Props = {
   sol: Solicitacao
   userName: string
+  budgetData?: {
+    numeroEmpenho?: string
+    valorEmpenho?: string
+    saldoEmpenho?: string
+  }
 }
 
 function fmt(iso: string) {
@@ -37,7 +43,7 @@ function mascaraCpf(cpf: string) {
   return cpf
 }
 
-export function SfExecucaoClient({ sol, userName }: Props) {
+export function SfExecucaoClient({ sol, userName, budgetData }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState('')

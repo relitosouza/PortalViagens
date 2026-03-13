@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import BudgetTetoInfo from './BudgetTetoInfo'
 
 type WorkflowStep = {
   id: string
@@ -28,6 +29,11 @@ type Solicitacao = {
 type Props = {
   sol: Solicitacao
   userName: string
+  budgetData?: {
+    numeroEmpenho?: string
+    valorEmpenho?: string
+    saldoEmpenho?: string
+  }
 }
 
 function formatarData(iso: string) {
@@ -68,7 +74,7 @@ function parsePreco(obs: string | null, totalDias: number) {
   return { voo, hotel, diarias }
 }
 
-export function SegovViabilidadeClient({ sol, userName }: Props) {
+export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
   const router = useRouter()
   const [observacao, setObservacao] = useState('')
   const [loading, setLoading] = useState<string | null>(null)
@@ -164,6 +170,13 @@ export function SegovViabilidadeClient({ sol, userName }: Props) {
                 </div>
               </div>
             </div>
+            
+            <BudgetTetoInfo 
+              destacado 
+              numeroEmpenho={budgetData?.numeroEmpenho} 
+              valorEmpenho={budgetData?.valorEmpenho} 
+              saldoEmpenho={budgetData?.saldoEmpenho} 
+            />
           </div>
 
           <div className="grid grid-cols-12 gap-6">

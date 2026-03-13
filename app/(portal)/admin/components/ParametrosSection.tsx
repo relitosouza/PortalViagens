@@ -9,7 +9,7 @@ type Param = {
   updatedAt: Date
 }
 
-const PARAM_LABELS: Record<string, { label: string; hint: string; unit: string }> = {
+const PARAM_LABELS: Record<string, { label: string; hint: string; unit: string; type?: string }> = {
   DIAS_UTEIS_ANTECEDENCIA_MINIMA: {
     label: 'Regra de Antecedência (Pré-Viagem)',
     hint: 'Determina o prazo mínimo para abertura de novas solicitações de passagem/diária.',
@@ -29,6 +29,24 @@ const PARAM_LABELS: Record<string, { label: string; hint: string; unit: string }
     label: 'Tamanho Máximo de Upload',
     hint: 'Limite máximo de arquivos enviados por solicitação.',
     unit: 'MB',
+  },
+  NUMERO_EMPENHO: {
+    label: 'Número do Empenho Global',
+    hint: 'Identificador do empenho que suporta as despesas de viagens.',
+    unit: 'Nº',
+    type: 'text',
+  },
+  VALOR_EMPENHO: {
+    label: 'Valor Total do Empenho (Teto Orçamentário)',
+    hint: 'Cota inicial autorizada para o período.',
+    unit: 'R$',
+    type: 'number',
+  },
+  SALDO_EMPENHO: {
+    label: 'Saldo disponível em Empenho',
+    hint: 'Valor atualizado após débitos das solicitações aprovadas.',
+    unit: 'R$',
+    type: 'number',
   },
 }
 
@@ -56,12 +74,20 @@ export default function ParametrosSection({ parametros: initial }: { parametros:
     }
   }
 
-  const displayOrder = ['DIAS_UTEIS_ANTECEDENCIA_MINIMA', 'DIAS_UTEIS_PRAZO_PRESTACAO', 'DIAS_ALERTA_VENCIMENTO', 'UPLOAD_MAX_MB']
+  const displayOrder = [
+    'NUMERO_EMPENHO', 
+    'VALOR_EMPENHO', 
+    'SALDO_EMPENHO',
+    'DIAS_UTEIS_ANTECEDENCIA_MINIMA', 
+    'DIAS_UTEIS_PRAZO_PRESTACAO', 
+    'DIAS_ALERTA_VENCIMENTO', 
+    'UPLOAD_MAX_MB'
+  ]
 
   return (
     <div className="p-6 space-y-6">
       <p className="text-xs text-slate-500 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-        <span className="font-bold text-amber-700">Atenção:</span> Alterações são aplicadas imediatamente nas novas solicitações.
+        <span className="font-bold text-amber-700">Atenção:</span> Alterações são aplicadas imediatamente. Ao atualizar o <span className="font-bold">Saldo</span>, o sistema passará a usar este novo valor como base para os próximos débitos.
       </p>
       {displayOrder.map(chave => {
         const meta = PARAM_LABELS[chave]
@@ -72,8 +98,9 @@ export default function ParametrosSection({ parametros: initial }: { parametros:
             <div className="flex gap-4">
               <div className="relative flex-1">
                 <input
-                  type="number"
-                  min="1"
+                  type={meta.type || 'number'}
+                  min={meta.type === 'text' ? undefined : "0"}
+                  step={meta.unit === 'R$' ? "0.01" : "1"}
                   value={valores[chave] ?? ''}
                   onChange={e => setValores(v => ({ ...v, [chave]: e.target.value }))}
                   className="w-full rounded-lg border border-slate-200 bg-slate-50 text-sm font-bold text-slate-900 pr-16 px-3 py-2 focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none"

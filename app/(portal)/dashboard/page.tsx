@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import BudgetTetoInfo from '@/components/BudgetTetoInfo'
 
 const STATUS_LABELS: Record<string, string> = {
   RASCUNHO: 'Rascunho',
@@ -58,6 +59,11 @@ export default async function DashboardPage() {
     include: { user: { select: { name: true } } }
   })
 
+  // Buscar parâmetros de empenho
+  const parametros = await prisma.configuracaoSistema.findMany({
+    where: { chave: { in: ['NUMERO_EMPENHO', 'VALOR_EMPENHO', 'SALDO_EMPENHO'] } }
+  })
+
   const hoje = new Date()
   const ativas = solicitacoes.filter(s => s.status !== 'CONCLUIDA' && s.status !== 'REPROVADA')
   const proximasViagens = solicitacoes.filter(s => new Date(s.dataIda) > hoje && s.status !== 'REPROVADA')
@@ -83,7 +89,29 @@ export default async function DashboardPage() {
             {role}
           </span>
         </div>
+        {/* Budget info in header if not demandante */}
+        {role !== 'DEMANDANTE' && (
+          <div className="hidden md:block">
+            <BudgetTetoInfo 
+              numeroEmpenho={parametros.find(p => p.chave === 'NUMERO_EMPENHO')?.valor}
+              valorEmpenho={parametros.find(p => p.chave === 'VALOR_EMPENHO')?.valor}
+              saldoEmpenho={parametros.find(p => p.chave === 'SALDO_EMPENHO')?.valor}
+            />
+          </div>
+        )}
       </header>
+
+      {/* Budget Highlight for SEGOV and SECOL */}
+      {(role === 'SEGOV' || role === 'SECOL' || role === 'SF') && (
+        <div className="mb-8">
+          <BudgetTetoInfo 
+            destacado
+            numeroEmpenho={parametros.find(p => p.chave === 'NUMERO_EMPENHO')?.valor}
+            valorEmpenho={parametros.find(p => p.chave === 'VALOR_EMPENHO')?.valor}
+            saldoEmpenho={parametros.find(p => p.chave === 'SALDO_EMPENHO')?.valor}
+          />
+        </div>
+      )}
       {/* Alert Banner — pending prestações */}
       {role === 'DEMANDANTE' && pendentesCount > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between">
