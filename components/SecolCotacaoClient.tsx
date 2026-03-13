@@ -62,6 +62,8 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
   const [showJustificativa, setShowJustificativa] = useState(false)
+  const [editingVooId, setEditingVooId] = useState<number | null>(null)
+  const [editingHotelId, setEditingHotelId] = useState<number | null>(null)
 
   // Restaurar dados da cotação anterior se houver
   useEffect(() => {
@@ -133,16 +135,50 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
 
   function adicionarVoo() {
     if (!novoVoo.companhia || !novoVoo.preco) return
-    setVoos(v => [...v, { ...novoVoo, id: Date.now() }])
+    if (editingVooId !== null) {
+      setVoos(vs => vs.map(v => v.id === editingVooId ? { ...novoVoo, id: editingVooId } : v))
+    } else {
+      setVoos(v => [...v, { ...novoVoo, id: Date.now() }])
+    }
     setNovoVoo({ ...EMPTY_VOO })
+    setEditingVooId(null)
     setAddingVoo(false)
   }
 
   function adicionarHotel() {
     if (!novoHotel.nome || !novoHotel.precoPorNoite) return
-    setHoteis(h => [...h, { ...novoHotel, id: Date.now() }])
+    if (editingHotelId !== null) {
+      setHoteis(hs => hs.map(h => h.id === editingHotelId ? { ...novoHotel, id: editingHotelId } : h))
+    } else {
+      setHoteis(h => [...h, { ...novoHotel, id: Date.now() }])
+    }
     setNovoHotel({ ...EMPTY_HOTEL })
+    setEditingHotelId(null)
     setAddingHotel(false)
+  }
+
+  function iniciarEdicaoVoo(v: OpcaoVoo) {
+    setNovoVoo({ 
+      companhia: v.companhia, 
+      numeroVoo: v.numeroVoo, 
+      origem: v.origem, 
+      destino: v.destino, 
+      horario: v.horario, 
+      preco: v.preco 
+    })
+    setEditingVooId(v.id)
+    setAddingVoo(true)
+  }
+
+  function iniciarEdicaoHotel(h: OpcaoHotel) {
+    setNovoHotel({ 
+      nome: h.nome, 
+      quarto: h.quarto, 
+      noites: h.noites, 
+      precoPorNoite: h.precoPorNoite 
+    })
+    setEditingHotelId(h.id)
+    setAddingHotel(true)
   }
 
   function formatarObservacao(): string {
@@ -357,7 +393,7 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
 
               {addingVoo && (
                 <div className="p-6 border-b border-slate-200 bg-blue-50/30">
-                  <p className="text-sm font-bold text-slate-700 mb-3">Nova opção de voo</p>
+                  <p className="text-sm font-bold text-slate-700 mb-3">{editingVooId !== null ? 'Editar opção de voo' : 'Nova opção de voo'}</p>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     <input className="border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="Companhia (ex: LATAM)" value={novoVoo.companhia} onChange={e => setNovoVoo(v => ({ ...v, companhia: e.target.value }))} />
                     <input className="border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="Nº Voo (ex: LA3450)" value={novoVoo.numeroVoo} onChange={e => setNovoVoo(v => ({ ...v, numeroVoo: e.target.value }))} />
@@ -367,8 +403,8 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
                     <input className="border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="Preço (ex: 1240,50)" value={novoVoo.preco} onChange={e => setNovoVoo(v => ({ ...v, preco: e.target.value }))} />
                   </div>
                   <div className="flex gap-3 mt-3">
-                    <button onClick={adicionarVoo} className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors">Confirmar</button>
-                    <button onClick={() => { setAddingVoo(false); setNovoVoo({ ...EMPTY_VOO }) }} className="px-4 py-2 border border-slate-300 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-50 transition-colors">Cancelar</button>
+                    <button onClick={adicionarVoo} className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors">{editingVooId !== null ? 'Salvar Alteração' : 'Confirmar'}</button>
+                    <button onClick={() => { setAddingVoo(false); setEditingVooId(null); setNovoVoo({ ...EMPTY_VOO }) }} className="px-4 py-2 border border-slate-300 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-50 transition-colors">Cancelar</button>
                   </div>
                 </div>
               )}
@@ -411,7 +447,10 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
                           </div>
                         </td>
                         <td className="px-6 py-4 font-bold">R$ {v.preco}</td>
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-6 py-4 text-right flex justify-end gap-1">
+                          <button onClick={() => iniciarEdicaoVoo(v)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
+                            <span className="material-symbols-outlined">edit</span>
+                          </button>
                           <button onClick={() => setVoos(vs => vs.filter(x => x.id !== v.id))} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
                             <span className="material-symbols-outlined">delete</span>
                           </button>
@@ -441,7 +480,7 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
 
               {addingHotel && (
                 <div className="p-6 border-b border-slate-200 bg-blue-50/30">
-                  <p className="text-sm font-bold text-slate-700 mb-3">Nova opção de hospedagem</p>
+                  <p className="text-sm font-bold text-slate-700 mb-3">{editingHotelId !== null ? 'Editar opção de hospedagem' : 'Nova opção de hospedagem'}</p>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <input className="border border-slate-300 rounded-lg px-3 py-2 text-sm md:col-span-2" placeholder="Nome do hotel" value={novoHotel.nome} onChange={e => setNovoHotel(h => ({ ...h, nome: e.target.value }))} />
                     <input className="border border-slate-300 rounded-lg px-3 py-2 text-sm md:col-span-2" placeholder="Tipo de quarto (ex: Standard c/ Café)" value={novoHotel.quarto} onChange={e => setNovoHotel(h => ({ ...h, quarto: e.target.value }))} />
@@ -449,8 +488,8 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
                     <input className="border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="Preço/noite (ex: 450,00)" value={novoHotel.precoPorNoite} onChange={e => setNovoHotel(h => ({ ...h, precoPorNoite: e.target.value }))} />
                   </div>
                   <div className="flex gap-3 mt-3">
-                    <button onClick={adicionarHotel} className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors">Confirmar</button>
-                    <button onClick={() => { setAddingHotel(false); setNovoHotel({ ...EMPTY_HOTEL }) }} className="px-4 py-2 border border-slate-300 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-50 transition-colors">Cancelar</button>
+                    <button onClick={adicionarHotel} className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors">{editingHotelId !== null ? 'Salvar Alteração' : 'Confirmar'}</button>
+                    <button onClick={() => { setAddingHotel(false); setEditingHotelId(null); setNovoHotel({ ...EMPTY_HOTEL }) }} className="px-4 py-2 border border-slate-300 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-50 transition-colors">Cancelar</button>
                   </div>
                 </div>
               )}
@@ -494,11 +533,14 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
                             <span className="text-slate-400 text-xs">(R$ {h.precoPorNoite}/dia)</span>
                           </td>
                           <td className="px-6 py-4 font-bold">R$ {total}</td>
-                          <td className="px-6 py-4 text-right">
-                            <button onClick={() => setHoteis(hs => hs.filter(x => x.id !== h.id))} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
-                              <span className="material-symbols-outlined">delete</span>
-                            </button>
-                          </td>
+                          <td className="px-6 py-4 text-right flex justify-end gap-1">
+                          <button onClick={() => iniciarEdicaoHotel(h)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
+                            <span className="material-symbols-outlined">edit</span>
+                          </button>
+                          <button onClick={() => setHoteis(hs => hs.filter(x => x.id !== h.id))} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
+                            <span className="material-symbols-outlined">delete</span>
+                          </button>
+                        </td>
                         </tr>
                       )
                     })}
