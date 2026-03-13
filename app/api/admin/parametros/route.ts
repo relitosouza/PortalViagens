@@ -28,14 +28,14 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'chave e valor são obrigatórios' }, { status: 400 })
   }
 
-  const existing = await prisma.configuracaoSistema.findUnique({ where: { chave } })
-  if (!existing) {
-    return NextResponse.json({ error: 'Parâmetro não encontrado' }, { status: 404 })
-  }
-
-  const updated = await prisma.configuracaoSistema.update({
+  const updated = await prisma.configuracaoSistema.upsert({
     where: { chave },
-    data: { valor: String(valor) },
+    update: { valor: String(valor) },
+    create: { 
+      chave, 
+      valor: String(valor), 
+      descricao: `Parâmetro ${chave} configurado manualmente` 
+    },
   })
 
   return NextResponse.json(updated)
