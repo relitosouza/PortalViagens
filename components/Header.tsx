@@ -16,7 +16,7 @@ export function Header({ userName, roleLabel, initials }: HeaderProps) {
       <div className="flex items-center justify-between px-8 py-3">
         <div className="flex items-center gap-4">
           <div className="flex flex-col">
-            <h1 className="text-lg font-black text-slate-900 leading-none tracking-tight">PORTAL DE VIAGENS</h1>
+            <h1 className="text-lg font-black text-slate-900 leading-none tracking-tight">SISTEMA DE APROVAÇÃO DE VIAGENS</h1>
           </div>
         </div>
 

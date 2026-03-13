@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import BudgetTetoInfo from './BudgetTetoInfo'
+import { parseCurrency } from '@/lib/utils/budget-utils'
 
 type OpcaoVoo = {
   id: number
@@ -192,7 +193,8 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
     if (hoteis.length > 0) {
       partes.push('=== OPÇÕES DE HOSPEDAGEM ===')
       hoteis.forEach((h, i) => {
-        const total = (parseFloat(h.precoPorNoite) * h.noites).toFixed(2)
+        const preco = parseCurrency(h.precoPorNoite)
+        const total = (preco * h.noites).toFixed(2).replace('.', ',')
         partes.push(`[${i + 1}] ${h.nome} | ${h.quarto} | ${h.noites} noite(s) × R$ ${h.precoPorNoite} = R$ ${total}`)
       })
     }
@@ -513,8 +515,8 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
                       </tr>
                     )}
                     {hoteis.map(h => {
-                      const preco = parseFloat(h.precoPorNoite.replace(',', '.')) || 0
-                      const total = (preco * h.noites).toFixed(2).replace('.', ',')
+                      const preco = parseCurrency(h.precoPorNoite)
+                      const total = (preco * h.noites).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
                       return (
                         <tr key={h.id} className="hover:bg-slate-50/50 transition-colors">
                           <td className="px-6 py-4">
