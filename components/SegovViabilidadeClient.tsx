@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import BudgetTetoInfo from './BudgetTetoInfo'
+import { parsePreco, calcularNoites } from '@/lib/utils/budget-utils'
 
 type WorkflowStep = {
   id: string
@@ -47,32 +48,6 @@ function formatarDataHora(iso: string) {
   })
 }
 
-function calcularNoites(dataIda: string, dataVolta: string): number {
-  const d1 = new Date(dataIda)
-  const d2 = new Date(dataVolta)
-  return Math.max(0, Math.round((d2.getTime() - d1.getTime()) / 86400000))
-}
-
-function parsePreco(obs: string | null, totalDias: number) {
-  if (!obs) return { voo: 0, hotel: 0, diarias: totalDias * 665.60 }
-  
-  // Busca por R$ seguido de número (ex: R$ 1.240,00 ou R$ 500)
-  const regexPreco = /R\$\s?([\d.,]+)/g
-  const matches = [...obs.matchAll(regexPreco)]
-  
-  const valores = matches.map(m => {
-    const v = m[1].replace(/\./g, '').replace(',', '.')
-    return parseFloat(v)
-  })
-
-  // Heurística simples: assume o primeiro valor como voo e o último de hotel (total) como hotel
-  // Diárias fixas conforme decreto simulado
-  const voo = valores[0] || 1240.00
-  const hotel = valores[valores.length - 1] || 950.00
-  const diarias = totalDias * 665.60
-
-  return { voo, hotel, diarias }
-}
 
 export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
   const router = useRouter()
@@ -140,58 +115,58 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
               <span>/</span>
               <span className="text-blue-600 font-medium">Análise SEGOV</span>
             </nav>
-            <div className="flex justify-between items-end">
+            <div className="space-y-6">
               <div>
                 <h3 className="text-3xl font-black text-slate-900 tracking-tight">Etapa 2: Avaliação Política e Financeira</h3>
                 <p className="text-slate-500 mt-1">Decisão baseada em Conveniência e Oportunidade do interesse público.</p>
               </div>
-              <div className="flex gap-4">
-                <div className="bg-blue-600/5 border border-blue-600/20 p-5 rounded-2xl flex items-center divide-x divide-blue-600/10 gap-6">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-blue-600 size-10 rounded-lg flex items-center justify-center text-white shrink-0">
-                      <span className="material-symbols-outlined">schedule</span>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest leading-none mb-1">Duração Total</p>
-                      <p className="text-2xl font-black text-blue-600 leading-none">{dias} dia{dias !== 1 ? 's' : ''}</p>
-                      <p className="text-[10px] text-slate-500 font-medium">{noites} noite{noites !== 1 ? 's' : ''}</p>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-4 pl-6">
-                    <div className="bg-blue-600 size-10 rounded-lg flex items-center justify-center text-white shrink-0">
-                      <span className="material-symbols-outlined">payments</span>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest leading-none mb-1">Custo Estimado</p>
-                      <p className="text-2xl font-black text-blue-600 leading-none">
-                        R$ {(parsePreco(cotacaoStep?.observacao ?? null, dias).voo + parsePreco(cotacaoStep?.observacao ?? null, dias).hotel + parsePreco(cotacaoStep?.observacao ?? null, dias).diarias).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </p>
-                    </div>
+              {/* Painel Orçamentário Dashboard */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Teto Orçamentário */}
+                <div className="col-span-1 md:col-span-1 bg-blue-600 p-6 rounded-2xl text-white shadow-lg shadow-blue-200">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-200 mb-2">Teto Orçamentário</p>
+                  <p className="text-2xl font-black">
+                    R$ {parseFloat(budgetData?.valorEmpenho || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                  <div className="mt-3 h-1 bg-white/20 rounded-full overflow-hidden">
+                    <div className="h-full bg-white w-full opacity-30"></div>
                   </div>
                 </div>
 
-                <div className="bg-red-600/5 border border-red-600/20 p-5 rounded-2xl flex items-center gap-4">
-                  <div className="bg-red-600 size-10 rounded-lg flex items-center justify-center text-white shrink-0">
-                    <span className="material-symbols-outlined">account_balance_wallet</span>
+                {/* Saldo do Empenho */}
+                <div className="col-span-1 md:col-span-1 bg-white border-2 border-red-500 p-6 rounded-2xl shadow-lg relative group overflow-hidden">
+                  <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <span className="material-symbols-outlined text-4xl text-red-600">account_balance_wallet</span>
                   </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest leading-none mb-1">Saldo do Empenho</p>
-                    <p className="text-2xl font-black text-red-700 leading-none">
-                      R$ {parseFloat(budgetData?.saldoEmpenho || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </p>
-                    <p className="text-[10px] text-red-500 font-medium mt-1">Limite p/ Novas Viagens</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-500 mb-2">Saldo do Empenho</p>
+                  <p className="text-2xl font-black text-red-700">
+                    R$ {parseFloat(budgetData?.saldoEmpenho || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                  <p className="mt-2 text-[10px] font-bold text-red-400 uppercase flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[12px]">tag</span>
+                    Empenho Nº {budgetData?.numeroEmpenho}
+                  </p>
+                </div>
+
+                {/* Duração Total */}
+                <div className="bg-slate-50 border border-slate-200 p-6 rounded-2xl">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Duração Total</p>
+                  <div className="flex items-end gap-2">
+                    <p className="text-2xl font-black text-slate-900 leading-none">{dias} Dias</p>
+                    <p className="text-[10px] text-slate-500 font-bold mb-0.5">{noites} Noites</p>
                   </div>
+                </div>
+
+                {/* Custo Estimado */}
+                <div className="bg-slate-50 border border-slate-200 p-6 rounded-2xl">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Custo Estimado</p>
+                  <p className="text-2xl font-black text-blue-600 leading-none uppercase">
+                    R$ {(parsePreco(cotacaoStep?.observacao ?? null, dias).total).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
                 </div>
               </div>
             </div>
-            
-            <BudgetTetoInfo 
-              destacado 
-              numeroEmpenho={budgetData?.numeroEmpenho} 
-              valorEmpenho={budgetData?.valorEmpenho} 
-              saldoEmpenho={budgetData?.saldoEmpenho} 
-            />
           </div>
 
           <div className="grid grid-cols-12 gap-6">
