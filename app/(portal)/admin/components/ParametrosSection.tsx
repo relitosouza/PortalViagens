@@ -74,6 +74,24 @@ export default function ParametrosSection({ parametros: initial }: { parametros:
     }
   }
 
+  const [savingAll, setSavingAll] = useState(false)
+  async function salvarTudo() {
+    setSavingAll(true)
+    try {
+      for (const chave of displayOrder) {
+        // Apenas salva se o valor for diferente do original (opcional, mas para simplificar vamos salvar todos que estão no estado)
+        await fetch('/api/admin/parametros', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chave, valor: valores[chave] }),
+        })
+      }
+      alert('Todas as configurações foram salvas com sucesso!')
+    } finally {
+      setSavingAll(false)
+    }
+  }
+
   const displayOrder = [
     'NUMERO_EMPENHO', 
     'VALOR_EMPENHO', 
@@ -86,9 +104,19 @@ export default function ParametrosSection({ parametros: initial }: { parametros:
 
   return (
     <div className="p-6 space-y-6">
-      <p className="text-xs text-slate-500 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-        <span className="font-bold text-amber-700">Atenção:</span> Alterações são aplicadas imediatamente. Ao atualizar o <span className="font-bold">Saldo</span>, o sistema passará a usar este novo valor como base para os próximos débitos.
-      </p>
+      <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <p className="text-xs text-slate-500 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 flex-1 mr-4">
+          <span className="font-bold text-amber-700">Dica:</span> Você pode salvar cada campo individualmente ou usar o botão de salvar tudo abaixo.
+        </p>
+        <button
+          onClick={salvarTudo}
+          disabled={savingAll}
+          className="px-6 py-2 bg-primary text-white rounded-lg text-sm font-black shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+        >
+          {savingAll ? 'Salvando...' : 'SALVAR TUDO'}
+        </button>
+      </div>
+
       {displayOrder.map(chave => {
         const meta = PARAM_LABELS[chave]
         if (!meta) return null
