@@ -70,9 +70,11 @@ export async function parseExcelSolicitacao(buffer: ArrayBuffer): Promise<Partia
   // sheet_to_json com header: 1 retorna array de arrays
   const rows = XLSX.utils.sheet_to_json<(string | number)[]>(ws, { header: 1, defval: '' })
 
-  // Linha 0: cabeçalhos, Linha 1: exemplo, Linha 2: primeiro dado real
+  // Linha 0: cabeçalhos; primeira linha não-vazia após o cabeçalho = dados
   const headers = rows[0] as string[]
-  const dataRow = rows[2] as (string | number)[]
+  const dataRow = rows.slice(1).find(
+    row => (row as (string | number)[]).some(cell => cell !== '' && cell !== undefined && cell !== null)
+  ) as (string | number)[] | undefined
 
   if (!headers || !dataRow) return {}
 
