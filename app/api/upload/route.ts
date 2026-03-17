@@ -47,20 +47,26 @@ export async function POST(req: NextRequest) {
     const baseName = path.basename(file.name, ext).replace(/[^a-zA-Z0-9-_]/g, '_')
     const filename = `${Date.now()}-${baseName}${ext}`
 
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    await writeFile(path.join(uploadDir, filename), buffer)
+    try {
+      const bytes = await file.arrayBuffer()
+      const buffer = Buffer.from(bytes)
+      await writeFile(path.join(uploadDir, filename), buffer)
 
-    const anexo = await prisma.anexo.create({
-      data: {
-        nome: file.name,
-        path: filename,
-        tipo: tipo ?? 'OUTRO',
-        solicitacaoId: solicitacaoId || null,
-        prestacaoId: prestacaoId || null,
-      }
-    })
-    anexosCriados.push(anexo)
+      const anexo = await prisma.anexo.create({
+        data: {
+          nome: file.name,
+          path: filename,
+          tipo: tipo ?? 'OUTRO',
+          solicitacaoId: solicitacaoId || null,
+          prestacaoId: prestacaoId || null,
+        }
+      })
+      anexosCriados.push(anexo)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('[UPLOAD ERROR]', msg)
+      return NextResponse.json({ error: `Erro ao salvar arquivo "${file.name}": ${msg}` }, { status: 500 })
+    }
   }
 
   return NextResponse.json({ anexos: anexosCriados })
