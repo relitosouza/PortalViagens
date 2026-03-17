@@ -5,7 +5,7 @@ import { Solicitacao, User } from '@prisma/client'
 
 type SolicitacaoComUser = Solicitacao & { user: User }
 
-const APP_URL = () => process.env.APP_URL ?? 'http://localhost:3000'
+const APP_URL = process.env.APP_URL ?? 'http://localhost:3000'
 
 /** Busca todos os usuários ativos do role e dispara logEmail para cada um */
 export async function notificarRole(
@@ -18,7 +18,11 @@ export async function notificarRole(
     where: { role, ativo: true },
   })
   for (const u of usuarios) {
-    logEmail({ para: u.email, assunto, corpo, tipo })
+    try {
+      logEmail({ para: u.email, assunto, corpo, tipo })
+    } catch {
+      // silent: email failure must not block workflow
+    }
   }
 }
 
@@ -29,17 +33,21 @@ export function notificarDemandante(
   corpo: string,
   tipo: string
 ): void {
-  logEmail({ para: sol.emailServidor, assunto, corpo, tipo })
+  try {
+    logEmail({ para: sol.emailServidor, assunto, corpo, tipo })
+  } catch {
+    // silent: email failure must not block workflow
+  }
 }
 
 /** Demandante submeteu → notificar SECOL para cotar */
-export async function notificarNovaSOlicitacaoParaSecol(
+export async function notificarNovaSolicitacaoParaSecol(
   sol: SolicitacaoComUser
 ): Promise<void> {
   await notificarRole(
     'SECOL',
     '[Viagens Osasco] Nova solicitação aguardando cotação',
-    `Uma nova solicitação de viagem para ${sol.destino} de ${sol.nomeCompleto} está aguardando cotação.\n\nAcesse: ${APP_URL()}/solicitacoes/${sol.id}`,
+    `Uma nova solicitação de viagem para ${sol.destino} de ${sol.nomeCompleto} está aguardando cotação.\n\nAcesse: ${APP_URL}/solicitacoes/${sol.id}`,
     'NOVA_SOLICITACAO_SECOL'
   )
 }
@@ -51,7 +59,7 @@ export async function notificarCotacaoParaSegov(
   await notificarRole(
     'SEGOV',
     '[Viagens Osasco] Solicitação aguardando análise de viabilidade',
-    `A cotação da viagem para ${sol.destino} de ${sol.nomeCompleto} foi concluída pela SECOL. A solicitação aguarda análise de viabilidade.\n\nAcesse: ${APP_URL()}/solicitacoes/${sol.id}`,
+    `A cotação da viagem para ${sol.destino} de ${sol.nomeCompleto} foi concluída pela SECOL. A solicitação aguarda análise de viabilidade.\n\nAcesse: ${APP_URL}/solicitacoes/${sol.id}`,
     'NOVA_VIABILIDADE_SEGOV'
   )
 }
@@ -63,7 +71,7 @@ export async function notificarViabilidadeAprovadaParaSecol(
   await notificarRole(
     'SECOL',
     '[Viagens Osasco] Viabilidade aprovada — emitir vouchers',
-    `A viabilidade da viagem para ${sol.destino} de ${sol.nomeCompleto} foi aprovada. A solicitação aguarda emissão dos vouchers.\n\nAcesse: ${APP_URL()}/solicitacoes/${sol.id}`,
+    `A viabilidade da viagem para ${sol.destino} de ${sol.nomeCompleto} foi aprovada. A solicitação aguarda emissão dos vouchers.\n\nAcesse: ${APP_URL}/solicitacoes/${sol.id}`,
     'EMISSAO_NECESSARIA_SECOL'
   )
 }
@@ -76,7 +84,7 @@ export async function notificarAjusteParaSecol(
   await notificarRole(
     'SECOL',
     '[Viagens Osasco] Ajuste necessário na cotação',
-    `A SEGOV solicitou ajuste na cotação da viagem para ${sol.destino} de ${sol.nomeCompleto}.\n\nMotivo: ${observacao || 'Não informado'}\n\nAcesse: ${APP_URL()}/solicitacoes/${sol.id}`,
+    `A SEGOV solicitou ajuste na cotação da viagem para ${sol.destino} de ${sol.nomeCompleto}.\n\nMotivo: ${observacao ?? 'Não informado'}\n\nAcesse: ${APP_URL}/solicitacoes/${sol.id}`,
     'AJUSTE_SECOL'
   )
 }
@@ -89,7 +97,7 @@ export function notificarAjusteParaDemandante(
   notificarDemandante(
     sol,
     '[Viagens Osasco] Ajuste necessário na sua solicitação',
-    `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} precisa de ajustes.\n\nMotivo: ${observacao || 'Não informado'}\n\nAcesse: ${APP_URL()}/solicitacoes/${sol.id}`,
+    `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} precisa de ajustes.\n\nMotivo: ${observacao ?? 'Não informado'}\n\nAcesse: ${APP_URL}/solicitacoes/${sol.id}`,
     'AJUSTE_DEMANDANTE'
   )
 }
@@ -101,7 +109,7 @@ export async function notificarEmissaoParaSf(
   await notificarRole(
     'SF',
     '[Viagens Osasco] Vouchers emitidos — aguardando execução',
-    `Os vouchers da viagem para ${sol.destino} de ${sol.nomeCompleto} foram emitidos. A solicitação aguarda confirmação de execução.\n\nAcesse: ${APP_URL()}/solicitacoes/${sol.id}`,
+    `Os vouchers da viagem para ${sol.destino} de ${sol.nomeCompleto} foram emitidos. A solicitação aguarda confirmação de execução.\n\nAcesse: ${APP_URL}/solicitacoes/${sol.id}`,
     'EXECUCAO_SF'
   )
 }
