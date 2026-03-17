@@ -1,7 +1,6 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { Sidebar } from '@/components/Sidebar'
-import { Header } from '@/components/Header'
+import { PortalShell } from '@/components/PortalShell'
 
 const ROLE_LABELS: Record<string, string> = {
   DEMANDANTE: 'Secretaria Demandante',
@@ -31,14 +30,13 @@ export default async function PortalLayout({
   const roleLabel = ROLE_LABELS[role] ?? role
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f6f6f8] text-slate-900">
-      <Sidebar role={role} />
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header userName={nomeUsuario} roleLabel={roleLabel} initials={iniciais} />
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
-      </div>
-    </div>
+    <PortalShell
+      role={role}
+      userName={nomeUsuario}
+      roleLabel={roleLabel}
+      initials={iniciais}
+    >
+      {children}
+    </PortalShell>
   )
 }
