@@ -65,7 +65,7 @@ function toISODate(value: unknown): string {
 
 export async function parseExcelSolicitacao(buffer: ArrayBuffer): Promise<Partial<FormData>> {
   const XLSX: typeof XLSXType = await import('xlsx')
-  const wb = XLSX.read(buffer, { type: 'array' })
+  const wb = XLSX.read(new Uint8Array(buffer), { type: 'array' })
   const ws = wb.Sheets[wb.SheetNames[0]]
   // sheet_to_json com header: 1 retorna array de arrays
   const rows = XLSX.utils.sheet_to_json<(string | number)[]>(ws, { header: 1, defval: '' })
