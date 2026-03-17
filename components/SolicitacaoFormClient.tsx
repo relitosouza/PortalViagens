@@ -25,6 +25,7 @@ export function SolicitacaoFormClient({ initialData, userName }: Props) {
   const [enviando, setEnviando] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [importWarning, setImportWarning] = useState('')
+  const [importing, setImporting] = useState(false)
   const [arquivos, setArquivos] = useState<File[]>([])
   const [form, setForm] = useState<FormData>(initialData ?? {
     nomeCompleto: '', matricula: '', cpf: '', dataNascimento: '',
@@ -39,22 +40,36 @@ export function SolicitacaoFormClient({ initialData, userName }: Props) {
 
   async function handleImport(file: File) {
     setImportWarning('')
+    setImporting(true)
     try {
       const buffer = await file.arrayBuffer()
       const dados = await parseExcelSolicitacao(buffer)
       setForm(f => ({ ...f, ...dados }))
 
-      const obrigatorios: (keyof FormData)[] = [
-        'nomeCompleto', 'matricula', 'cpf', 'dataNascimento', 'celular', 'emailServidor',
-        'justificativaPublica', 'nexoCargo', 'destino', 'dataIda', 'dataVolta',
-        'justificativaLocal', 'fichaOrcamentaria',
-      ]
-      const faltando = obrigatorios.filter(k => !dados[k])
+      const FIELD_LABELS: Partial<Record<keyof FormData, string>> = {
+        nomeCompleto: 'Nome Completo',
+        matricula: 'Matrícula',
+        cpf: 'CPF',
+        dataNascimento: 'Data de Nascimento',
+        celular: 'Telefone/WhatsApp',
+        emailServidor: 'E-mail Institucional',
+        justificativaPublica: 'Justificativa do Interesse Público',
+        nexoCargo: 'Nexo com as Atribuições do Cargo',
+        destino: 'Destino',
+        dataIda: 'Data de Ida',
+        dataVolta: 'Data de Volta',
+        justificativaLocal: 'Justificativa de Localização',
+        fichaOrcamentaria: 'Ficha Orçamentária',
+      }
+      const obrigatorios = Object.keys(FIELD_LABELS) as (keyof FormData)[]
+      const faltando = obrigatorios.filter(k => !dados[k]).map(k => FIELD_LABELS[k] ?? k)
       if (faltando.length > 0) {
-        setImportWarning(`Campos não encontrados na planilha: complete-os manualmente antes de enviar.`)
+        setImportWarning(`Preencha manualmente: ${faltando.join(', ')}.`)
       }
     } catch {
       setImportWarning('Erro ao ler a planilha. Verifique se o arquivo é um .xlsx válido.')
+    } finally {
+      setImporting(false)
     }
   }
 
@@ -160,12 +175,13 @@ export function SolicitacaoFormClient({ initialData, userName }: Props) {
           <span className="material-symbols-outlined text-base">download</span>
           Baixar modelo (.xlsx)
         </a>
-        <label className="flex items-center gap-2 px-4 py-2 rounded-lg border border-blue-300 text-blue-700 text-sm font-medium hover:bg-blue-50 transition-colors cursor-pointer">
+        <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${importing ? 'border-slate-200 text-slate-400 cursor-not-allowed' : 'border-blue-300 text-blue-700 hover:bg-blue-50 cursor-pointer'}`}>
           <span className="material-symbols-outlined text-base">upload_file</span>
           Importar planilha
           <input
             type="file"
-            accept=".xlsx,.xls"
+            accept=".xlsx"
+            disabled={importing}
             className="hidden"
             onChange={e => {
               const file = e.target.files?.[0]
@@ -330,7 +346,7 @@ export function SolicitacaoFormClient({ initialData, userName }: Props) {
           <button
             type="button"
             onClick={() => enviar(true)}
-            disabled={salvando || enviando}
+            disabled={salvando || enviando || importing}
             className="w-full md:w-auto px-8 py-2.5 rounded-lg border border-slate-300 text-slate-700 font-bold hover:bg-slate-100 transition-colors disabled:opacity-50 text-sm"
           >
             {salvando ? 'Salvando...' : 'Salvar Rascunho'}
@@ -338,7 +354,7 @@ export function SolicitacaoFormClient({ initialData, userName }: Props) {
           <button
             type="button"
             onClick={() => enviar(false)}
-            disabled={enviando || salvando}
+            disabled={enviando || salvando || importing}
             className="w-full md:w-auto px-10 py-2.5 rounded-lg bg-blue-600 text-white font-bold hover:shadow-lg hover:shadow-blue-600/30 hover:bg-blue-700 transition-all disabled:opacity-50 text-sm"
           >
             {enviando ? 'Enviando...' : 'Enviar Solicitação'}
