@@ -64,7 +64,9 @@ export async function POST(req: NextRequest) {
     notificarNovaSolicitacaoParaSecol(solicitacao).catch(() => {})
   }
 
-  return NextResponse.json(solicitacao, { status: 201 })
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { user: _user, ...solicitacaoResponse } = solicitacao
+  return NextResponse.json(solicitacaoResponse, { status: 201 })
 }
 
 export async function GET() {
