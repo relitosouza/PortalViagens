@@ -42,13 +42,21 @@ const DATE_FIELDS = new Set<keyof FormData>(['dataNascimento', 'dataIda', 'dataV
 /** Converte serial Excel ou string DD/MM/AAAA para YYYY-MM-DD */
 function toISODate(value: unknown): string {
   if (typeof value === 'number') {
-    // Serial Excel: dias desde 1900-01-01 (com bug leap year do Excel)
+    // Serial Excel: dias desde 1900-01-00 UTC. A constante 25569 já absorve
+    // o bug do leap year do Excel (que considera 1900 bissexto). Válido para seriais >= 60.
     const date = new Date(Math.round((value - 25569) * 86400 * 1000))
     return date.toISOString().slice(0, 10)
   }
   if (typeof value === 'string') {
     const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
-    if (match) return `${match[3]}-${match[2]}-${match[1]}`
+    if (match) {
+      const [, dd, mm, yyyy] = match
+      const day = parseInt(dd, 10)
+      const month = parseInt(mm, 10)
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        return `${yyyy}-${mm}-${dd}`
+      }
+    }
     // Já está em YYYY-MM-DD
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
   }
@@ -71,7 +79,7 @@ export async function parseExcelSolicitacao(buffer: ArrayBuffer): Promise<Partia
   const result: Partial<FormData> = {}
 
   headers.forEach((header, i) => {
-    const field = COLUMN_MAP[header?.trim()]
+    const field = COLUMN_MAP[String(header ?? '').trim()]
     if (!field) return
     const raw = dataRow[i]
     if (raw === '' || raw === undefined || raw === null) return
