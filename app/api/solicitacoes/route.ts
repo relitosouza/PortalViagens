@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { calcularDiasUteisAte } from '@/lib/utils/diasUteis'
+import { notificarNovaSolicitacaoParaSecol } from '@/lib/email-notifications'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -55,8 +56,13 @@ export async function POST(req: NextRequest) {
       indicacaoHospedagem: body.indicacaoHospedagem ?? null,
       status: isRascunho ? 'RASCUNHO' : 'AGUARDANDO_COTACAO',
       userId: user.id,
-    }
+    },
+    include: { user: true },
   })
+
+  if (!isRascunho) {
+    notificarNovaSolicitacaoParaSecol(solicitacao).catch(() => {})
+  }
 
   return NextResponse.json(solicitacao, { status: 201 })
 }
