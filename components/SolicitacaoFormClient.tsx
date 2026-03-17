@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { parseExcelSolicitacao } from '@/lib/utils/parse-excel-solicitacao'
 
 type FormData = {
   id?: string
@@ -23,6 +24,7 @@ export function SolicitacaoFormClient({ initialData, userName }: Props) {
   const [erro, setErro] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [salvando, setSalvando] = useState(false)
+  const [importWarning, setImportWarning] = useState('')
   const [arquivos, setArquivos] = useState<File[]>([])
   const [form, setForm] = useState<FormData>(initialData ?? {
     nomeCompleto: '', matricula: '', cpf: '', dataNascimento: '',
@@ -34,6 +36,27 @@ export function SolicitacaoFormClient({ initialData, userName }: Props) {
   const update = (field: keyof FormData) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm(f => ({ ...f, [field]: e.target.value }))
+
+  async function handleImport(file: File) {
+    setImportWarning('')
+    try {
+      const buffer = await file.arrayBuffer()
+      const dados = await parseExcelSolicitacao(buffer)
+      setForm(f => ({ ...f, ...dados }))
+
+      const obrigatorios: (keyof FormData)[] = [
+        'nomeCompleto', 'matricula', 'cpf', 'dataNascimento', 'celular', 'emailServidor',
+        'justificativaPublica', 'nexoCargo', 'destino', 'dataIda', 'dataVolta',
+        'justificativaLocal', 'fichaOrcamentaria',
+      ]
+      const faltando = obrigatorios.filter(k => !dados[k])
+      if (faltando.length > 0) {
+        setImportWarning(`Campos não encontrados na planilha: complete-os manualmente antes de enviar.`)
+      }
+    } catch {
+      setImportWarning('Erro ao ler a planilha. Verifique se o arquivo é um .xlsx válido.')
+    }
+  }
 
   function validar(): boolean {
     setErro('')
@@ -126,6 +149,38 @@ export function SolicitacaoFormClient({ initialData, userName }: Props) {
           </span>
         </div>
       </header>
+
+      {/* Importação via Excel */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <a
+          href="/modelo-solicitacao-viagem.xlsx"
+          download
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors"
+        >
+          <span className="material-symbols-outlined text-base">download</span>
+          Baixar modelo (.xlsx)
+        </a>
+        <label className="flex items-center gap-2 px-4 py-2 rounded-lg border border-blue-300 text-blue-700 text-sm font-medium hover:bg-blue-50 transition-colors cursor-pointer">
+          <span className="material-symbols-outlined text-base">upload_file</span>
+          Importar planilha
+          <input
+            type="file"
+            accept=".xlsx,.xls"
+            className="hidden"
+            onChange={e => {
+              const file = e.target.files?.[0]
+              if (file) handleImport(file)
+              e.target.value = ''
+            }}
+          />
+        </label>
+        {importWarning && (
+          <span className="text-amber-700 text-xs font-medium flex items-center gap-1">
+            <span className="material-symbols-outlined text-sm">warning</span>
+            {importWarning}
+          </span>
+        )}
+      </div>
 
       <div className="space-y-8 bg-white p-6 md:p-10 rounded-xl border border-slate-200 shadow-sm">
         {/* 1. Dados do Servidor */}
