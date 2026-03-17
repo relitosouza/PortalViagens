@@ -24,6 +24,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (body.ativo !== undefined) updateData.ativo = body.ativo
   if (body.cpfBloqueado !== undefined) updateData.cpfBloqueado = body.cpfBloqueado
   if (body.password) updateData.password = await bcrypt.hash(body.password, 10)
+  if (body.email !== undefined) {
+    const existing = await prisma.user.findFirst({ where: { email: body.email, NOT: { id } } })
+    if (existing) return NextResponse.json({ error: 'E-mail já cadastrado por outro usuário' }, { status: 409 })
+    updateData.email = body.email
+  }
 
   const usuario = await prisma.user.update({
     where: { id },

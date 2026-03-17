@@ -78,7 +78,7 @@ export default function UsuariosSection({ usuarios: initial }: { usuarios: Usuar
         if (!res.ok) { const d = await res.json(); throw new Error(d.error) }
         setSuccessMsg('Usuário criado com sucesso.')
       } else if (modalMode === 'editar' && editTarget) {
-        const body: Record<string, unknown> = { name: form.name, role: form.role }
+        const body: Record<string, unknown> = { name: form.name, role: form.role, email: form.email }
         if (form.password) body.password = form.password
         const res = await fetch(`/api/admin/usuarios/${editTarget.id}`, {
           method: 'PUT',
@@ -229,18 +229,16 @@ export default function UsuariosSection({ usuarios: initial }: { usuarios: Usuar
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
               </div>
-              {modalMode === 'criar' && (
-                <div>
-                  <label className="text-sm font-semibold text-slate-700 block mb-1">E-mail</label>
-                  <input
-                    type="email"
-                    required
-                    value={form.email}
-                    onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                  />
-                </div>
-              )}
+              <div>
+                <label className="text-sm font-semibold text-slate-700 block mb-1">E-mail</label>
+                <input
+                  type="email"
+                  required
+                  value={form.email}
+                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                />
+              </div>
               <div>
                 <label className="text-sm font-semibold text-slate-700 block mb-1">Perfil de acesso</label>
                 <select
