@@ -1,7 +1,14 @@
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
-import { logEmail } from '@/lib/email-log'
+import {
+  notificarCotacaoParaSegov,
+  notificarViabilidadeAprovadaParaSecol,
+  notificarAjusteParaSecol,
+  notificarAjusteParaDemandante,
+  notificarEmissaoParaSf,
+  notificarDemandante,
+} from '@/lib/email-notifications'
 import { addDiasUteis } from '@/lib/utils/diasUteis'
 
 // Tabela de transições de estado — REGRA DE SEGREGAÇÃO DE FUNÇÕES implementada aqui
@@ -118,7 +125,50 @@ export async function POST(
     }
   }
 
-  // Lógica especial para etapa de EXECUÇÃO aprovada (conclusão)
+  // ── Notificações por email ────────────────────────────────────────────────
+
+  // COTACAO aprovada → demandante (atualização) + SEGOV (próxima ação)
+  if (transicao.etapa === 'COTACAO' && decisao === 'APROVADO') {
+    notificarDemandante(
+      sol,
+      '[Viagens Osasco] Cotação concluída — aguardando análise de viabilidade',
+      `Prezado(a) ${sol.nomeCompleto},\n\nA cotação da sua viagem para ${sol.destino} foi concluída pela SECOL. A solicitação aguarda análise de viabilidade pela SEGOV.`,
+      'COTACAO_CONCLUIDA'
+    )
+    notificarCotacaoParaSegov(sol).catch(() => {})
+  }
+
+  // VIABILIDADE aprovada → SECOL (emitir vouchers)
+  if (transicao.etapa === 'VIABILIDADE' && decisao === 'APROVADO') {
+    notificarViabilidadeAprovadaParaSecol(sol).catch(() => {})
+  }
+
+  // VIABILIDADE ajuste SECOL → SECOL recota
+  if (transicao.etapa === 'VIABILIDADE' && decisao === 'AJUSTE_SECOL') {
+    notificarAjusteParaSecol(sol, observacao).catch(() => {})
+  }
+
+  // VIABILIDADE ajuste demandante → demandante corrige rascunho
+  if (transicao.etapa === 'VIABILIDADE' && decisao === 'AJUSTE_DEMANDANTE') {
+    notificarAjusteParaDemandante(sol, observacao)
+  }
+
+  // VIABILIDADE reprovada → demandante
+  if (decisao === 'REPROVADO') {
+    notificarDemandante(
+      sol,
+      '[Viagens Osasco] ❌ Solicitação reprovada',
+      `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} foi REPROVADA.\n\nMotivo: ${observacao || 'Não informado'}\n\nPara mais informações, acesse: ${process.env.APP_URL ?? 'http://localhost:3000'}/solicitacoes/${sol.id}`,
+      'REPROVACAO'
+    )
+  }
+
+  // EMISSAO aprovada → SF executa
+  if (transicao.etapa === 'EMISSAO' && decisao === 'APROVADO') {
+    notificarEmissaoParaSf(sol).catch(() => {})
+  }
+
+  // EXECUCAO aprovada → demandante (vouchers + prestação de contas)
   if (transicao.etapa === 'EXECUCAO' && decisao === 'APROVADO') {
     const prazoFinal = addDiasUteis(new Date(sol.dataVolta), 5)
 
@@ -128,32 +178,12 @@ export async function POST(
       create: { solicitacaoId: sol.id, prazoFinal },
     })
 
-    logEmail({
-      para: sol.emailServidor,
-      assunto: '[Viagens Osasco] ✅ Viagem aprovada — acesse seus vouchers',
-      corpo: `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} foi APROVADA e os vouchers estão disponíveis no sistema.\n\nPrazo para prestação de contas: ${prazoFinal.toLocaleDateString('pt-BR')} (5 dias úteis após o retorno).\n\nAcesse o sistema: ${process.env.APP_URL ?? 'http://localhost:3000'}/solicitacoes/${sol.id}`,
-      tipo: 'VOUCHER_APROVACAO',
-    })
-  }
-
-  // Notificar reprovação
-  if (decisao === 'REPROVADO') {
-    logEmail({
-      para: sol.emailServidor,
-      assunto: '[Viagens Osasco] ❌ Solicitação reprovada',
-      corpo: `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} foi REPROVADA.\n\nMotivo: ${observacao || 'Não informado'}\n\nPara mais informações, acesse o sistema: ${process.env.APP_URL ?? 'http://localhost:3000'}/solicitacoes/${sol.id}`,
-      tipo: 'REPROVACAO',
-    })
-  }
-
-  // Notificar aprovação intermediária (cotação para SEGOV)
-  if (transicao.etapa === 'COTACAO' && decisao === 'APROVADO') {
-    logEmail({
-      para: sol.emailServidor,
-      assunto: '[Viagens Osasco] Cotação concluída — aguardando análise de viabilidade',
-      corpo: `Prezado(a) ${sol.nomeCompleto},\n\nA cotação da sua viagem para ${sol.destino} foi concluída pela SECOL. A solicitação aguarda agora a análise de viabilidade pela SEGOV.`,
-      tipo: 'COTACAO_CONCLUIDA',
-    })
+    notificarDemandante(
+      sol,
+      '[Viagens Osasco] ✅ Viagem aprovada — acesse seus vouchers',
+      `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} foi APROVADA e os vouchers estão disponíveis no sistema.\n\nPrazo para prestação de contas: ${prazoFinal.toLocaleDateString('pt-BR')} (5 dias úteis após o retorno).\n\nAcesse o sistema: ${process.env.APP_URL ?? 'http://localhost:3000'}/solicitacoes/${sol.id}`,
+      'VOUCHER_APROVACAO'
+    )
   }
 
   return NextResponse.json({
