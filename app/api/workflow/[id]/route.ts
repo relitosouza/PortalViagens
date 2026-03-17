@@ -154,7 +154,7 @@ export async function POST(
   }
 
   // VIABILIDADE reprovada → demandante
-  if (decisao === 'REPROVADO') {
+  if (transicao.etapa === 'VIABILIDADE' && decisao === 'REPROVADO') {
     notificarDemandante(
       sol,
       '[Viagens Osasco] ❌ Solicitação reprovada',
