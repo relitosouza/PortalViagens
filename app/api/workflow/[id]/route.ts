@@ -102,10 +102,10 @@ export async function POST(
     })
 
     if (cotacaoStep && (cotacaoStep.valorPassagem != null || cotacaoStep.valorHospedagem != null)) {
-      const notasDebito: string[] = []
-      const notasAlerta: string[] = []
+      const { notasDebito, notasAlerta } = await prisma.$transaction(async (tx) => {
+        const notasDebito: string[] = []
+        const notasAlerta: string[] = []
 
-      await prisma.$transaction(async (tx) => {
         if (cotacaoStep.valorPassagem != null) {
           const cfg = await tx.configuracaoSistema.findUnique({ where: { chave: 'SALDO_EMPENHO_PASSAGEM' } })
           if (cfg) {
@@ -137,11 +137,13 @@ export async function POST(
             }
           }
         }
+
+        return { notasDebito, notasAlerta }
       })
 
       // Atualizar observação do WorkflowStep de VIABILIDADE
       const viabilidadeStep = await prisma.workflowStep.findFirst({
-        where: { solicitacaoId: sol.id, etapa: 'VIABILIDADE' },
+        where: { solicitacaoId: sol.id, etapa: 'VIABILIDADE', decisao: 'APROVADO' },
         orderBy: { createdAt: 'desc' },
       })
       if (viabilidadeStep) {
@@ -152,7 +154,7 @@ export async function POST(
         await prisma.workflowStep.update({
           where: { id: viabilidadeStep.id },
           data: { observacao: (observacao || '') + nota },
-        }).catch(() => {})
+        }).catch((e) => console.error('[workflow] viabilidadeStep annotation failed', e))
       }
 
       // Notificar SF se houver saldo insuficiente
