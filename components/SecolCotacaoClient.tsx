@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import BudgetTetoInfo from './BudgetTetoInfo'
 import { parseCurrency } from '@/lib/utils/budget-utils'
 
 type OpcaoVoo = {
@@ -298,21 +297,6 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
               </button>
             </div>
           </div>
-        </div>
-
-        <div className="mb-8">
-          <BudgetTetoInfo
-            destacado
-            numeroEmpenho={budgetData?.numeroEmpenho}
-            valorEmpenho={budgetData?.valorEmpenho}
-            saldoEmpenho={budgetData?.saldoEmpenho}
-            numeroEmpenhoPassagem={budgetData?.numeroEmpenhoPassagem}
-            valorEmpenhoPassagem={budgetData?.valorEmpenhoPassagem}
-            saldoEmpenhoPassagem={budgetData?.saldoEmpenhoPassagem}
-            numeroEmpenhoHospedagem={budgetData?.numeroEmpenhoHospedagem}
-            valorEmpenhoHospedagem={budgetData?.valorEmpenhoHospedagem}
-            saldoEmpenhoHospedagem={budgetData?.saldoEmpenhoHospedagem}
-          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
