@@ -57,15 +57,17 @@ model Solicitacao {
 }
 
 model WorkflowStep {
-  id            String      @id @default(cuid())
-  solicitacaoId String
-  etapa         String
-  atorRole      String
-  atorNome      String
-  decisao       String?
-  observacao    String?
-  createdAt     DateTime    @default(now())
-  solicitacao   Solicitacao @relation(fields: [solicitacaoId], references: [id])
+  id              String      @id @default(cuid())
+  solicitacaoId   String
+  etapa           String
+  atorRole        String
+  atorNome        String
+  decisao         String?
+  observacao      String?
+  valorPassagem   Float?
+  valorHospedagem Float?
+  createdAt       DateTime    @default(now())
+  solicitacao     Solicitacao @relation(fields: [solicitacaoId], references: [id])
 }
 
 model Prestacao {

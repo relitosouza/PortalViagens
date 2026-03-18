@@ -26,6 +26,12 @@ async function main() {
     { chave: 'NUMERO_EMPENHO', valor: '2024/0001', descricao: 'Número do empenho global para viagens' },
     { chave: 'VALOR_EMPENHO', valor: '100000.00', descricao: 'Valor total do empenho (teto orçamentário)' },
     { chave: 'SALDO_EMPENHO', valor: '100000.00', descricao: 'Saldo disponível no empenho' },
+    { chave: 'NUMERO_EMPENHO_PASSAGEM', valor: '2026/0002', descricao: 'Número do empenho para passagens aéreas' },
+    { chave: 'VALOR_EMPENHO_PASSAGEM', valor: '50000.00', descricao: 'Valor total do empenho para passagens' },
+    { chave: 'SALDO_EMPENHO_PASSAGEM', valor: '50000.00', descricao: 'Saldo disponível no empenho de passagens' },
+    { chave: 'NUMERO_EMPENHO_HOSPEDAGEM', valor: '2026/0003', descricao: 'Número do empenho para hospedagem' },
+    { chave: 'VALOR_EMPENHO_HOSPEDAGEM', valor: '50000.00', descricao: 'Valor total do empenho para hospedagem' },
+    { chave: 'SALDO_EMPENHO_HOSPEDAGEM', valor: '50000.00', descricao: 'Saldo disponível no empenho de hospedagem' },
   ]
 
   for (const p of parametros) {

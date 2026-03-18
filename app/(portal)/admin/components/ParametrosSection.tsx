@@ -48,6 +48,12 @@ const PARAM_LABELS: Record<string, { label: string; hint: string; unit: string; 
     unit: 'R$',
     type: 'number',
   },
+  NUMERO_EMPENHO_PASSAGEM: { label: 'Número do Empenho — Passagens', hint: 'Empenho específico para passagens aéreas.', unit: 'Nº', type: 'text' },
+  VALOR_EMPENHO_PASSAGEM: { label: 'Valor Total — Empenho Passagens', hint: 'Cota autorizada para passagens no período.', unit: 'R$', type: 'number' },
+  SALDO_EMPENHO_PASSAGEM: { label: 'Saldo Disponível — Passagens', hint: 'Saldo atualizado após débitos de passagens aprovadas.', unit: 'R$', type: 'number' },
+  NUMERO_EMPENHO_HOSPEDAGEM: { label: 'Número do Empenho — Hospedagem', hint: 'Empenho específico para hospedagem.', unit: 'Nº', type: 'text' },
+  VALOR_EMPENHO_HOSPEDAGEM: { label: 'Valor Total — Empenho Hospedagem', hint: 'Cota autorizada para hospedagem no período.', unit: 'R$', type: 'number' },
+  SALDO_EMPENHO_HOSPEDAGEM: { label: 'Saldo Disponível — Hospedagem', hint: 'Saldo atualizado após débitos de hospedagem aprovados.', unit: 'R$', type: 'number' },
 }
 
 export default function ParametrosSection({ parametros: initial }: { parametros: Param[] }) {
@@ -93,12 +99,18 @@ export default function ParametrosSection({ parametros: initial }: { parametros:
   }
 
   const displayOrder = [
-    'NUMERO_EMPENHO', 
-    'VALOR_EMPENHO', 
+    'NUMERO_EMPENHO',
+    'VALOR_EMPENHO',
     'SALDO_EMPENHO',
-    'DIAS_UTEIS_ANTECEDENCIA_MINIMA', 
-    'DIAS_UTEIS_PRAZO_PRESTACAO', 
-    'DIAS_ALERTA_VENCIMENTO', 
+    'NUMERO_EMPENHO_PASSAGEM',
+    'VALOR_EMPENHO_PASSAGEM',
+    'SALDO_EMPENHO_PASSAGEM',
+    'NUMERO_EMPENHO_HOSPEDAGEM',
+    'VALOR_EMPENHO_HOSPEDAGEM',
+    'SALDO_EMPENHO_HOSPEDAGEM',
+    'DIAS_UTEIS_ANTECEDENCIA_MINIMA',
+    'DIAS_UTEIS_PRAZO_PRESTACAO',
+    'DIAS_ALERTA_VENCIMENTO',
     'UPLOAD_MAX_MB'
   ]
 
