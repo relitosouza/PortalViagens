@@ -44,6 +44,12 @@ type Props = {
     numeroEmpenho?: string
     valorEmpenho?: string
     saldoEmpenho?: string
+    numeroEmpenhoPassagem?: string
+    valorEmpenhoPassagem?: string
+    saldoEmpenhoPassagem?: string
+    numeroEmpenhoHospedagem?: string
+    valorEmpenhoHospedagem?: string
+    saldoEmpenhoHospedagem?: string
   }
 }
 
@@ -65,6 +71,10 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
   const [showJustificativa, setShowJustificativa] = useState(false)
   const [editingVooId, setEditingVooId] = useState<number | null>(null)
   const [editingHotelId, setEditingHotelId] = useState<number | null>(null)
+  const [valorPassagemStr, setValorPassagemStr] = useState<string>('0')
+  const [valorHospedagemStr, setValorHospedagemStr] = useState<string>('0')
+  const [valorPassagemEditado, setValorPassagemEditado] = useState(false)
+  const [valorHospedagemEditado, setValorHospedagemEditado] = useState(false)
 
   // Restaurar dados da cotação anterior se houver
   useEffect(() => {
@@ -130,6 +140,18 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
     setHoteis(restoredHoteis)
     setObservacao(restoredObs)
   }, [initialQuotes])
+
+  useEffect(() => {
+    if (valorPassagemEditado) return
+    const total = voos.reduce((acc, v) => acc + parseCurrency(v.preco), 0)
+    setValorPassagemStr(total.toFixed(2))
+  }, [voos, valorPassagemEditado])
+
+  useEffect(() => {
+    if (valorHospedagemEditado) return
+    const total = hoteis.reduce((acc, h) => acc + parseCurrency(h.precoPorNoite) * h.noites, 0)
+    setValorHospedagemStr(total.toFixed(2))
+  }, [hoteis, valorHospedagemEditado])
 
   const dataIda = new Date(sol.dataIda).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
   const dataVolta = new Date(sol.dataVolta).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -212,7 +234,12 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
       const res = await fetch(`/api/workflow/${sol.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ decisao: 'APROVADO', observacao: formatarObservacao() }),
+        body: JSON.stringify({
+          decisao: 'APROVADO',
+          observacao: formatarObservacao(),
+          valorPassagem: parseCurrency(valorPassagemStr),
+          valorHospedagem: parseCurrency(valorHospedagemStr),
+        }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -274,11 +301,17 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
         </div>
 
         <div className="mb-8">
-          <BudgetTetoInfo 
+          <BudgetTetoInfo
             destacado
-            numeroEmpenho={budgetData?.numeroEmpenho} 
-            valorEmpenho={budgetData?.valorEmpenho} 
-            saldoEmpenho={budgetData?.saldoEmpenho} 
+            numeroEmpenho={budgetData?.numeroEmpenho}
+            valorEmpenho={budgetData?.valorEmpenho}
+            saldoEmpenho={budgetData?.saldoEmpenho}
+            numeroEmpenhoPassagem={budgetData?.numeroEmpenhoPassagem}
+            valorEmpenhoPassagem={budgetData?.valorEmpenhoPassagem}
+            saldoEmpenhoPassagem={budgetData?.saldoEmpenhoPassagem}
+            numeroEmpenhoHospedagem={budgetData?.numeroEmpenhoHospedagem}
+            valorEmpenhoHospedagem={budgetData?.valorEmpenhoHospedagem}
+            saldoEmpenhoHospedagem={budgetData?.saldoEmpenhoHospedagem}
           />
         </div>
 
@@ -554,6 +587,51 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
                 </table>
               </div>
             </section>
+
+              {/* Resumo Financeiro */}
+              <section className="bg-white p-6 rounded-xl border border-slate-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="material-symbols-outlined text-green-600">payments</span>
+                  <h3 className="font-bold text-lg text-slate-900">Resumo Financeiro</h3>
+                </div>
+                <p className="text-xs text-slate-500 mb-4">Calculado automaticamente com base nas opções acima. Edite se necessário.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
+                      Valor Passagem (R$)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={valorPassagemStr}
+                      onChange={e => {
+                        setValorPassagemStr(e.target.value)
+                        setValorPassagemEditado(e.target.value !== '')
+                        if (e.target.value === '') setValorPassagemEditado(false)
+                      }}
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
+                      Valor Hospedagem (R$)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={valorHospedagemStr}
+                      onChange={e => {
+                        setValorHospedagemStr(e.target.value)
+                        setValorHospedagemEditado(e.target.value !== '')
+                        if (e.target.value === '') setValorHospedagemEditado(false)
+                      }}
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </section>
 
             {/* Conclusion */}
             <section className="bg-white p-6 rounded-xl border border-slate-200">
