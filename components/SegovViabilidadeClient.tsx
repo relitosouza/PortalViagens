@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import BudgetTetoInfo from './BudgetTetoInfo'
-import { parsePreco, calcularNoites } from '@/lib/utils/budget-utils'
+import { parsePreco, calcularNoites, parseCurrency } from '@/lib/utils/budget-utils'
 
 type WorkflowStep = {
   id: string
@@ -68,7 +68,6 @@ function extrairDetalhesCotacao(obs: string | null, totalDias: number) {
   const matches = [...obs.matchAll(regexPreco)]
   
   // Usar parseCurrency para consistência
-  const { parseCurrency } = require('@/lib/utils/budget-utils')
   const valores = matches.map(m => parseCurrency(m[1]))
 
   // Extrair Descrição do Voo
