@@ -588,50 +588,48 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
               </div>
             </section>
 
-              {/* Resumo Financeiro */}
-              <section className="bg-white p-6 rounded-xl border border-slate-200">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="material-symbols-outlined text-green-600">payments</span>
-                  <h3 className="font-bold text-lg text-slate-900">Resumo Financeiro</h3>
+            {/* Resumo Financeiro */}
+            <section className="bg-white p-6 rounded-xl border border-slate-200">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="material-symbols-outlined text-green-600">payments</span>
+                <h3 className="font-bold text-lg text-slate-900">Resumo Financeiro</h3>
+              </div>
+              <p className="text-xs text-slate-500 mb-4">Calculado automaticamente com base nas opções acima. Edite se necessário.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
+                    Valor Passagem (R$)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={valorPassagemStr}
+                    onChange={e => {
+                      setValorPassagemStr(e.target.value)
+                      setValorPassagemEditado(e.target.value !== '')
+                    }}
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
-                <p className="text-xs text-slate-500 mb-4">Calculado automaticamente com base nas opções acima. Edite se necessário.</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
-                      Valor Passagem (R$)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={valorPassagemStr}
-                      onChange={e => {
-                        setValorPassagemStr(e.target.value)
-                        setValorPassagemEditado(e.target.value !== '')
-                        if (e.target.value === '') setValorPassagemEditado(false)
-                      }}
-                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
-                      Valor Hospedagem (R$)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={valorHospedagemStr}
-                      onChange={e => {
-                        setValorHospedagemStr(e.target.value)
-                        setValorHospedagemEditado(e.target.value !== '')
-                        if (e.target.value === '') setValorHospedagemEditado(false)
-                      }}
-                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
+                    Valor Hospedagem (R$)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={valorHospedagemStr}
+                    onChange={e => {
+                      setValorHospedagemStr(e.target.value)
+                      setValorHospedagemEditado(e.target.value !== '')
+                    }}
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
-              </section>
+              </div>
+            </section>
 
             {/* Conclusion */}
             <section className="bg-white p-6 rounded-xl border border-slate-200">
