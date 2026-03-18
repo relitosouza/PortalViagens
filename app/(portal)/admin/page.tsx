@@ -3,6 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import UsuariosSection from './components/UsuariosSection'
 import ParametrosSection from './components/ParametrosSection'
+import BloqueiosSection from './components/BloqueiosSection'
 
 type EmailLog = { id: string; para: string; assunto: string; corpo: string; timestamp: string; tipo: string }
 
@@ -27,6 +28,7 @@ interface SolicitacaoSummary {
   nomeCompleto: string;
   destino: string;
   dataVolta: Date | null;
+  userId: string;
 }
 
 interface PrestacaoPendente {
@@ -65,7 +67,11 @@ export default async function AdminPage() {
     prisma.user.findMany({ where: { cpfBloqueado: true }, select: { id: true, name: true, email: true, role: true } }),
     prisma.prestacao.findMany({
       where: { enviadoEm: null, prazoFinal: { lt: new Date() } },
-      include: { solicitacao: { select: { nomeCompleto: true, destino: true, dataVolta: true } } },
+      include: {
+        solicitacao: {
+          select: { nomeCompleto: true, destino: true, dataVolta: true, userId: true }
+        }
+      },
       orderBy: { prazoFinal: 'asc' },
       take: 10,
     }),
@@ -158,47 +164,7 @@ export default async function AdminPage() {
                 <span className="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded uppercase">Crítico</span>
               )}
             </div>
-            <div className="p-6">
-              <p className="text-sm text-slate-500 mb-6">
-                Servidores bloqueados por pendência na prestação de contas (&gt; 5 dias úteis).
-              </p>
-              {cpfsBloqueados.length === 0 && prestacoesPendentes.length === 0 ? (
-                <div className="text-center py-8 text-slate-400">
-                  <span className="material-symbols-outlined text-[36px] block mb-2">check_circle</span>
-                  <p className="text-sm">Nenhum bloqueio ativo</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {prestacoesPendentes.map((p: PrestacaoPendente) => {
-                    const diasAtraso = Math.floor((hoje.getTime() - new Date(p.prazoFinal).getTime()) / 86400000)
-                    return (
-                      <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-red-100 bg-red-50/20">
-                        <div className="flex items-center gap-3">
-                          <div className="size-9 bg-red-100 text-red-600 rounded flex items-center justify-center font-bold text-xs uppercase">CPF</div>
-                          <div>
-                            <p className="text-sm font-bold text-slate-900">{p.solicitacao.nomeCompleto}</p>
-                            <p className="text-[11px] text-slate-500">{p.solicitacao.destino} | Atraso: {diasAtraso} dia{diasAtraso !== 1 ? 's' : ''}</p>
-                          </div>
-                        </div>
-                        <span className="text-[10px] text-red-600 font-bold uppercase px-2 py-0.5 bg-red-100 rounded">Bloqueado</span>
-                      </div>
-                    )
-                  })}
-                  {cpfsBloqueados.filter((u: BlockedUser) => !prestacoesPendentes.some((p: PrestacaoPendente) => p.solicitacao.nomeCompleto === u.name)).map((u: BlockedUser) => (
-                    <div key={u.id} className="flex items-center justify-between p-3 rounded-lg border border-red-100 bg-red-50/20">
-                      <div className="flex items-center gap-3">
-                        <div className="size-9 bg-red-100 text-red-600 rounded flex items-center justify-center font-bold text-xs uppercase">CPF</div>
-                        <div>
-                          <p className="text-sm font-bold text-slate-900">{u.name}</p>
-                          <p className="text-[11px] text-slate-500">{u.email}</p>
-                        </div>
-                      </div>
-                      <span className="text-[10px] text-red-600 font-bold uppercase px-2 py-0.5 bg-red-100 rounded">Bloqueado</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          <BloqueiosSection cpfsBloqueados={cpfsBloqueados} prestacoesPendentes={prestacoesPendentes} />
           </section>
 
           {/* Operational Parameters */}
