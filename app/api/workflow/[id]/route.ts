@@ -138,6 +138,24 @@ export async function POST(
           }
         }
 
+        // Débito consolidado no Saldo do Teto (Passagem + Hospedagem)
+        const debitoTeto = (cotacaoStep.valorPassagem ?? 0) + (cotacaoStep.valorHospedagem ?? 0)
+        if (debitoTeto > 0) {
+          const cfgTeto = await tx.configuracaoSistema.findUnique({ where: { chave: 'SALDO_EMPENHO' } })
+          if (cfgTeto) {
+            const saldoAtual = parseFloat(cfgTeto.valor)
+            const novoSaldo = Math.max(0, saldoAtual - debitoTeto)
+            await tx.configuracaoSistema.update({
+              where: { chave: 'SALDO_EMPENHO' },
+              data: { valor: novoSaldo.toFixed(2) },
+            })
+            notasDebito.push(`Teto: R$ ${debitoTeto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (saldo: R$ ${novoSaldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})`)
+            if (debitoTeto > saldoAtual) {
+              notasAlerta.push(`TETO com saldo insuficiente (saldo era R$ ${saldoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})`)
+            }
+          }
+        }
+
         return { notasDebito, notasAlerta }
       })
 
