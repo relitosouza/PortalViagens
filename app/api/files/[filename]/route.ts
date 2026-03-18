@@ -23,7 +23,8 @@ export async function GET(
   const { filename } = await params
   // Prevenir path traversal
   const safeFilename = path.basename(filename)
-  const filePath = path.join(process.cwd(), 'uploads', safeFilename)
+  const uploadDir = process.env.UPLOAD_DIR ?? path.join(process.cwd(), 'uploads')
+  const filePath = path.join(uploadDir, safeFilename)
 
   try {
     const file = await readFile(filePath)

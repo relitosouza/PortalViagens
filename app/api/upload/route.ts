@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Nenhum arquivo enviado' }, { status: 400 })
     }
 
-    const uploadDir = path.join(process.cwd(), 'uploads')
+    const uploadDir = process.env.UPLOAD_DIR ?? path.join(process.cwd(), 'uploads')
     await mkdir(uploadDir, { recursive: true })
 
     const ALLOWED_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.xls', '.xlsx']
