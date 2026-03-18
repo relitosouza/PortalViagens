@@ -8,6 +8,7 @@ import {
   notificarAjusteParaDemandante,
   notificarEmissaoParaSf,
   notificarDemandante,
+  notificarRole,
 } from '@/lib/email-notifications'
 import { addDiasUteis } from '@/lib/utils/diasUteis'
 
@@ -49,7 +50,7 @@ export async function POST(
   const userName: string = user.name ?? ''
 
   const body = await req.json()
-  const { decisao, observacao } = body
+  const { decisao, observacao, valorPassagem, valorHospedagem } = body
 
   if (!decisao) return NextResponse.json({ error: 'Decisão obrigatória' }, { status: 400 })
 
@@ -80,6 +81,10 @@ export async function POST(
       atorNome: userName,
       decisao,
       observacao: observacao || null,
+      ...(transicao.etapa === 'COTACAO' && {
+        valorPassagem: valorPassagem ?? null,
+        valorHospedagem: valorHospedagem ?? null,
+      }),
     },
   })
 
@@ -89,38 +94,75 @@ export async function POST(
     data: { status: transicao.proximoStatus },
   })
 
-  // Lógica especial para etapa de VIABILIDADE aprovada (SEGOV) — DÉBITO DE EMPENHO
+  // Lógica especial para etapa de VIABILIDADE aprovada (SEGOV) — DÉBITO DE EMPENHOS
   if (transicao.etapa === 'VIABILIDADE' && decisao === 'APROVADO') {
-    // 1. Buscar cotação técnica anterior
     const cotacaoStep = await prisma.workflowStep.findFirst({
       where: { solicitacaoId: sol.id, etapa: 'COTACAO', decisao: 'APROVADO' },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     })
 
-    if (cotacaoStep) {
-      const { calcularNoites, parsePreco } = await import('@/lib/utils/budget-utils')
-      const noites = calcularNoites(sol.dataIda, sol.dataVolta)
-      const dias = noites + 1
-      const { total } = parsePreco(cotacaoStep.observacao, dias)
+    if (cotacaoStep && (cotacaoStep.valorPassagem != null || cotacaoStep.valorHospedagem != null)) {
+      const notasDebito: string[] = []
+      const notasAlerta: string[] = []
 
-      // 2. Buscar saldo atual
-      const configSaldo = await prisma.configuracaoSistema.findUnique({ where: { chave: 'SALDO_EMPENHO' } })
-      
-      if (configSaldo) {
-        const saldoAtual = parseFloat(configSaldo.valor)
-        const novoSaldo = Math.max(0, saldoAtual - total)
-        
-        // 3. Atualizar saldo
-        await prisma.configuracaoSistema.update({
-          where: { chave: 'SALDO_EMPENHO' },
-          data: { valor: novoSaldo.toFixed(2) }
-        })
+      await prisma.$transaction(async (tx) => {
+        if (cotacaoStep.valorPassagem != null) {
+          const cfg = await tx.configuracaoSistema.findUnique({ where: { chave: 'SALDO_EMPENHO_PASSAGEM' } })
+          if (cfg) {
+            const saldoAtual = parseFloat(cfg.valor)
+            const novoSaldo = Math.max(0, saldoAtual - cotacaoStep.valorPassagem)
+            await tx.configuracaoSistema.update({
+              where: { chave: 'SALDO_EMPENHO_PASSAGEM' },
+              data: { valor: novoSaldo.toFixed(2) },
+            })
+            notasDebito.push(`Passagem: R$ ${cotacaoStep.valorPassagem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (saldo: R$ ${novoSaldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})`)
+            if (cotacaoStep.valorPassagem > saldoAtual) {
+              notasAlerta.push(`PASSAGEM com saldo insuficiente (saldo era R$ ${saldoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})`)
+            }
+          }
+        }
 
-        // 4. Adicionar nota na observação do workflow sobre o débito
+        if (cotacaoStep.valorHospedagem != null) {
+          const cfg = await tx.configuracaoSistema.findUnique({ where: { chave: 'SALDO_EMPENHO_HOSPEDAGEM' } })
+          if (cfg) {
+            const saldoAtual = parseFloat(cfg.valor)
+            const novoSaldo = Math.max(0, saldoAtual - cotacaoStep.valorHospedagem)
+            await tx.configuracaoSistema.update({
+              where: { chave: 'SALDO_EMPENHO_HOSPEDAGEM' },
+              data: { valor: novoSaldo.toFixed(2) },
+            })
+            notasDebito.push(`Hospedagem: R$ ${cotacaoStep.valorHospedagem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (saldo: R$ ${novoSaldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})`)
+            if (cotacaoStep.valorHospedagem > saldoAtual) {
+              notasAlerta.push(`HOSPEDAGEM com saldo insuficiente (saldo era R$ ${saldoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})`)
+            }
+          }
+        }
+      })
+
+      // Atualizar observação do WorkflowStep de VIABILIDADE
+      const viabilidadeStep = await prisma.workflowStep.findFirst({
+        where: { solicitacaoId: sol.id, etapa: 'VIABILIDADE' },
+        orderBy: { createdAt: 'desc' },
+      })
+      if (viabilidadeStep) {
+        let nota = `\n\n[DÉBITO AUTOMÁTICO] ${notasDebito.join(' | ')}`
+        if (notasAlerta.length > 0) {
+          nota += `\n⚠️ ALERTA: ${notasAlerta.join('; ')} — Secretaria de Finanças notificada para regularização.`
+        }
         await prisma.workflowStep.update({
-          where: { id: (await prisma.workflowStep.findFirst({ where: { solicitacaoId: sol.id, etapa: 'VIABILIDADE' }, orderBy: { createdAt: 'desc' } }))?.id ?? '' },
-          data: { observacao: (observacao || '') + `\n\n[DÉBITO AUTOMÁTICO] Valor estimado de R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} debitado do empenho. Novo saldo: R$ ${novoSaldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.` }
-        }).catch(() => {}) // Silencioso se falhar
+          where: { id: viabilidadeStep.id },
+          data: { observacao: (observacao || '') + nota },
+        }).catch(() => {})
+      }
+
+      // Notificar SF se houver saldo insuficiente
+      if (notasAlerta.length > 0) {
+        notificarRole(
+          'SF',
+          '[Viagens Osasco] ⚠️ Saldo de empenho insuficiente — regularização necessária',
+          `A solicitação de ${sol.nomeCompleto} para ${sol.destino} foi aprovada pela SEGOV, porém o saldo de empenho era insuficiente para cobrir o valor comprometido.\n\nDetalhes:\n${notasAlerta.join('\n')}\n\nAcesse o sistema: ${process.env.APP_URL ?? 'http://localhost:3000'}/solicitacoes/${sol.id}`,
+          'SALDO_INSUFICIENTE'
+        ).catch(() => {})
       }
     }
   }
