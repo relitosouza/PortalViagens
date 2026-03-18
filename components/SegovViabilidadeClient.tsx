@@ -55,11 +55,10 @@ function formatarDataHora(iso: string) {
 }
 
 
-function extrairDetalhesCotacao(obs: string | null, totalDias: number) {
-  const padrao = { 
-    voo: 0, vooDesc: 'Não cotado', 
-    hotel: 0, hotelDesc: 'Não cotado', 
-    diarias: totalDias * 665.60 
+function extrairDetalhesCotacao(obs: string | null) {
+  const padrao = {
+    voo: 0, vooDesc: 'Não cotado',
+    hotel: 0, hotelDesc: 'Não cotado',
   }
   if (!obs) return padrao
 
@@ -83,7 +82,6 @@ function extrairDetalhesCotacao(obs: string | null, totalDias: number) {
     vooDesc,
     hotel: valores[valores.length - 1] || 0,
     hotelDesc,
-    diarias: totalDias * 665.60
   }
 }
 
@@ -96,8 +94,8 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
   const cotacaoStep = sol.steps.find(s => s.etapa === 'COTACAO')
   const noites = calcularNoites(sol.dataIda, sol.dataVolta)
   const dias = noites + 1
-  const detalhes = extrairDetalhesCotacao(cotacaoStep?.observacao ?? null, dias)
-  const custoTotal = detalhes.voo + detalhes.hotel + detalhes.diarias
+  const detalhes = extrairDetalhesCotacao(cotacaoStep?.observacao ?? null)
+  const custoTotal = detalhes.voo + detalhes.hotel
 
   async function executar(decisao: string) {
     if (!observacao.trim() && decisao !== 'APROVADO') {
@@ -169,42 +167,50 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
                   <div className="absolute -right-4 -top-4 w-32 h-32 bg-red-600/10 blur-3xl rounded-full group-hover:bg-red-600/20 transition-all pointer-events-none"></div>
                   
                   <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-6">
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Saldo Atual de Empenho</p>
-                        <p className="text-3xl font-black text-white tracking-tight">
-                          <span className="text-red-500">R$</span> {parseFloat(budgetData?.saldoEmpenho || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Teto Orçamentário</p>
-                        <p className="text-sm font-bold text-slate-300">
-                          R$ {parseFloat(budgetData?.valorEmpenho || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Barra de Progresso: Linha Branca (Fundo) e Linha Vermelha (Saldo) */}
-                    <div className="relative">
-                      <div className="h-3 bg-white/10 rounded-full w-full overflow-hidden border border-white/5">
-                        <div 
-                          className="h-full bg-red-600 rounded-full shadow-[0_0_15px_rgba(220,38,38,0.4)] transition-all duration-1000 ease-out"
-                          style={{ width: `${Math.min(100, (parseFloat(budgetData?.saldoEmpenho || '0') / parseFloat(budgetData?.valorEmpenho || '1')) * 100)}%` }}
-                        />
-                      </div>
-                      
-                      <div className="flex justify-between items-center mt-3">
-                        <div className="flex items-center gap-2">
-                          <div className="size-2 rounded-full bg-red-500 animate-pulse"></div>
-                          <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">
-                            Empenho Nº {budgetData?.numeroEmpenho}
-                          </span>
-                        </div>
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest pt-0.5">
-                          {((parseFloat(budgetData?.saldoEmpenho || '0') / parseFloat(budgetData?.valorEmpenho || '1')) * 100).toFixed(1)}% Disponível
-                        </span>
-                      </div>
-                    </div>
+                    {(() => {
+                      const valorTeto = parseFloat(budgetData?.valorEmpenho || '0')
+                      const empPass = parseFloat(budgetData?.valorEmpenhoPassagem || '0')
+                      const empHosp = parseFloat(budgetData?.valorEmpenhoHospedagem || '0')
+                      const saldoTeto = valorTeto - empPass - empHosp
+                      const percentTeto = valorTeto > 0 ? (saldoTeto / valorTeto) * 100 : 0
+                      return (
+                        <>
+                          <div className="flex justify-between items-start mb-6">
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Saldo do Teto</p>
+                              <p className="text-3xl font-black text-white tracking-tight">
+                                <span className="text-red-500">R$</span> {saldoTeto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Teto Orçamentário</p>
+                              <p className="text-sm font-bold text-slate-300">
+                                R$ {valorTeto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="relative">
+                            <div className="h-3 bg-white/10 rounded-full w-full overflow-hidden border border-white/5">
+                              <div
+                                className="h-full bg-red-600 rounded-full shadow-[0_0_15px_rgba(220,38,38,0.4)] transition-all duration-1000 ease-out"
+                                style={{ width: `${Math.min(100, percentTeto)}%` }}
+                              />
+                            </div>
+                            <div className="flex justify-between items-center mt-3">
+                              <div className="flex items-center gap-2">
+                                <div className="size-2 rounded-full bg-red-500 animate-pulse"></div>
+                                <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">
+                                  Empenho Nº {budgetData?.numeroEmpenho}
+                                </span>
+                              </div>
+                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest pt-0.5">
+                                {percentTeto.toFixed(1)}% Disponível
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      )
+                    })()}
                   </div>
                 </div>
 
@@ -456,17 +462,6 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
                     </p>
                   </div>
 
-                  {/* Diárias */}
-                  <div className="p-4 rounded-xl border border-blue-50 bg-white shadow-sm flex justify-between items-start">
-                    <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Diárias & Ajuda Custo</p>
-                      <p className="text-sm font-bold text-slate-900 leading-none mb-1">Padrão Tabela Municipal</p>
-                      <p className="text-[10px] text-slate-500">Conforme Decreto 12.345/2023</p>
-                    </div>
-                    <p className="text-lg font-black text-slate-900">
-                      R$ {detalhes.diarias.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </p>
-                  </div>
                 </div>
               </section>
 
