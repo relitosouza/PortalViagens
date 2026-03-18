@@ -240,7 +240,7 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Empenho Passagens</p>
                           </div>
                           <p className="text-2xl font-black text-white tracking-tight">
-                            <span className="text-emerald-400">R$</span> {parseFloat(budgetData.saldoEmpenhoPassagem).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            <span className="text-emerald-400">R$</span> {parseFloat(budgetData.saldoEmpenhoPassagem || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </p>
                         </div>
                         <div className="text-right">
@@ -253,7 +253,7 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
                       <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-emerald-400 rounded-full transition-all duration-1000"
-                          style={{ width: `${Math.min(100, (parseFloat(budgetData.saldoEmpenhoPassagem) / parseFloat(budgetData.valorEmpenhoPassagem || '1')) * 100)}%` }}
+                          style={{ width: `${Math.min(100, (parseFloat(budgetData.saldoEmpenhoPassagem || '0') / parseFloat(budgetData.valorEmpenhoPassagem || '1')) * 100)}%` }}
                         />
                       </div>
                       <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-2">
@@ -270,7 +270,7 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-400">Empenho Hospedagem</p>
                           </div>
                           <p className="text-2xl font-black text-white tracking-tight">
-                            <span className="text-orange-400">R$</span> {parseFloat(budgetData.saldoEmpenhoHospedagem).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            <span className="text-orange-400">R$</span> {parseFloat(budgetData.saldoEmpenhoHospedagem || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </p>
                         </div>
                         <div className="text-right">
@@ -283,7 +283,7 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
                       <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-orange-400 rounded-full transition-all duration-1000"
-                          style={{ width: `${Math.min(100, (parseFloat(budgetData.saldoEmpenhoHospedagem) / parseFloat(budgetData.valorEmpenhoHospedagem || '1')) * 100)}%` }}
+                          style={{ width: `${Math.min(100, (parseFloat(budgetData.saldoEmpenhoHospedagem || '0') / parseFloat(budgetData.valorEmpenhoHospedagem || '1')) * 100)}%` }}
                         />
                       </div>
                       <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest mt-2">

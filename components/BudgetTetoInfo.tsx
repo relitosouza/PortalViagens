@@ -104,7 +104,11 @@ export default function BudgetTetoInfo({
 
   if (destacado) {
     return (
-      <div className={`grid gap-4 ${hasPassagem || hasHospedagem ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1'}`}>
+      <div className={`grid gap-4 ${
+        hasPassagem && hasHospedagem ? 'grid-cols-1 md:grid-cols-3' :
+        hasPassagem || hasHospedagem ? 'grid-cols-1 md:grid-cols-2' :
+        'grid-cols-1'
+      }`}>
         <EmpenhoCard
           numeroEmpenho={numeroEmpenho}
           valorEmpenho={valorEmpenho}
