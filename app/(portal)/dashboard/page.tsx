@@ -61,7 +61,11 @@ export default async function DashboardPage() {
 
   // Buscar parâmetros de empenho
   const parametros = await prisma.configuracaoSistema.findMany({
-    where: { chave: { in: ['NUMERO_EMPENHO', 'VALOR_EMPENHO', 'SALDO_EMPENHO'] } }
+    where: { chave: { in: [
+      'NUMERO_EMPENHO', 'VALOR_EMPENHO', 'SALDO_EMPENHO',
+      'NUMERO_EMPENHO_PASSAGEM', 'VALOR_EMPENHO_PASSAGEM', 'SALDO_EMPENHO_PASSAGEM',
+      'NUMERO_EMPENHO_HOSPEDAGEM', 'VALOR_EMPENHO_HOSPEDAGEM', 'SALDO_EMPENHO_HOSPEDAGEM',
+    ] } }
   })
 
   const hoje = new Date()
@@ -92,10 +96,16 @@ export default async function DashboardPage() {
         {/* Budget info in header if not demandante */}
         {role !== 'DEMANDANTE' && (
           <div className="hidden md:block">
-            <BudgetTetoInfo 
+            <BudgetTetoInfo
               numeroEmpenho={parametros.find(p => p.chave === 'NUMERO_EMPENHO')?.valor}
               valorEmpenho={parametros.find(p => p.chave === 'VALOR_EMPENHO')?.valor}
               saldoEmpenho={parametros.find(p => p.chave === 'SALDO_EMPENHO')?.valor}
+              numeroEmpenhoPassagem={parametros.find(p => p.chave === 'NUMERO_EMPENHO_PASSAGEM')?.valor}
+              valorEmpenhoPassagem={parametros.find(p => p.chave === 'VALOR_EMPENHO_PASSAGEM')?.valor}
+              saldoEmpenhoPassagem={parametros.find(p => p.chave === 'SALDO_EMPENHO_PASSAGEM')?.valor}
+              numeroEmpenhoHospedagem={parametros.find(p => p.chave === 'NUMERO_EMPENHO_HOSPEDAGEM')?.valor}
+              valorEmpenhoHospedagem={parametros.find(p => p.chave === 'VALOR_EMPENHO_HOSPEDAGEM')?.valor}
+              saldoEmpenhoHospedagem={parametros.find(p => p.chave === 'SALDO_EMPENHO_HOSPEDAGEM')?.valor}
             />
           </div>
         )}
@@ -104,11 +114,17 @@ export default async function DashboardPage() {
       {/* Budget Highlight for SEGOV and SECOL */}
       {(role === 'SEGOV' || role === 'SECOL' || role === 'SF') && (
         <div className="mb-8">
-          <BudgetTetoInfo 
+          <BudgetTetoInfo
             destacado
             numeroEmpenho={parametros.find(p => p.chave === 'NUMERO_EMPENHO')?.valor}
             valorEmpenho={parametros.find(p => p.chave === 'VALOR_EMPENHO')?.valor}
             saldoEmpenho={parametros.find(p => p.chave === 'SALDO_EMPENHO')?.valor}
+            numeroEmpenhoPassagem={parametros.find(p => p.chave === 'NUMERO_EMPENHO_PASSAGEM')?.valor}
+            valorEmpenhoPassagem={parametros.find(p => p.chave === 'VALOR_EMPENHO_PASSAGEM')?.valor}
+            saldoEmpenhoPassagem={parametros.find(p => p.chave === 'SALDO_EMPENHO_PASSAGEM')?.valor}
+            numeroEmpenhoHospedagem={parametros.find(p => p.chave === 'NUMERO_EMPENHO_HOSPEDAGEM')?.valor}
+            valorEmpenhoHospedagem={parametros.find(p => p.chave === 'VALOR_EMPENHO_HOSPEDAGEM')?.valor}
+            saldoEmpenhoHospedagem={parametros.find(p => p.chave === 'SALDO_EMPENHO_HOSPEDAGEM')?.valor}
           />
         </div>
       )}

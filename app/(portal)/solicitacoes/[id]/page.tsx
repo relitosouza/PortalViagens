@@ -56,13 +56,23 @@ export default async function DetalheSolicitacaoPage({
   
   // Buscar parâmetros de empenho para alertar SegoV, Secol e Finanças
   const budgetParams = await prisma.configuracaoSistema.findMany({
-    where: { chave: { in: ['NUMERO_EMPENHO', 'VALOR_EMPENHO', 'SALDO_EMPENHO'] } }
+    where: { chave: { in: [
+      'NUMERO_EMPENHO', 'VALOR_EMPENHO', 'SALDO_EMPENHO',
+      'NUMERO_EMPENHO_PASSAGEM', 'VALOR_EMPENHO_PASSAGEM', 'SALDO_EMPENHO_PASSAGEM',
+      'NUMERO_EMPENHO_HOSPEDAGEM', 'VALOR_EMPENHO_HOSPEDAGEM', 'SALDO_EMPENHO_HOSPEDAGEM',
+    ] } }
   })
   
   const budgetData = {
     numeroEmpenho: budgetParams.find(p => p.chave === 'NUMERO_EMPENHO')?.valor,
     valorEmpenho: budgetParams.find(p => p.chave === 'VALOR_EMPENHO')?.valor,
     saldoEmpenho: budgetParams.find(p => p.chave === 'SALDO_EMPENHO')?.valor,
+    numeroEmpenhoPassagem: budgetParams.find(p => p.chave === 'NUMERO_EMPENHO_PASSAGEM')?.valor,
+    valorEmpenhoPassagem: budgetParams.find(p => p.chave === 'VALOR_EMPENHO_PASSAGEM')?.valor,
+    saldoEmpenhoPassagem: budgetParams.find(p => p.chave === 'SALDO_EMPENHO_PASSAGEM')?.valor,
+    numeroEmpenhoHospedagem: budgetParams.find(p => p.chave === 'NUMERO_EMPENHO_HOSPEDAGEM')?.valor,
+    valorEmpenhoHospedagem: budgetParams.find(p => p.chave === 'VALOR_EMPENHO_HOSPEDAGEM')?.valor,
+    saldoEmpenhoHospedagem: budgetParams.find(p => p.chave === 'SALDO_EMPENHO_HOSPEDAGEM')?.valor,
   }
 
   // DEMANDANTE só pode ver suas próprias solicitações

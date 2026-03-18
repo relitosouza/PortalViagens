@@ -34,6 +34,12 @@ type Props = {
     numeroEmpenho?: string
     valorEmpenho?: string
     saldoEmpenho?: string
+    numeroEmpenhoPassagem?: string
+    valorEmpenhoPassagem?: string
+    saldoEmpenhoPassagem?: string
+    numeroEmpenhoHospedagem?: string
+    valorEmpenhoHospedagem?: string
+    saldoEmpenhoHospedagem?: string
   }
 }
 
@@ -222,6 +228,71 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-3">Impacto no Saldo</p>
                 </div>
               </div>
+              {/* Empenhos Separados — Passagem e Hospedagem */}
+              {(budgetData?.saldoEmpenhoPassagem || budgetData?.saldoEmpenhoHospedagem) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {budgetData?.saldoEmpenhoPassagem && (
+                    <div className="bg-emerald-900 p-6 rounded-3xl shadow-xl border border-emerald-700 relative overflow-hidden">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="material-symbols-outlined text-emerald-400 text-[18px]">flight</span>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Empenho Passagens</p>
+                          </div>
+                          <p className="text-2xl font-black text-white tracking-tight">
+                            <span className="text-emerald-400">R$</span> {parseFloat(budgetData.saldoEmpenhoPassagem).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 mb-1">Teto</p>
+                          <p className="text-sm font-bold text-emerald-300">
+                            R$ {parseFloat(budgetData.valorEmpenhoPassagem || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-400 rounded-full transition-all duration-1000"
+                          style={{ width: `${Math.min(100, (parseFloat(budgetData.saldoEmpenhoPassagem) / parseFloat(budgetData.valorEmpenhoPassagem || '1')) * 100)}%` }}
+                        />
+                      </div>
+                      <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-2">
+                        Nº {budgetData.numeroEmpenhoPassagem}
+                      </p>
+                    </div>
+                  )}
+                  {budgetData?.saldoEmpenhoHospedagem && (
+                    <div className="bg-orange-900 p-6 rounded-3xl shadow-xl border border-orange-700 relative overflow-hidden">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="material-symbols-outlined text-orange-400 text-[18px]">hotel</span>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-400">Empenho Hospedagem</p>
+                          </div>
+                          <p className="text-2xl font-black text-white tracking-tight">
+                            <span className="text-orange-400">R$</span> {parseFloat(budgetData.saldoEmpenhoHospedagem).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500 mb-1">Teto</p>
+                          <p className="text-sm font-bold text-orange-300">
+                            R$ {parseFloat(budgetData.valorEmpenhoHospedagem || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-orange-400 rounded-full transition-all duration-1000"
+                          style={{ width: `${Math.min(100, (parseFloat(budgetData.saldoEmpenhoHospedagem) / parseFloat(budgetData.valorEmpenhoHospedagem || '1')) * 100)}%` }}
+                        />
+                      </div>
+                      <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest mt-2">
+                        Nº {budgetData.numeroEmpenhoHospedagem}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
