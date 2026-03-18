@@ -158,50 +158,8 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
                 <p className="text-slate-500 mt-1">Decisão baseada em Conveniência e Oportunidade do interesse público.</p>
               </div>
 
-              {/* Painel OrçamentárioDashboard Único */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {/* Card Unificado de Orçamento */}
-                <div className="col-span-1 md:col-span-2 bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-800 relative overflow-hidden group">
-                  {/* Efeito de brilho no fundo */}
-                  <div className="absolute -right-4 -top-4 w-32 h-32 bg-red-600/10 blur-3xl rounded-full group-hover:bg-red-600/20 transition-all pointer-events-none"></div>
-                  
-                  <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-6">
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Saldo do Teto</p>
-                        <p className="text-3xl font-black text-white tracking-tight">
-                          <span className="text-red-500">R$</span> {parseFloat(budgetData?.saldoEmpenho || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Teto Orçamentário</p>
-                        <p className="text-sm font-bold text-slate-300">
-                          R$ {parseFloat(budgetData?.valorEmpenho || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="relative">
-                      <div className="h-3 bg-white/10 rounded-full w-full overflow-hidden border border-white/5">
-                        <div
-                          className="h-full bg-red-600 rounded-full shadow-[0_0_15px_rgba(220,38,38,0.4)] transition-all duration-1000 ease-out"
-                          style={{ width: `${Math.min(100, (parseFloat(budgetData?.saldoEmpenho || '0') / parseFloat(budgetData?.valorEmpenho || '1')) * 100)}%` }}
-                        />
-                      </div>
-                      <div className="flex justify-between items-center mt-3">
-                        <div className="flex items-center gap-2">
-                          <div className="size-2 rounded-full bg-red-500 animate-pulse"></div>
-                          <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">
-                            Empenho Nº {budgetData?.numeroEmpenho}
-                          </span>
-                        </div>
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest pt-0.5">
-                          {((parseFloat(budgetData?.saldoEmpenho || '0') / parseFloat(budgetData?.valorEmpenho || '1')) * 100).toFixed(1)}% Disponível
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
+              {/* Painel Orçamentário */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Duração Total */}
                 <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Duração Total</p>
