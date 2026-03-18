@@ -49,6 +49,39 @@ function formatarDataHora(iso: string) {
 }
 
 
+function extrairDetalhesCotacao(obs: string | null, totalDias: number) {
+  const padrao = { 
+    voo: 0, vooDesc: 'Não cotado', 
+    hotel: 0, hotelDesc: 'Não cotado', 
+    diarias: totalDias * 665.60 
+  }
+  if (!obs) return padrao
+
+  // Extrair preços usando a mesma lógica do parsePreco em budget-utils
+  const regexPreco = /R\$\s?([\d.,]+)/g
+  const matches = [...obs.matchAll(regexPreco)]
+  
+  // Usar parseCurrency para consistência
+  const { parseCurrency } = require('@/lib/utils/budget-utils')
+  const valores = matches.map(m => parseCurrency(m[1]))
+
+  // Extrair Descrição do Voo
+  const vooMatch = obs.match(/=== OPÇÕES DE VOO ===\s+\[1\]\s+([^|]+)/)
+  const vooDesc = vooMatch ? vooMatch[1].trim() : 'Voo não identificado'
+
+  // Extrair Descrição do Hotel
+  const hotelMatch = obs.match(/=== OPÇÕES DE HOSPEDAGEM ===\s+\[1\]\s+([^|]+)/)
+  const hotelDesc = hotelMatch ? hotelMatch[1].trim() : 'Hotel não identificado'
+
+  return {
+    voo: valores[0] || 0,
+    vooDesc,
+    hotel: valores[valores.length - 1] || 0,
+    hotelDesc,
+    diarias: totalDias * 665.60
+  }
+}
+
 export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
   const router = useRouter()
   const [observacao, setObservacao] = useState('')
@@ -58,6 +91,8 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
   const cotacaoStep = sol.steps.find(s => s.etapa === 'COTACAO')
   const noites = calcularNoites(sol.dataIda, sol.dataVolta)
   const dias = noites + 1
+  const detalhes = extrairDetalhesCotacao(cotacaoStep?.observacao ?? null, dias)
+  const custoTotal = detalhes.voo + detalhes.hotel + detalhes.diarias
 
   async function executar(decisao: string) {
     if (!observacao.trim() && decisao !== 'APROVADO') {
@@ -182,7 +217,7 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
                 <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Custo Estimado</p>
                   <p className="text-xl font-black text-blue-600 leading-none mb-1">
-                    <span className="text-xs mr-0.5">R$</span> {parsePreco(cotacaoStep?.observacao ?? null, dias).total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    <span className="text-xs mr-0.5">R$</span> {custoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-3">Impacto no Saldo</p>
                 </div>
@@ -260,9 +295,8 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
                       Parecer da SEGOV (Observações Oficiais)
                     </label>
                     <textarea
-                      className="w-full rounded-lg border-slate-200 text-sm focus:border-blue-600 focus:ring-blue-600 bg-slate-50"
-                      rows={4}
-                      placeholder="Descreva aqui os motivos da aprovação, reprovação ou necessidade de ajustes..."
+                      className="w-full rounded-xl border-slate-300 text-base focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 bg-white shadow-inner p-4 transition-all min-h-[160px] text-slate-700"
+                      placeholder="Descreva aqui os motivos da aprovação, reprovação ou necessidade de ajustes de forma clara e detalhada..."
                       value={observacao}
                       onChange={e => setObservacao(e.target.value)}
                     />
@@ -332,11 +366,11 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
                   <div className="p-4 rounded-xl border border-blue-50 bg-white shadow-sm flex justify-between items-start">
                     <div>
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Passagem Aérea</p>
-                      <p className="text-sm font-bold text-slate-900 leading-none mb-1">LATAM - Voo Direto</p>
-                      <p className="text-[10px] text-slate-500">CGH &gt; BSB (Ida e Volta)</p>
+                      <p className="text-sm font-bold text-slate-900 leading-none mb-1">{detalhes.vooDesc}</p>
+                      <p className="text-[10px] text-slate-500">Ida e Volta</p>
                     </div>
                     <p className="text-lg font-black text-slate-900">
-                      R$ {parsePreco(cotacaoStep?.observacao ?? null, dias).voo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {detalhes.voo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
                   </div>
 
@@ -344,23 +378,23 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
                   <div className="p-4 rounded-xl border border-blue-50 bg-white shadow-sm flex justify-between items-start">
                     <div>
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Hospedagem</p>
-                      <p className="text-sm font-bold text-slate-900 leading-none mb-1">Quality Hotel Brasília</p>
-                      <p className="text-[10px] text-slate-500">{noites} Diárias - Café incluso</p>
+                      <p className="text-sm font-bold text-slate-900 leading-none mb-1">{detalhes.hotelDesc}</p>
+                      <p className="text-[10px] text-slate-500">{noites} Diárias</p>
                     </div>
                     <p className="text-lg font-black text-slate-900">
-                      R$ {parsePreco(cotacaoStep?.observacao ?? null, dias).hotel.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {detalhes.hotel.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
                   </div>
 
                   {/* Diárias */}
                   <div className="p-4 rounded-xl border border-blue-50 bg-white shadow-sm flex justify-between items-start">
                     <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Diárias &amp; Ajuda Custo</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Diárias & Ajuda Custo</p>
                       <p className="text-sm font-bold text-slate-900 leading-none mb-1">Padrão Tabela Municipal</p>
                       <p className="text-[10px] text-slate-500">Conforme Decreto 12.345/2023</p>
                     </div>
                     <p className="text-lg font-black text-slate-900">
-                      R$ {parsePreco(cotacaoStep?.observacao ?? null, dias).diarias.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {detalhes.diarias.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
                   </div>
                 </div>
@@ -371,7 +405,7 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
                 <div className="px-6 py-4 border-b border-slate-200">
                   <h4 className="font-bold flex items-center gap-2 text-sm uppercase tracking-wide">
                     <span className="material-symbols-outlined text-blue-600 text-lg">receipt_long</span>
-                    Observações Técnicas SECOL
+                    Análise Técnica da SECOL
                   </h4>
                 </div>
                 <div className="p-6">

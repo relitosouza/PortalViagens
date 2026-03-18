@@ -449,13 +449,15 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
                           </div>
                         </td>
                         <td className="px-6 py-4 font-bold">R$ {v.preco}</td>
-                        <td className="px-6 py-4 text-right flex justify-end gap-1">
-                          <button onClick={() => iniciarEdicaoVoo(v)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
-                            <span className="material-symbols-outlined">edit</span>
-                          </button>
-                          <button onClick={() => setVoos(vs => vs.filter(x => x.id !== v.id))} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
-                            <span className="material-symbols-outlined">delete</span>
-                          </button>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-1">
+                            <button onClick={() => iniciarEdicaoVoo(v)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
+                              <span className="material-symbols-outlined text-[20px]">edit</span>
+                            </button>
+                            <button onClick={() => setVoos(vs => vs.filter(x => x.id !== v.id))} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
+                              <span className="material-symbols-outlined text-[20px]">delete</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -535,14 +537,16 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
                             <span className="text-slate-400 text-xs">(R$ {h.precoPorNoite}/dia)</span>
                           </td>
                           <td className="px-6 py-4 font-bold">R$ {total}</td>
-                          <td className="px-6 py-4 text-right flex justify-end gap-1">
-                          <button onClick={() => iniciarEdicaoHotel(h)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
-                            <span className="material-symbols-outlined">edit</span>
-                          </button>
-                          <button onClick={() => setHoteis(hs => hs.filter(x => x.id !== h.id))} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
-                            <span className="material-symbols-outlined">delete</span>
-                          </button>
-                        </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex justify-end gap-1">
+                              <button onClick={() => iniciarEdicaoHotel(h)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
+                                <span className="material-symbols-outlined text-[20px]">edit</span>
+                              </button>
+                              <button onClick={() => setHoteis(hs => hs.filter(x => x.id !== h.id))} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
+                                <span className="material-symbols-outlined text-[20px]">delete</span>
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                       )
                     })}
