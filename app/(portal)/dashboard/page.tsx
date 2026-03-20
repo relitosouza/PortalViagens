@@ -12,6 +12,9 @@ const STATUS_LABELS: Record<string, string> = {
   AGUARDANDO_EXECUCAO: 'Execução Orçamentária',
   CONCLUIDA: 'Concluída',
   REPROVADA: 'Reprovada',
+  AGUARDANDO_SECRETARIO: 'Aguardando Secretário',
+  DEVOLVIDO_SECRETARIO: 'Devolvido — Correção',
+  REPROVADO_SECRETARIO: 'Reprovado pelo Secretário',
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -22,10 +25,14 @@ const STATUS_BADGE: Record<string, string> = {
   AGUARDANDO_EXECUCAO: 'bg-purple-100 text-purple-800',
   CONCLUIDA: 'bg-emerald-100 text-emerald-800',
   REPROVADA: 'bg-rose-100 text-rose-800',
+  AGUARDANDO_SECRETARIO: 'bg-violet-100 text-violet-800',
+  DEVOLVIDO_SECRETARIO: 'bg-amber-100 text-amber-800',
+  REPROVADO_SECRETARIO: 'bg-rose-100 text-rose-800',
 }
 
 const ROLE_STATUS_MAP: Record<string, string[]> = {
-  DEMANDANTE: ['RASCUNHO', 'AGUARDANDO_COTACAO', 'AGUARDANDO_VIABILIDADE', 'AGUARDANDO_EMISSAO', 'AGUARDANDO_EXECUCAO', 'CONCLUIDA', 'REPROVADA'],
+  DEMANDANTE: ['RASCUNHO', 'AGUARDANDO_SECRETARIO', 'DEVOLVIDO_SECRETARIO', 'REPROVADO_SECRETARIO', 'AGUARDANDO_COTACAO', 'AGUARDANDO_VIABILIDADE', 'AGUARDANDO_EMISSAO', 'AGUARDANDO_EXECUCAO', 'CONCLUIDA', 'REPROVADA'],
+  SECRETARIO: ['AGUARDANDO_SECRETARIO', 'DEVOLVIDO_SECRETARIO', 'REPROVADO_SECRETARIO', 'AGUARDANDO_COTACAO', 'CONCLUIDA'],
   SECOL: ['AGUARDANDO_COTACAO', 'AGUARDANDO_EMISSAO'],
   SEGOV: ['AGUARDANDO_VIABILIDADE'],
   SF: ['AGUARDANDO_EXECUCAO'],
@@ -34,6 +41,9 @@ const ROLE_STATUS_MAP: Record<string, string[]> = {
 function getStatusActionIcon(status: string): string {
   if (status === 'RASCUNHO') return 'edit'
   if (status === 'REPROVADA') return 'info'
+  if (status === 'AGUARDANDO_SECRETARIO') return 'approval'
+  if (status === 'DEVOLVIDO_SECRETARIO') return 'edit'
+  if (status === 'REPROVADO_SECRETARIO') return 'info'
   return 'visibility'
 }
 
@@ -48,6 +58,12 @@ export default async function DashboardPage() {
   let where: Record<string, unknown> = {}
   if (role === 'DEMANDANTE') {
     where = { userId, status: { in: ROLE_STATUS_MAP[role] } }
+  } else if (role === 'SECRETARIO') {
+    const sessionUser = session.user as { id: string; role: string; secretariaId?: string }
+    where = {
+      status: { in: ROLE_STATUS_MAP['SECRETARIO'] },
+      user: { secretariaId: sessionUser.secretariaId ?? '' },
+    }
   } else if (role !== 'ADMIN') {
     where = { status: { in: ROLE_STATUS_MAP[role] ?? [] } }
   }

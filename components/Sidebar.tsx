@@ -67,6 +67,21 @@ export function Sidebar({ role, onClose }: SidebarProps) {
             <span className="text-sm font-medium">Solicitações</span>
           </Link>
 
+          {(role === 'SECRETARIO') && (
+            <Link
+              href="/portal/secretario"
+              onClick={onClose}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                pathname.startsWith('/portal/secretario')
+                  ? 'bg-blue-600 text-white'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[20px]">approval</span>
+              <span className="text-sm font-medium">Aprovações</span>
+            </Link>
+          )}
+
           <a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 cursor-not-allowed" href="#">
             <span className="material-symbols-outlined text-[20px]">description</span>
             <span className="text-sm font-medium">Relatórios</span>
@@ -91,7 +106,7 @@ export function Sidebar({ role, onClose }: SidebarProps) {
 
         {/* Bottom actions */}
         <div className="mt-auto pt-6 border-t border-slate-200 flex flex-col gap-3">
-          {(role === 'DEMANDANTE' || role === 'ADMIN') && (
+          {(role === 'DEMANDANTE' || role === 'ADMIN' || role === 'SECRETARIO') && (
             <Link
               href="/solicitacoes/nova"
               onClick={onClose}

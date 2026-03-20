@@ -8,6 +8,7 @@ const ROLE_LABELS: Record<string, string> = {
   SEGOV: 'SEGOV — Gabinete',
   SF: 'Secretaria de Finanças',
   ADMIN: 'Administrador do Sistema',
+  SECRETARIO: 'Secretário(a)',
 }
 
 function getInitials(name: string | null | undefined): string {
