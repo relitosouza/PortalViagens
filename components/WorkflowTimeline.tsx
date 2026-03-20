@@ -9,6 +9,7 @@ type WorkflowStep = {
 }
 
 const ETAPAS = [
+  { key: 'SECRETARIO', label: 'Aprovação do Secretário', ator: 'Secretário(a)', desc: 'Avaliação e aprovação do pedido de viagem pelo Secretário responsável pela área' },
   { key: 'COTACAO', label: 'Cotação Técnica', ator: 'SECOL / DRP', desc: 'Consulta à Ata de Registro de Preços e upload de opções de voos/hotéis' },
   { key: 'VIABILIDADE', label: 'Análise de Viabilidade', ator: 'SEGOV — Gabinete', desc: 'Avaliação de conveniência e oportunidade política/financeira' },
   { key: 'EMISSAO', label: 'Emissão de OS e Vouchers', ator: 'SECOL', desc: 'Emissão da Ordem de Serviço e envio de vouchers ao servidor' },
@@ -16,6 +17,9 @@ const ETAPAS = [
 ]
 
 const STATUS_ETAPA_MAP: Record<string, string> = {
+  AGUARDANDO_SECRETARIO: 'SECRETARIO',
+  DEVOLVIDO_SECRETARIO: 'SECRETARIO',
+  REPROVADO_SECRETARIO: 'SECRETARIO',
   AGUARDANDO_COTACAO: 'COTACAO',
   AGUARDANDO_VIABILIDADE: 'VIABILIDADE',
   AGUARDANDO_EMISSAO: 'EMISSAO',
@@ -30,18 +34,24 @@ export function WorkflowTimeline({ status, steps }: { status: string; steps: Wor
   return (
     <div className="space-y-3">
       {ETAPAS.map((etapa, i) => {
-        const step = steps.find(s => s.etapa === etapa.key)
+        // For SECRETARIO, find the last step (most recent decision)
+        const step = etapa.key === 'SECRETARIO'
+          ? steps.filter(s => s.etapa === 'SECRETARIO').at(-1) ?? undefined
+          : steps.find(s => s.etapa === etapa.key)
         const isDone = step?.decisao === 'APROVADO'
         const isReprovado = step?.decisao === 'REPROVADO'
+        const isDevolvido = etapa.key === 'SECRETARIO' && step?.decisao === 'DEVOLVIDO'
         const isAtual = etapaAtualKey === etapa.key
-        const isPending = !isDone && !isReprovado && !isAtual
+        const isPending = !isDone && !isReprovado && !isDevolvido && !isAtual
 
         return (
           <div key={etapa.key} className={`rounded-xl border-2 p-4 transition-all
             ${isDone ? 'border-green-200 bg-green-50' :
               isReprovado ? 'border-red-200 bg-red-50' :
+              isDevolvido ? 'border-amber-200 bg-amber-50' :
               isAtual ? 'border-blue-300 bg-blue-50 shadow-sm' :
-              'border-gray-200 bg-gray-50 opacity-70'}`}>
+              'border-gray-200 bg-gray-50 opacity-70'
+            }`}>
             <div className="flex gap-4">
               {/* Ícone de status */}
               <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0
@@ -76,6 +86,11 @@ export function WorkflowTimeline({ status, steps }: { status: string; steps: Wor
                   {isReprovado && (
                     <span className="text-xs bg-red-100 text-red-700 px-2.5 py-0.5 rounded-full font-medium">
                       Reprovado
+                    </span>
+                  )}
+                  {isDevolvido && (
+                    <span className="text-xs bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full font-medium">
+                      Devolvido
                     </span>
                   )}
                 </div>
