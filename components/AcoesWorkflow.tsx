@@ -5,12 +5,34 @@ import { useRouter } from 'next/navigation'
 type Acao = {
   label: string
   decisao: string
-  cor: 'blue' | 'green' | 'red'
+  cor: 'blue' | 'green' | 'red' | 'yellow'
   descricao: string
 }
 
 // Ações disponíveis por status + role
 const ACOES_MAP: Record<string, Record<string, Acao[]>> = {
+  AGUARDANDO_SECRETARIO: {
+    SECRETARIO: [
+      {
+        label: 'Aprovar Solicitação',
+        decisao: 'APROVADO',
+        cor: 'green',
+        descricao: 'Aprova a solicitação e encaminha para cotação pela SECOL.',
+      },
+      {
+        label: 'Devolver para Correção',
+        decisao: 'DEVOLVIDO',
+        cor: 'yellow' as const,
+        descricao: 'Devolve o pedido ao servidor para que faça as correções necessárias.',
+      },
+      {
+        label: 'Reprovar Solicitação',
+        decisao: 'REPROVADO',
+        cor: 'red',
+        descricao: 'Reprova definitivamente a solicitação.',
+      },
+    ],
+  },
   AGUARDANDO_COTACAO: {
     SECOL: [{
       label: 'Confirmar Cotação e Avançar',
@@ -69,6 +91,7 @@ const CORES: Record<string, string> = {
   blue: 'bg-blue-700 hover:bg-blue-800 text-white',
   green: 'bg-green-600 hover:bg-green-700 text-white',
   red: 'bg-red-600 hover:bg-red-700 text-white',
+  yellow: 'bg-amber-500 hover:bg-amber-600 text-white',
 }
 
 type Props = {
@@ -81,23 +104,26 @@ export function AcoesWorkflow({ solicitacaoId, status, userRole }: Props) {
   const [observacao, setObservacao] = useState('')
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState('')
+  const [modalDecisao, setModalDecisao] = useState<string | null>(null)
+  const [modalJustificativa, setModalJustificativa] = useState('')
   const router = useRouter()
 
-  const acoes = (userRole === 'ADMIN') 
+  const acoes = (userRole === 'ADMIN')
     ? Object.values(ACOES_MAP[status] ?? {}).flat()
     : (ACOES_MAP[status]?.[userRole] ?? [])
 
   if (acoes.length === 0) return null
 
-  async function executarAcao(decisao: string) {
+  async function executarAcao(decisao: string, justificativaOverride?: string) {
     setLoading(true)
     setErro('')
+    const obs = justificativaOverride !== undefined ? justificativaOverride : observacao
 
     try {
       const res = await fetch(`/api/workflow/${solicitacaoId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ decisao, observacao }),
+        body: JSON.stringify({ decisao, observacao: obs }),
       })
 
       const data = await res.json()
@@ -126,7 +152,7 @@ export function AcoesWorkflow({ solicitacaoId, status, userRole }: Props) {
         <div className="mb-4 space-y-2">
           {acoes.map(a => (
             <div key={a.decisao} className="flex items-start gap-2 text-sm text-gray-600">
-              <span className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${a.cor === 'green' ? 'bg-green-500' : a.cor === 'red' ? 'bg-red-500' : 'bg-blue-500'}`} />
+              <span className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${a.cor === 'green' ? 'bg-green-500' : a.cor === 'red' ? 'bg-red-500' : a.cor === 'yellow' ? 'bg-amber-500' : 'bg-blue-500'}`} />
               <span>{a.descricao}</span>
             </div>
           ))}
@@ -154,7 +180,14 @@ export function AcoesWorkflow({ solicitacaoId, status, userRole }: Props) {
         {acoes.map(a => (
           <button
             key={a.decisao}
-            onClick={() => executarAcao(a.decisao)}
+            onClick={() => {
+              if (['DEVOLVIDO', 'REPROVADO'].includes(a.decisao)) {
+                setModalDecisao(a.decisao)
+                setModalJustificativa('')
+              } else {
+                executarAcao(a.decisao)
+              }
+            }}
             disabled={loading}
             className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition disabled:opacity-50 ${CORES[a.cor]}`}
           >
@@ -162,6 +195,43 @@ export function AcoesWorkflow({ solicitacaoId, status, userRole }: Props) {
           </button>
         ))}
       </div>
+
+      {modalDecisao && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full space-y-4">
+            <h3 className="font-bold text-slate-900">
+              {modalDecisao === 'DEVOLVIDO' ? 'Devolver para Correção' : 'Reprovar Solicitação'}
+            </h3>
+            <p className="text-sm text-slate-500">Informe o motivo (obrigatório):</p>
+            <textarea
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              rows={4}
+              placeholder="Descreva o motivo..."
+              value={modalJustificativa}
+              onChange={e => setModalJustificativa(e.target.value)}
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setModalDecisao(null)}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  if (!modalJustificativa.trim()) return
+                  executarAcao(modalDecisao, modalJustificativa.trim())
+                  setModalDecisao(null)
+                }}
+                disabled={!modalJustificativa.trim() || loading}
+                className={`px-5 py-2 rounded-lg text-sm font-semibold text-white transition disabled:opacity-50 ${modalDecisao === 'REPROVADO' ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-500 hover:bg-amber-600'}`}
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
