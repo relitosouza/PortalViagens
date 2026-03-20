@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { calcularDiasUteisAte } from '@/lib/utils/diasUteis'
-import { notificarNovaSolicitacaoParaSecol } from '@/lib/email-notifications'
+import { notificarSecretariosAtivos, notificarRole } from '@/lib/email-notifications'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -35,9 +35,16 @@ export async function POST(req: NextRequest) {
         error: `Antecedência insuficiente: apenas ${diasUteis} dia(s) útil(is). Mínimo exigido: 15 dias úteis (Art. 1º).`
       }, { status: 422 })
     }
+
+    // Validar secretaria vinculada
+    if (!dbUser?.secretariaId) {
+      return NextResponse.json({
+        error: 'Seu cadastro não possui secretaria vinculada. Contate o administrador.'
+      }, { status: 400 })
+    }
   }
 
-  const solicitacao = await prisma.solicitacao.create({
+  const sol = await prisma.solicitacao.create({
     data: {
       nomeCompleto: body.nomeCompleto,
       matricula: body.matricula,
@@ -54,18 +61,18 @@ export async function POST(req: NextRequest) {
       fichaOrcamentaria: body.fichaOrcamentaria,
       indicacaoVoo: body.indicacaoVoo ?? null,
       indicacaoHospedagem: body.indicacaoHospedagem ?? null,
-      status: isRascunho ? 'RASCUNHO' : 'AGUARDANDO_COTACAO',
+      status: isRascunho ? 'RASCUNHO' : 'AGUARDANDO_SECRETARIO',
       userId: user.id,
     },
     include: { user: true },
   })
 
   if (!isRascunho) {
-    notificarNovaSolicitacaoParaSecol(solicitacao).catch(() => {})
+    notificarSecretariosAtivos(sol, sol.user.secretariaId!).catch(() => {})
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { user: _user, ...solicitacaoResponse } = solicitacao
+  const { user: _user, ...solicitacaoResponse } = sol
   return NextResponse.json(solicitacaoResponse, { status: 201 })
 }
 
