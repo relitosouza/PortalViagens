@@ -9,6 +9,9 @@ import {
   notificarEmissaoParaSf,
   notificarDemandante,
   notificarRole,
+  notificarAprovacaoSecretario,
+  notificarDevolucaoSecretario,
+  notificarReprovacaoSecretario,
 } from '@/lib/email-notifications'
 import { addDiasUteis } from '@/lib/utils/diasUteis'
 
@@ -20,6 +23,11 @@ const TRANSICOES: Record<string, {
   proximoStatus: string
   rolePermitido: string
 }[]> = {
+  AGUARDANDO_SECRETARIO: [
+    { etapa: 'SECRETARIO', decisao: 'APROVADO', proximoStatus: 'AGUARDANDO_COTACAO', rolePermitido: 'SECRETARIO' },
+    { etapa: 'SECRETARIO', decisao: 'DEVOLVIDO', proximoStatus: 'DEVOLVIDO_SECRETARIO', rolePermitido: 'SECRETARIO' },
+    { etapa: 'SECRETARIO', decisao: 'REPROVADO', proximoStatus: 'REPROVADO_SECRETARIO', rolePermitido: 'SECRETARIO' },
+  ],
   AGUARDANDO_COTACAO: [
     { etapa: 'COTACAO', decisao: 'APROVADO', proximoStatus: 'AGUARDANDO_VIABILIDADE', rolePermitido: 'SECOL' },
   ],
@@ -72,27 +80,54 @@ export async function POST(
     }, { status: 403 })
   }
 
-  // Registrar passo do workflow
-  await prisma.workflowStep.create({
-    data: {
-      solicitacaoId: sol.id,
-      etapa: transicao.etapa,
-      atorRole: role,
-      atorNome: userName,
-      decisao,
-      observacao: observacao || null,
-      ...(transicao.etapa === 'COTACAO' && {
-        valorPassagem: valorPassagem ?? null,
-        valorHospedagem: valorHospedagem ?? null,
-      }),
-    },
-  })
+  // Validate required observacao for SECRETARIO DEVOLVIDO and REPROVADO
+  if (transicao.etapa === 'SECRETARIO' && ['DEVOLVIDO', 'REPROVADO'].includes(decisao) && !observacao?.trim()) {
+    return NextResponse.json({ error: 'Justificativa obrigatória para devolução ou reprovação.' }, { status: 400 })
+  }
 
-  // Atualizar status da solicitação
-  await prisma.solicitacao.update({
-    where: { id: sol.id },
-    data: { status: transicao.proximoStatus },
-  })
+  // Validate SECRETARIO belongs to same secretaria (for non-ADMIN)
+  if (transicao.etapa === 'SECRETARIO' && role === 'SECRETARIO') {
+    const sessionUser = session.user as { id: string; role: string; secretariaId?: string }
+    if (sessionUser.secretariaId !== sol.user.secretariaId) {
+      return NextResponse.json({ error: 'Não autorizado para esta secretaria.' }, { status: 403 })
+    }
+  }
+
+  // Use transaction for optimistic locking (prevents concurrent secretário actions)
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Re-check status inside transaction
+      const solAtual = await tx.solicitacao.findUnique({ where: { id: sol.id }, select: { status: true } })
+      if (solAtual?.status !== sol.status) {
+        throw new Error('CONCURRENT_ACTION')
+      }
+
+      await tx.workflowStep.create({
+        data: {
+          solicitacaoId: sol.id,
+          etapa: transicao.etapa,
+          atorRole: role,
+          atorNome: userName,
+          decisao,
+          observacao: observacao || null,
+          ...(transicao.etapa === 'COTACAO' && {
+            valorPassagem: valorPassagem ?? null,
+            valorHospedagem: valorHospedagem ?? null,
+          }),
+        },
+      })
+
+      await tx.solicitacao.update({
+        where: { id: sol.id },
+        data: { status: transicao.proximoStatus },
+      })
+    })
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message === 'CONCURRENT_ACTION') {
+      return NextResponse.json({ error: 'Este pedido já foi processado por outro Secretário.' }, { status: 409 })
+    }
+    throw err
+  }
 
   // Lógica especial para etapa de VIABILIDADE aprovada (SEGOV) — DÉBITO DE EMPENHOS
   if (transicao.etapa === 'VIABILIDADE' && decisao === 'APROVADO') {
@@ -208,6 +243,21 @@ export async function POST(
   }
 
   // ── Notificações por email ────────────────────────────────────────────────
+
+  // SECRETARIO aprovado → notificar SECOL + Demandante
+  if (transicao.etapa === 'SECRETARIO' && decisao === 'APROVADO') {
+    notificarAprovacaoSecretario(sol).catch(() => {})
+  }
+
+  // SECRETARIO devolvido → notificar Demandante
+  if (transicao.etapa === 'SECRETARIO' && decisao === 'DEVOLVIDO') {
+    notificarDevolucaoSecretario(sol, observacao || '')
+  }
+
+  // SECRETARIO reprovado → notificar Demandante
+  if (transicao.etapa === 'SECRETARIO' && decisao === 'REPROVADO') {
+    notificarReprovacaoSecretario(sol, observacao || '')
+  }
 
   // COTACAO aprovada → demandante (atualização) + SEGOV (próxima ação)
   if (transicao.etapa === 'COTACAO' && decisao === 'APROVADO') {
