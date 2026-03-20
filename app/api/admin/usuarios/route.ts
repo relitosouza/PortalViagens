@@ -25,6 +25,7 @@ export async function GET() {
       cpfBloqueado: true,
       ativo: true,
       createdAt: true,
+      secretariaId: true,
     },
   })
 
@@ -42,6 +43,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Campos obrigatórios: name, email, password, role' }, { status: 400 })
   }
 
+  if (['DEMANDANTE', 'SECRETARIO'].includes(body.role) && !body.secretariaId) {
+    return NextResponse.json({ error: 'Secretaria é obrigatória para este papel.' }, { status: 400 })
+  }
+
   const existing = await prisma.user.findUnique({ where: { email } })
   if (existing) {
     return NextResponse.json({ error: 'E-mail já cadastrado' }, { status: 409 })
@@ -49,8 +54,8 @@ export async function POST(req: NextRequest) {
 
   const hashedPassword = await bcrypt.hash(password, 10)
   const usuario = await prisma.user.create({
-    data: { name, email, password: hashedPassword, role },
-    select: { id: true, name: true, email: true, role: true, cpfBloqueado: true, ativo: true, createdAt: true },
+    data: { name, email, password: hashedPassword, role, secretariaId: body.secretariaId || null },
+    select: { id: true, name: true, email: true, role: true, cpfBloqueado: true, ativo: true, createdAt: true, secretariaId: true },
   })
 
   return NextResponse.json(usuario, { status: 201 })

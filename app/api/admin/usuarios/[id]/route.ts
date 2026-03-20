@@ -18,6 +18,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params
   const body = await req.json()
 
+  const existingUser = await prisma.user.findUnique({ where: { id }, select: { role: true, secretariaId: true } })
+  if (!existingUser) return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
+
+  const newRole = body.role ?? existingUser.role
+  if (['DEMANDANTE', 'SECRETARIO'].includes(newRole) && body.secretariaId === null) {
+    return NextResponse.json({ error: 'Secretaria é obrigatória para este papel.' }, { status: 400 })
+  }
+
   const updateData: Record<string, unknown> = {}
   if (body.name !== undefined) updateData.name = body.name
   if (body.role !== undefined) updateData.role = body.role
@@ -29,11 +37,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (existing) return NextResponse.json({ error: 'E-mail já cadastrado por outro usuário' }, { status: 409 })
     updateData.email = body.email
   }
+  updateData.secretariaId = body.secretariaId !== undefined ? body.secretariaId : existingUser.secretariaId
 
   const usuario = await prisma.user.update({
     where: { id },
     data: updateData,
-    select: { id: true, name: true, email: true, role: true, cpfBloqueado: true, ativo: true, createdAt: true },
+    select: { id: true, name: true, email: true, role: true, cpfBloqueado: true, ativo: true, createdAt: true, secretariaId: true },
   })
 
   return NextResponse.json(usuario)
