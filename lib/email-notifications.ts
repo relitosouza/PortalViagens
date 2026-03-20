@@ -113,3 +113,69 @@ export async function notificarEmissaoParaSf(
     'EXECUCAO_SF'
   )
 }
+
+/** Notifica todos os Secretários ativos da secretaria do solicitante */
+export async function notificarSecretariosAtivos(
+  sol: SolicitacaoComUser,
+  secretariaId: string
+): Promise<void> {
+  const secretarios = await prisma.user.findMany({
+    where: { role: 'SECRETARIO', secretariaId, ativo: true },
+  })
+  for (const s of secretarios) {
+    try {
+      logEmail({
+        para: s.email,
+        assunto: '[Viagens Osasco] Nova solicitação aguardando sua aprovação',
+        corpo: `Uma nova solicitação de viagem para ${sol.destino} de ${sol.nomeCompleto} aguarda sua aprovação.\n\nAcesse: ${APP_URL}/portal/solicitacoes/${sol.id}`,
+        tipo: 'NOVA_SOLICITACAO_SECRETARIO',
+      })
+    } catch {
+      // silent
+    }
+  }
+}
+
+/** Secretário aprovou → notificar SECOL + Demandante */
+export async function notificarAprovacaoSecretario(
+  sol: SolicitacaoComUser
+): Promise<void> {
+  await notificarRole(
+    'SECOL',
+    '[Viagens Osasco] Nova solicitação aguardando cotação',
+    `A solicitação de viagem para ${sol.destino} de ${sol.nomeCompleto} foi aprovada pelo Secretário e aguarda cotação.\n\nAcesse: ${APP_URL}/solicitacoes/${sol.id}`,
+    'APROVACAO_SECRETARIO_SECOL'
+  )
+  notificarDemandante(
+    sol,
+    '[Viagens Osasco] Sua solicitação foi aprovada pelo Secretário',
+    `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} foi aprovada pelo Secretário e encaminhada para cotação.\n\nAcesse: ${APP_URL}/solicitacoes/${sol.id}`,
+    'APROVACAO_SECRETARIO_DEMANDANTE'
+  )
+}
+
+/** Secretário devolveu → notificar Demandante */
+export function notificarDevolucaoSecretario(
+  sol: SolicitacaoComUser,
+  observacao: string
+): void {
+  notificarDemandante(
+    sol,
+    '[Viagens Osasco] Sua solicitação foi devolvida para correção',
+    `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} foi devolvida pelo Secretário para correção.\n\nMotivo: ${observacao}\n\nAcesse: ${APP_URL}/solicitacoes/${sol.id}`,
+    'DEVOLUCAO_SECRETARIO'
+  )
+}
+
+/** Secretário reprovou → notificar Demandante */
+export function notificarReprovacaoSecretario(
+  sol: SolicitacaoComUser,
+  observacao: string
+): void {
+  notificarDemandante(
+    sol,
+    '[Viagens Osasco] Sua solicitação foi reprovada',
+    `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} foi reprovada pelo Secretário.\n\nMotivo: ${observacao}\n\nPara novas viagens, crie uma nova solicitação.\n\nAcesse: ${APP_URL}/solicitacoes/${sol.id}`,
+    'REPROVACAO_SECRETARIO'
+  )
+}
