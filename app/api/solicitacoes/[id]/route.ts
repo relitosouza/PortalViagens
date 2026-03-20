@@ -14,7 +14,7 @@ export async function PATCH(
   const user = session.user as { id: string; role: string; secretariaId?: string }
   const { id } = await params
   const body = await req.json()
-  const isRascunho = body.isRascunho === true
+  const isRascunho = body.rascunho === true
 
   const sol = await prisma.solicitacao.findUnique({
     where: { id },
