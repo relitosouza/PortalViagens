@@ -15,9 +15,11 @@ model User {
   name         String
   email        String        @unique
   password     String
-  role         String        // DEMANDANTE | SECOL | SEGOV | SF | ADMIN
+  role         String        // DEMANDANTE | SECOL | SEGOV | SF | ADMIN | SECRETARIO
   cpfBloqueado Boolean       @default(false)
   ativo        Boolean       @default(true)
+  secretariaId String?
+  secretaria   Secretaria? @relation(fields: [secretariaId], references: [id])
   createdAt    DateTime      @default(now())
   solicitacoes Solicitacao[]
 }
@@ -27,6 +29,14 @@ model ConfiguracaoSistema {
   valor     String
   descricao String
   updatedAt DateTime @updatedAt
+}
+
+model Secretaria {
+  id        String   @id @default(cuid())
+  nome      String   @unique
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  users     User[]
 }
 
 model Solicitacao {
