@@ -17,6 +17,9 @@ const STATUS_LABELS: Record<string, string> = {
   AGUARDANDO_EXECUCAO: 'Execução Orçamentária',
   CONCLUIDA: 'Concluída',
   REPROVADA: 'Reprovada',
+  AGUARDANDO_SECRETARIO: 'Aguardando Secretário',
+  DEVOLVIDO_SECRETARIO: 'Devolvido — Correção',
+  REPROVADO_SECRETARIO: 'Reprovado pelo Secretário',
 }
 
 const STATUS_CORES: Record<string, string> = {
@@ -26,9 +29,13 @@ const STATUS_CORES: Record<string, string> = {
   AGUARDANDO_EXECUCAO: 'bg-purple-100 text-purple-700',
   CONCLUIDA: 'bg-green-100 text-green-700',
   REPROVADA: 'bg-red-100 text-red-700',
+  AGUARDANDO_SECRETARIO: 'bg-violet-100 text-violet-700',
+  DEVOLVIDO_SECRETARIO: 'bg-amber-100 text-amber-700',
+  REPROVADO_SECRETARIO: 'bg-red-100 text-red-700',
 }
 
 import { SolicitacaoFormClient } from '@/components/SolicitacaoFormClient'
+import { SecretarioAprovacaoClient } from '@/components/SecretarioAprovacaoClient'
 
 export default async function DetalheSolicitacaoPage({
   params,
@@ -45,7 +52,7 @@ export default async function DetalheSolicitacaoPage({
   const sol = await prisma.solicitacao.findUnique({
     where: { id },
     include: {
-      user: { select: { name: true, email: true } },
+      user: { select: { name: true, email: true, secretariaId: true } },
       steps: { orderBy: { createdAt: 'asc' } },
       anexos: { orderBy: { createdAt: 'asc' } },
       prestacao: { include: { anexos: true } },
@@ -78,11 +85,21 @@ export default async function DetalheSolicitacaoPage({
   // DEMANDANTE só pode ver suas próprias solicitações
   if (role === 'DEMANDANTE' && sol.userId !== userId) notFound()
 
+  if (role === 'SECRETARIO') {
+    const sessionUser = session.user as { id: string; role: string; secretariaId?: string }
+    if (sol.user.secretariaId !== sessionUser.secretariaId) notFound()
+  }
+
+  const ultimoStepDevolvido = sol.steps
+    .filter(s => s.etapa === 'SECRETARIO' && s.decisao === 'DEVOLVIDO')
+    .at(-1)
+  const devolucaoMotivo = ultimoStepDevolvido?.observacao ?? undefined
+
   // DEMANDANTE em RASCUNHO — formulário de edição
   if (sol.status === 'RASCUNHO' && (role === 'DEMANDANTE' || role === 'ADMIN')) {
     return (
       <div className="p-8">
-        <SolicitacaoFormClient 
+        <SolicitacaoFormClient
           userName={session.user.name ?? ''}
           initialData={{
             id: sol.id,
@@ -102,8 +119,36 @@ export default async function DetalheSolicitacaoPage({
             indicacaoVoo: sol.indicacaoVoo ?? '',
             indicacaoHospedagem: sol.indicacaoHospedagem ?? '',
           }}
+          solicitacaoStatus={sol.status}
+          devolucaoMotivo={devolucaoMotivo}
         />
       </div>
+    )
+  }
+
+  // SECRETARIO aprovação — layout dedicado (ADMIN também acessa)
+  if ((role === 'SECRETARIO' || role === 'ADMIN') && sol.status === 'AGUARDANDO_SECRETARIO') {
+    return (
+      <SecretarioAprovacaoClient
+        solicitacao={{
+          id: sol.id,
+          nomeCompleto: sol.nomeCompleto,
+          matricula: sol.matricula,
+          cpf: sol.cpf,
+          dataNascimento: sol.dataNascimento.toISOString().split('T')[0],
+          celular: sol.celular,
+          emailServidor: sol.emailServidor,
+          justificativaPublica: sol.justificativaPublica ?? '',
+          nexoCargo: sol.nexoCargo ?? '',
+          destino: sol.destino,
+          dataIda: sol.dataIda.toISOString().split('T')[0],
+          dataVolta: sol.dataVolta.toISOString().split('T')[0],
+          justificativaLocal: sol.justificativaLocal,
+          fichaOrcamentaria: sol.fichaOrcamentaria,
+          indicacaoVoo: sol.indicacaoVoo ?? '',
+          indicacaoHospedagem: sol.indicacaoHospedagem ?? '',
+        }}
+      />
     )
   }
 
