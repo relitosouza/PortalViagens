@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import fs from 'fs'
 import path from 'path'
 import UsuariosSection from './components/UsuariosSection'
+import SecretariasSection from './components/SecretariasSection'
 import ParametrosSection from './components/ParametrosSection'
 import BloqueiosSection from './components/BloqueiosSection'
 
@@ -63,7 +64,7 @@ const ETAPA_LABELS: Record<string, string> = {
 export default async function AdminPage() {
   // ... (data fetching stays same)
   const [usuarios, cpfsBloqueados, prestacoesPendentes, parametros, workflowSteps, totalSolicitacoes] = await Promise.all([
-    prisma.user.findMany({ orderBy: { createdAt: 'desc' }, select: { id: true, name: true, email: true, role: true, cpfBloqueado: true, ativo: true, createdAt: true } }),
+    prisma.user.findMany({ orderBy: { createdAt: 'desc' }, select: { id: true, name: true, email: true, role: true, cpfBloqueado: true, ativo: true, createdAt: true, secretariaId: true } }),
     prisma.user.findMany({ where: { cpfBloqueado: true }, select: { id: true, name: true, email: true, role: true } }),
     prisma.prestacao.findMany({
       where: { enviadoEm: null, prazoFinal: { lt: new Date() } },
@@ -150,6 +151,11 @@ export default async function AdminPage() {
             </div>
           </div>
           <UsuariosSection usuarios={usuarios} />
+        </section>
+
+        {/* Secretarias Management */}
+        <section id="secretarias">
+          <SecretariasSection />
         </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

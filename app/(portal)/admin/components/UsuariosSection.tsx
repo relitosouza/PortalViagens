@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 type Usuario = {
   id: string
   name: string
   email: string
   role: string
+  secretariaId: string | null
   cpfBloqueado: boolean | null
   ativo: boolean | null
   createdAt: Date
@@ -18,6 +19,7 @@ const ROLE_BADGE: Record<string, string> = {
   SEGOV: 'bg-purple-100 text-purple-700',
   SF: 'bg-orange-100 text-orange-700',
   DEMANDANTE: 'bg-blue-100 text-blue-700',
+  SECRETARIO: 'bg-indigo-100 text-indigo-700',
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -26,6 +28,7 @@ const ROLE_LABELS: Record<string, string> = {
   SEGOV: 'SEGOV',
   SF: 'Secretaria de Finanças',
   DEMANDANTE: 'Demandante',
+  SECRETARIO: 'Secretário',
 }
 
 type ModalMode = 'criar' | 'editar' | null
@@ -34,20 +37,28 @@ export default function UsuariosSection({ usuarios: initial }: { usuarios: Usuar
   const [usuarios, setUsuarios] = useState<Usuario[]>(initial)
   const [modalMode, setModalMode] = useState<ModalMode>(null)
   const [editTarget, setEditTarget] = useState<Usuario | null>(null)
-  const [form, setForm] = useState({ name: '', email: '', role: 'DEMANDANTE', password: '' })
+  const [form, setForm] = useState({ name: '', email: '', role: 'DEMANDANTE', password: '', secretariaId: '' })
+  const [secretarias, setSecretarias] = useState<{ id: string, nome: string, ativo: boolean }[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
 
+  useEffect(() => {
+    fetch('/api/admin/secretarias')
+      .then(res => res.json())
+      .then(data => setSecretarias(Array.isArray(data) ? data : []))
+      .catch(console.error)
+  }, [])
+
   function openCriar() {
-    setForm({ name: '', email: '', role: 'DEMANDANTE', password: '' })
+    setForm({ name: '', email: '', role: 'DEMANDANTE', password: '', secretariaId: '' })
     setEditTarget(null)
     setModalMode('criar')
     setError('')
   }
 
   function openEditar(u: Usuario) {
-    setForm({ name: u.name, email: u.email, role: u.role, password: '' })
+    setForm({ name: u.name, email: u.email, role: u.role, password: '', secretariaId: u.secretariaId || '' })
     setEditTarget(u)
     setModalMode('editar')
     setError('')
@@ -78,7 +89,7 @@ export default function UsuariosSection({ usuarios: initial }: { usuarios: Usuar
         if (!res.ok) { const d = await res.json(); throw new Error(d.error) }
         setSuccessMsg('Usuário criado com sucesso.')
       } else if (modalMode === 'editar' && editTarget) {
-        const body: Record<string, unknown> = { name: form.name, role: form.role, email: form.email }
+        const body: Record<string, unknown> = { name: form.name, role: form.role, email: form.email, secretariaId: form.secretariaId || null }
         if (form.password) body.password = form.password
         const res = await fetch(`/api/admin/usuarios/${editTarget.id}`, {
           method: 'PUT',
@@ -247,11 +258,28 @@ export default function UsuariosSection({ usuarios: initial }: { usuarios: Usuar
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 >
                   <option value="DEMANDANTE">Demandante</option>
+                  <option value="SECRETARIO">Secretário</option>
                   <option value="SECOL">SECOL / DRP</option>
                   <option value="SEGOV">SEGOV</option>
                   <option value="SF">Secretaria de Finanças</option>
                   <option value="ADMIN">Administrador</option>
                 </select>
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-slate-700 block mb-1">Secretaria Vinculada</label>
+                <select
+                  value={form.secretariaId}
+                  onChange={e => setForm(f => ({ ...f, secretariaId: e.target.value }))}
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                >
+                  <option value="">Nenhuma / Não se aplica</option>
+                  {secretarias.filter(s => s.ativo !== false).map(s => (
+                    <option key={s.id} value={s.id}>{s.nome}</option>
+                  ))}
+                </select>
+                {(form.role === 'DEMANDANTE' || form.role === 'SECRETARIO') && !form.secretariaId && (
+                  <p className="text-[10px] text-orange-600 mt-1">Recomendado para este perfil</p>
+                )}
               </div>
               <div>
                 <label className="text-sm font-semibold text-slate-700 block mb-1">
