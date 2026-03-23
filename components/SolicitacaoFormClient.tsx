@@ -112,7 +112,7 @@ export function SolicitacaoFormClient({ initialData, userName, solicitacaoStatus
         body: JSON.stringify({ ...form, rascunho })
       })
       const text = await res.text()
-      let data: Record<string, any> = {}
+      let data: Record<string, unknown> = {}
       try { data = JSON.parse(text) } catch { /* ignore */ }
 
       if (!res.ok) {
@@ -130,7 +130,7 @@ export function SolicitacaoFormClient({ initialData, userName, solicitacaoStatus
         const uploadRes = await fetch('/api/upload', { method: 'POST', body: fd })
         if (!uploadRes.ok) {
           const upText = await uploadRes.text()
-          let upData: Record<string, any> = {}
+          let upData: Record<string, unknown> = {}
           try { upData = JSON.parse(upText) } catch {}
           setErro(typeof upData.error === 'string' ? upData.error : `Erro no envio de arquivos (${uploadRes.status})`)
           return
@@ -139,8 +139,8 @@ export function SolicitacaoFormClient({ initialData, userName, solicitacaoStatus
 
       router.push('/dashboard')
       router.refresh()
-    } catch (err: any) {
-      setErro('Erro de rede ou falha inesperada: ' + err.message)
+    } catch (err: unknown) {
+      setErro('Erro de rede ou falha inesperada: ' + (err instanceof Error ? err.message : String(err)))
     } finally {
       setSalvando(false)
       setEnviando(false)
