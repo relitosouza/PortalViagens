@@ -4,6 +4,7 @@ import path from 'path'
 import UsuariosSection from './components/UsuariosSection'
 import ParametrosSection from './components/ParametrosSection'
 import BloqueiosSection from './components/BloqueiosSection'
+import SecretariasSection from './components/SecretariasSection'
 
 type EmailLog = { id: string; para: string; assunto: string; corpo: string; timestamp: string; tipo: string }
 
@@ -62,6 +63,11 @@ const ETAPA_LABELS: Record<string, string> = {
 
 export default async function AdminPage() {
   // ... (data fetching stays same)
+  const secretarias = await prisma.secretaria.findMany({
+    orderBy: { nome: 'asc' },
+    include: { _count: { select: { users: { where: { ativo: true } } } } },
+  })
+
   const [usuarios, cpfsBloqueados, prestacoesPendentes, parametros, workflowSteps, totalSolicitacoes] = await Promise.all([
     prisma.user.findMany({ orderBy: { createdAt: 'desc' }, select: { id: true, name: true, email: true, role: true, cpfBloqueado: true, ativo: true, createdAt: true } }),
     prisma.user.findMany({ where: { cpfBloqueado: true }, select: { id: true, name: true, email: true, role: true } }),
@@ -149,8 +155,10 @@ export default async function AdminPage() {
               <span className="text-xs text-slate-400 font-medium">{totalUsuarios} registros</span>
             </div>
           </div>
-          <UsuariosSection usuarios={usuarios} />
+          <UsuariosSection usuarios={usuarios} secretarias={secretarias} />
         </section>
+
+        <SecretariasSection secretarias={secretarias} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Blocked CPFs Section */}

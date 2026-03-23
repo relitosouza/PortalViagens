@@ -10,7 +10,10 @@ type Usuario = {
   cpfBloqueado: boolean | null
   ativo: boolean | null
   createdAt: Date
+  secretariaId?: string | null
 }
+
+type Secretaria = { id: string; nome: string; ativo: boolean }
 
 const ROLE_BADGE: Record<string, string> = {
   ADMIN: 'bg-primary/10 text-primary',
@@ -18,6 +21,7 @@ const ROLE_BADGE: Record<string, string> = {
   SEGOV: 'bg-purple-100 text-purple-700',
   SF: 'bg-orange-100 text-orange-700',
   DEMANDANTE: 'bg-blue-100 text-blue-700',
+  SECRETARIO: 'bg-violet-100 text-violet-700',
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -26,28 +30,29 @@ const ROLE_LABELS: Record<string, string> = {
   SEGOV: 'SEGOV',
   SF: 'Secretaria de Finanças',
   DEMANDANTE: 'Demandante',
+  SECRETARIO: 'Secretario(a)',
 }
 
 type ModalMode = 'criar' | 'editar' | null
 
-export default function UsuariosSection({ usuarios: initial }: { usuarios: Usuario[] }) {
+export default function UsuariosSection({ usuarios: initial, secretarias }: { usuarios: Usuario[], secretarias: Secretaria[] }) {
   const [usuarios, setUsuarios] = useState<Usuario[]>(initial)
   const [modalMode, setModalMode] = useState<ModalMode>(null)
   const [editTarget, setEditTarget] = useState<Usuario | null>(null)
-  const [form, setForm] = useState({ name: '', email: '', role: 'DEMANDANTE', password: '' })
+  const [form, setForm] = useState({ name: '', email: '', role: 'DEMANDANTE', password: '', secretariaId: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
 
   function openCriar() {
-    setForm({ name: '', email: '', role: 'DEMANDANTE', password: '' })
+    setForm({ name: '', email: '', role: 'DEMANDANTE', password: '', secretariaId: '' })
     setEditTarget(null)
     setModalMode('criar')
     setError('')
   }
 
   function openEditar(u: Usuario) {
-    setForm({ name: u.name, email: u.email, role: u.role, password: '' })
+    setForm({ name: u.name, email: u.email, role: u.role, password: '', secretariaId: u.secretariaId ?? '' })
     setEditTarget(u)
     setModalMode('editar')
     setError('')
@@ -247,12 +252,29 @@ export default function UsuariosSection({ usuarios: initial }: { usuarios: Usuar
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 >
                   <option value="DEMANDANTE">Demandante</option>
+                  <option value="SECRETARIO">Secretario(a)</option>
                   <option value="SECOL">SECOL / DRP</option>
                   <option value="SEGOV">SEGOV</option>
                   <option value="SF">Secretaria de Finanças</option>
                   <option value="ADMIN">Administrador</option>
                 </select>
               </div>
+              {(['DEMANDANTE', 'SECRETARIO'].includes(form.role)) && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">Secretaria <span className="text-red-500">*</span></label>
+                  <select
+                    className="w-full rounded-lg border border-slate-300 bg-slate-50 px-4 h-10 text-sm"
+                    value={form.secretariaId}
+                    onChange={e => setForm(f => ({ ...f, secretariaId: e.target.value }))}
+                    required
+                  >
+                    <option value="">Selecione...</option>
+                    {secretarias.filter(s => s.ativo).map(s => (
+                      <option key={s.id} value={s.id}>{s.nome}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="text-sm font-semibold text-slate-700 block mb-1">
                   {modalMode === 'criar' ? 'Senha temporária' : 'Nova senha (deixe em branco para manter)'}
