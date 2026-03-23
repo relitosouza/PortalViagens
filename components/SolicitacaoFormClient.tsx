@@ -17,9 +17,11 @@ type FormData = {
 type Props = {
   initialData?: FormData
   userName: string
+  solicitacaoStatus?: string
+  devolucaoMotivo?: string
 }
 
-export function SolicitacaoFormClient({ initialData, userName }: Props) {
+export function SolicitacaoFormClient({ initialData, userName, solicitacaoStatus, devolucaoMotivo }: Props) {
   const router = useRouter()
   const [erro, setErro] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -79,10 +81,7 @@ export function SolicitacaoFormClient({ initialData, userName }: Props) {
       setErro('Preencha todos os campos obrigatórios na seção "Dados do Servidor"')
       return false
     }
-    if (!form.justificativaPublica || !form.nexoCargo) {
-      setErro('Preencha todos os campos obrigatórios na seção "Detalhes da Missão"')
-      return false
-    }
+
     if (!form.destino || !form.dataIda || !form.dataVolta || !form.justificativaLocal || !form.fichaOrcamentaria) {
       setErro('Preencha todos os campos obrigatórios na seção "Logística"')
       return false
@@ -165,6 +164,25 @@ export function SolicitacaoFormClient({ initialData, userName }: Props) {
         </div>
       </header>
 
+      {/* DEVOLVIDO banner */}
+      {solicitacaoStatus === 'DEVOLVIDO_SECRETARIO' && devolucaoMotivo && (
+        <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 flex items-start gap-3">
+          <span className="material-symbols-outlined text-amber-600 mt-0.5">warning</span>
+          <div>
+            <p className="font-bold text-amber-900 text-sm">Devolvido para correção pelo Secretário</p>
+            <p className="text-amber-700 text-sm mt-1">{devolucaoMotivo}</p>
+          </div>
+        </div>
+      )}
+
+      {/* REPROVADO banner */}
+      {solicitacaoStatus === 'REPROVADO_SECRETARIO' && (
+        <div className="bg-red-50 border border-red-300 rounded-xl p-4 flex items-center gap-3">
+          <span className="material-symbols-outlined text-red-600">cancel</span>
+          <p className="font-bold text-red-900 text-sm">Esta solicitação foi reprovada pelo Secretário.</p>
+        </div>
+      )}
+
       {/* Importação via Excel */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <a
@@ -237,18 +255,35 @@ export function SolicitacaoFormClient({ initialData, userName }: Props) {
         <section>
           <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-3">
             <span className="material-symbols-outlined text-blue-600">assignment</span>
-            <h2 className="text-slate-900 text-lg font-bold">2. Detalhes da Missão</h2>
+            <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
+              2. Detalhes da Missão
+              <span className="text-[10px] font-black uppercase tracking-widest bg-violet-100 text-violet-700 px-2 py-0.5 rounded">
+                Preenchimento do Secretário
+              </span>
+            </h3>
           </div>
           <div className="space-y-6">
             <div>
               <label className={labelCls}>Justificativa do Interesse Público</label>
-              <textarea className={textareaCls} rows={4} value={form.justificativaPublica} onChange={update('justificativaPublica')}
-                placeholder="Descreva os benefícios da viagem para o município de Osasco..." />
+              <textarea
+                disabled
+                className={`${textareaCls} disabled:opacity-50 disabled:cursor-not-allowed`}
+                rows={4}
+                value={form.justificativaPublica}
+                onChange={update('justificativaPublica')}
+                placeholder="Descreva os benefícios da viagem para o município de Osasco..."
+              />
             </div>
             <div>
               <label className={labelCls}>Nexo com as Atribuições do Cargo</label>
-              <textarea className={textareaCls} rows={3} value={form.nexoCargo} onChange={update('nexoCargo')}
-                placeholder="Explique como este evento se relaciona com suas funções atuais..." />
+              <textarea
+                disabled
+                className={`${textareaCls} disabled:opacity-50 disabled:cursor-not-allowed`}
+                rows={3}
+                value={form.nexoCargo}
+                onChange={update('nexoCargo')}
+                placeholder="Explique como este evento se relaciona com suas funções atuais..."
+              />
             </div>
           </div>
         </section>
@@ -354,10 +389,10 @@ export function SolicitacaoFormClient({ initialData, userName }: Props) {
           <button
             type="button"
             onClick={() => enviar(false)}
-            disabled={enviando || salvando || importing}
+            disabled={enviando || salvando || importing || solicitacaoStatus === 'REPROVADO_SECRETARIO'}
             className="w-full md:w-auto px-10 py-2.5 rounded-lg bg-blue-600 text-white font-bold hover:shadow-lg hover:shadow-blue-600/30 hover:bg-blue-700 transition-all disabled:opacity-50 text-sm"
           >
-            {enviando ? 'Enviando...' : 'Enviar Solicitação'}
+            {enviando ? 'Enviando...' : solicitacaoStatus === 'DEVOLVIDO_SECRETARIO' ? 'Resubmeter para o Secretário' : 'Enviar Solicitação'}
           </button>
         </div>
       </div>
