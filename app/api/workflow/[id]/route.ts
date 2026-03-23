@@ -20,6 +20,11 @@ const TRANSICOES: Record<string, {
   proximoStatus: string
   rolePermitido: string
 }[]> = {
+  AGUARDANDO_SECRETARIO: [
+    { etapa: 'SECRETARIO', decisao: 'APROVADO', proximoStatus: 'AGUARDANDO_COTACAO', rolePermitido: 'SECRETARIO' },
+    { etapa: 'SECRETARIO', decisao: 'AJUSTE_DEMANDANTE', proximoStatus: 'DEVOLVIDO_SECRETARIO', rolePermitido: 'SECRETARIO' },
+    { etapa: 'SECRETARIO', decisao: 'REPROVADO', proximoStatus: 'REPROVADA', rolePermitido: 'SECRETARIO' },
+  ],
   AGUARDANDO_COTACAO: [
     { etapa: 'COTACAO', decisao: 'APROVADO', proximoStatus: 'AGUARDANDO_VIABILIDADE', rolePermitido: 'SECOL' },
   ],

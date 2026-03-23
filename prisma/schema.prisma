@@ -53,6 +53,8 @@ model Solicitacao {
   updatedAt            DateTime       @updatedAt
   userId               String
   user                 User           @relation(fields: [userId], references: [id])
+  secretariaId         String?
+  secretaria           Secretaria?    @relation(fields: [secretariaId], references: [id])
   anexos               Anexo[]
   steps                WorkflowStep[]
   prestacao            Prestacao?

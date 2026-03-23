@@ -16,13 +16,12 @@ export async function PATCH(
   const sol = await prisma.solicitacao.findUnique({ where: { id } })
   if (!sol) return NextResponse.json({ error: 'Não encontrada' }, { status: 404 })
 
-  // Apenas o dono ou ADMIN podem editar em RASCUNHO
-  if (user.role !== 'ADMIN' && sol.userId !== user.id) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
-  }
+  // Regras de Autenticação/Autorização baseadas em Status e Role
+  const canEditAsDemandante = (sol.status === 'RASCUNHO' || sol.status === 'DEVOLVIDO_SECRETARIO') && (user.id === sol.userId || user.role === 'ADMIN')
+  const canEditAsSecretario = sol.status === 'AGUARDANDO_SECRETARIO' && (user.role === 'SECRETARIO' || user.role === 'ADMIN')
 
-  if (sol.status !== 'RASCUNHO' && user.role !== 'ADMIN') {
-    return NextResponse.json({ error: 'Solicitação não está em rascunho' }, { status: 403 })
+  if (!canEditAsDemandante && !canEditAsSecretario) {
+    return NextResponse.json({ error: 'Você não tem permissão para editar esta solicitação no status atual.' }, { status: 403 })
   }
 
   const body = await req.json()
@@ -57,9 +56,25 @@ export async function PATCH(
       fichaOrcamentaria: body.fichaOrcamentaria,
       indicacaoVoo: body.indicacaoVoo ?? null,
       indicacaoHospedagem: body.indicacaoHospedagem ?? null,
-      status: isRascunho ? 'RASCUNHO' : 'AGUARDANDO_COTACAO',
+      status: isRascunho 
+        ? sol.status === 'DEVOLVIDO_SECRETARIO' ? 'DEVOLVIDO_SECRETARIO' : 'RASCUNHO'
+        : canEditAsSecretario ? 'AGUARDANDO_COTACAO' : 'AGUARDANDO_SECRETARIO',
     }
   })
+
+  // Se o Secretário aprovou (não é rascunho e ele tem permissão de secretário), registra o passo do workflow
+  if (!isRascunho && canEditAsSecretario) {
+    await prisma.workflowStep.create({
+      data: {
+        solicitacaoId: id,
+        etapa: 'SECRETARIO',
+        atorRole: user.role,
+        atorNome: session.user.name || user.role,
+        decisao: 'APROVADO',
+        observacao: 'Aprovado e Justificado pelo Secretário.'
+      }
+    })
+  }
 
   return NextResponse.json(updated)
 }

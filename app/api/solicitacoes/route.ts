@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       fichaOrcamentaria: body.fichaOrcamentaria,
       indicacaoVoo: body.indicacaoVoo ?? null,
       indicacaoHospedagem: body.indicacaoHospedagem ?? null,
-      status: isRascunho ? 'RASCUNHO' : 'AGUARDANDO_COTACAO',
+      status: isRascunho ? 'RASCUNHO' : 'AGUARDANDO_SECRETARIO',
       userId: user.id,
     },
     include: { user: true },

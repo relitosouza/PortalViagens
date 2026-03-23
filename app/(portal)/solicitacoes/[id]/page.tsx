@@ -11,8 +11,10 @@ import Link from 'next/link'
 
 const STATUS_LABELS: Record<string, string> = {
   RASCUNHO: 'Rascunho',
-  AGUARDANDO_COTACAO: 'Aguardando Cotação',
-  AGUARDANDO_VIABILIDADE: 'Análise de Viabilidade',
+  AGUARDANDO_SECRETARIO: 'Aguardando Validação do Secretário',
+  DEVOLVIDO_SECRETARIO: 'Devolvido pelo Secretário',
+  AGUARDANDO_COTACAO: 'Aguardando Cotação (SECOL)',
+  AGUARDANDO_VIABILIDADE: 'Análise de Viabilidade (SEGOV)',
   AGUARDANDO_EMISSAO: 'Aguardando Emissão OS',
   AGUARDANDO_EXECUCAO: 'Execução Orçamentária',
   CONCLUIDA: 'Concluída',
@@ -20,6 +22,8 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const STATUS_CORES: Record<string, string> = {
+  AGUARDANDO_SECRETARIO: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+  DEVOLVIDO_SECRETARIO: 'bg-amber-100 text-amber-700 border-amber-200',
   AGUARDANDO_COTACAO: 'bg-yellow-100 text-yellow-700',
   AGUARDANDO_VIABILIDADE: 'bg-orange-100 text-orange-700',
   AGUARDANDO_EMISSAO: 'bg-blue-100 text-blue-700',
@@ -78,12 +82,18 @@ export default async function DetalheSolicitacaoPage({
   // DEMANDANTE só pode ver suas próprias solicitações
   if (role === 'DEMANDANTE' && sol.userId !== userId) notFound()
 
-  // DEMANDANTE em RASCUNHO — formulário de edição
-  if (sol.status === 'RASCUNHO' && (role === 'DEMANDANTE' || role === 'ADMIN')) {
+  // DEMANDANTE ou SECRETARIO em fluxos de edição/aprovação
+  if (
+    (sol.status === 'RASCUNHO' && (role === 'DEMANDANTE' || role === 'ADMIN')) ||
+    (sol.status === 'DEVOLVIDO_SECRETARIO' && (role === 'DEMANDANTE' || role === 'ADMIN')) ||
+    (sol.status === 'AGUARDANDO_SECRETARIO' && (role === 'SECRETARIO' || role === 'ADMIN'))
+  ) {
     return (
       <div className="p-8">
         <SolicitacaoFormClient 
           userName={session.user.name ?? ''}
+          userRole={role}
+          status={sol.status}
           initialData={{
             id: sol.id,
             nomeCompleto: sol.nomeCompleto,
