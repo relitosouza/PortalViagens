@@ -11,9 +11,9 @@ import Link from 'next/link'
 
 const STATUS_LABELS: Record<string, string> = {
   RASCUNHO: 'Rascunho',
-  AGUARDANDO_SECRETARIO: 'Aguardando Validação do Secretário',
+  AGUARDANDO_APROVACAO_PASTA: 'Gabinete do Secretário',
   DEVOLVIDO_SECRETARIO: 'Devolvido pelo Secretário',
-  AGUARDANDO_COTACAO: 'Aguardando Cotação (SECOL)',
+  EM_COTACAO: 'Aguardando Cotação (SECOL)',
   AGUARDANDO_VIABILIDADE: 'Análise de Viabilidade (SEGOV)',
   AGUARDANDO_EMISSAO: 'Aguardando Emissão OS',
   AGUARDANDO_EXECUCAO: 'Execução Orçamentária',
@@ -22,9 +22,9 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const STATUS_CORES: Record<string, string> = {
-  AGUARDANDO_SECRETARIO: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+  AGUARDANDO_APROVACAO_PASTA: 'bg-indigo-100 text-indigo-700 border-indigo-200',
   DEVOLVIDO_SECRETARIO: 'bg-amber-100 text-amber-700 border-amber-200',
-  AGUARDANDO_COTACAO: 'bg-yellow-100 text-yellow-700',
+  EM_COTACAO: 'bg-yellow-100 text-yellow-700',
   AGUARDANDO_VIABILIDADE: 'bg-orange-100 text-orange-700',
   AGUARDANDO_EMISSAO: 'bg-blue-100 text-blue-700',
   AGUARDANDO_EXECUCAO: 'bg-purple-100 text-purple-700',
@@ -86,7 +86,7 @@ export default async function DetalheSolicitacaoPage({
   if (
     (sol.status === 'RASCUNHO' && (role === 'DEMANDANTE' || role === 'ADMIN')) ||
     (sol.status === 'DEVOLVIDO_SECRETARIO' && (role === 'DEMANDANTE' || role === 'ADMIN')) ||
-    (sol.status === 'AGUARDANDO_SECRETARIO' && (role === 'SECRETARIO' || role === 'ADMIN'))
+    (sol.status === 'AGUARDANDO_APROVACAO_PASTA' && (role === 'SECRETARIO' || role === 'ADMIN'))
   ) {
     return (
       <div className="p-8">
@@ -199,7 +199,7 @@ export default async function DetalheSolicitacaoPage({
   }
 
   // SECOL cotação — layout dedicado (ADMIN também acessa)
-  if ((role === 'SECOL' || role === 'ADMIN') && sol.status === 'AGUARDANDO_COTACAO') {
+  if ((role === 'SECOL' || role === 'ADMIN') && sol.status === 'EM_COTACAO') {
     const cotacaoAnterior = sol.steps.find(s => s.etapa === 'COTACAO')
     return (
       <SecolCotacaoClient

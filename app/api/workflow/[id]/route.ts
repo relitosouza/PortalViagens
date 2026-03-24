@@ -20,18 +20,18 @@ const TRANSICOES: Record<string, {
   proximoStatus: string
   rolePermitido: string
 }[]> = {
-  AGUARDANDO_SECRETARIO: [
-    { etapa: 'SECRETARIO', decisao: 'APROVADO', proximoStatus: 'AGUARDANDO_COTACAO', rolePermitido: 'SECRETARIO' },
+  AGUARDANDO_APROVACAO_PASTA: [
+    { etapa: 'SECRETARIO', decisao: 'APROVADO', proximoStatus: 'EM_COTACAO', rolePermitido: 'SECRETARIO' },
     { etapa: 'SECRETARIO', decisao: 'AJUSTE_DEMANDANTE', proximoStatus: 'DEVOLVIDO_SECRETARIO', rolePermitido: 'SECRETARIO' },
     { etapa: 'SECRETARIO', decisao: 'REPROVADO', proximoStatus: 'REPROVADA', rolePermitido: 'SECRETARIO' },
   ],
-  AGUARDANDO_COTACAO: [
+  EM_COTACAO: [
     { etapa: 'COTACAO', decisao: 'APROVADO', proximoStatus: 'AGUARDANDO_VIABILIDADE', rolePermitido: 'SECOL' },
   ],
   AGUARDANDO_VIABILIDADE: [
     { etapa: 'VIABILIDADE', decisao: 'APROVADO', proximoStatus: 'AGUARDANDO_EMISSAO', rolePermitido: 'SEGOV' },
     { etapa: 'VIABILIDADE', decisao: 'REPROVADO', proximoStatus: 'REPROVADA', rolePermitido: 'SEGOV' },
-    { etapa: 'VIABILIDADE', decisao: 'AJUSTE_SECOL', proximoStatus: 'AGUARDANDO_COTACAO', rolePermitido: 'SEGOV' },
+    { etapa: 'VIABILIDADE', decisao: 'AJUSTE_SECOL', proximoStatus: 'EM_COTACAO', rolePermitido: 'SEGOV' },
     { etapa: 'VIABILIDADE', decisao: 'AJUSTE_DEMANDANTE', proximoStatus: 'RASCUNHO', rolePermitido: 'SEGOV' },
   ],
   AGUARDANDO_EMISSAO: [

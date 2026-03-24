@@ -98,9 +98,10 @@ model Anexo {
 }
 
 model Secretaria {
-  id        String   @id @default(cuid())
-  nome      String   @unique
-  ativo     Boolean  @default(true)
-  createdAt DateTime @default(now())
-  users     User[]
+  id           String        @id @default(cuid())
+  nome         String        @unique
+  ativo        Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  users        User[]
+  solicitacoes Solicitacao[]
 }

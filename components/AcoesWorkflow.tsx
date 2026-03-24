@@ -11,7 +11,7 @@ type Acao = {
 
 // Ações disponíveis por status + role
 const ACOES_MAP: Record<string, Record<string, Acao[]>> = {
-  AGUARDANDO_COTACAO: {
+  EM_COTACAO: {
     SECOL: [{
       label: 'Confirmar Cotação e Avançar',
       decisao: 'APROVADO',

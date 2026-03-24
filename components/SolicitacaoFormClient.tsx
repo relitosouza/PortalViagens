@@ -83,7 +83,7 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
     }
     
     // Na etapa do secretário, estes campos são obrigatórios
-    if (status === 'AGUARDANDO_SECRETARIO' && (userRole === 'SECRETARIO' || userRole === 'ADMIN')) {
+    if (status === 'AGUARDANDO_APROVACAO_PASTA' && (userRole === 'SECRETARIO' || userRole === 'ADMIN')) {
       if (!form.justificativaPublica || !form.nexoCargo) {
         setErro('Atenção: Para prosseguir com a aprovação, é obrigatório preencher a Justificativa de Interesse Público e o Nexo com as Atribuições do Cargo.')
         return false
@@ -185,10 +185,10 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
             {form.id ? 'Editar Solicitação' : 'Requisição de Viagem'}
           </h2>
           <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest ${form.id ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-            {status === 'AGUARDANDO_SECRETARIO' ? 'Gabinete do Secretário' : form.id ? 'Ajustes no Processo' : 'Novo Processo'}
+            {status === 'AGUARDANDO_APROVACAO_PASTA' ? 'Gabinete do Secretário' : form.id ? 'Ajustes no Processo' : 'Novo Processo'}
           </span>
         </div>
-        {status === 'AGUARDANDO_SECRETARIO' && (
+        {status === 'AGUARDANDO_APROVACAO_PASTA' && (
           <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-4 py-2 flex items-center gap-2">
             <span className="material-symbols-outlined text-indigo-600 text-sm">info</span>
             <span className="text-xs text-indigo-700 font-medium italic">"Sua solicitação foi encaminhada para o Gabinete do Secretário para preenchimento dos detalhes da missão e aprovação de mérito."</span>
@@ -281,10 +281,10 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
                 rows={4} 
                 value={form.justificativaPublica} 
                 onChange={update('justificativaPublica')}
-                disabled={!(userRole === 'SECRETARIO' || userRole === 'ADMIN') || status !== 'AGUARDANDO_SECRETARIO'}
-                placeholder={status === 'AGUARDANDO_SECRETARIO' ? "Preencha a justificativa de mérito público para o município..." : "A ser preenchido pelo Secretário..."} 
+                disabled={!(userRole === 'SECRETARIO' || userRole === 'ADMIN') || status !== 'AGUARDANDO_APROVACAO_PASTA'}
+                placeholder={status === 'AGUARDANDO_APROVACAO_PASTA' ? "Preencha a justificativa de mérito público para o município..." : "A ser preenchido pelo Secretário..."} 
               />
-              {status === 'AGUARDANDO_SECRETARIO' && userRole === 'DEMANDANTE' && (
+              {status === 'AGUARDANDO_APROVACAO_PASTA' && userRole === 'DEMANDANTE' && (
                 <p className="text-[10px] text-indigo-600 mt-1 italic font-medium">Aguardando preenchimento do Secretário</p>
               )}
             </div>
@@ -298,8 +298,8 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
                 rows={3} 
                 value={form.nexoCargo} 
                 onChange={update('nexoCargo')}
-                disabled={!(userRole === 'SECRETARIO' || userRole === 'ADMIN') || status !== 'AGUARDANDO_SECRETARIO'}
-                placeholder={status === 'AGUARDANDO_SECRETARIO' ? "Explique como o evento se relaciona com o cargo..." : "A ser preenchido pelo Secretário..."} 
+                disabled={!(userRole === 'SECRETARIO' || userRole === 'ADMIN') || status !== 'AGUARDANDO_APROVACAO_PASTA'}
+                placeholder={status === 'AGUARDANDO_APROVACAO_PASTA' ? "Explique como o evento se relaciona com o cargo..." : "A ser preenchido pelo Secretário..."} 
               />
             </div>
           </div>
@@ -403,7 +403,7 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
           >
             {salvando ? 'Salvando...' : 'Salvar Rascunho'}
           </button>
-          {status === 'AGUARDANDO_SECRETARIO' && (userRole === 'SECRETARIO' || userRole === 'ADMIN') && (
+          {status === 'AGUARDANDO_APROVACAO_PASTA' && (userRole === 'SECRETARIO' || userRole === 'ADMIN') && (
             <button
               type="button"
               onClick={devolverParaAjuste}
@@ -419,7 +419,7 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
             disabled={enviando || salvando || importing}
             className="w-full md:w-auto px-10 py-2.5 rounded-lg bg-blue-600 text-white font-bold hover:shadow-lg hover:shadow-blue-600/30 hover:bg-blue-700 transition-all disabled:opacity-50 text-sm"
           >
-            {enviando ? 'Processando...' : status === 'AGUARDANDO_SECRETARIO' ? 'Aprovar e Seguir' : status === 'DEVOLVIDO_SECRETARIO' ? 'Resubmeter Solicitação' : 'Enviar Solicitação'}
+            {enviando ? 'Processando...' : status === 'AGUARDANDO_APROVACAO_PASTA' ? 'Aprovar e Seguir' : status === 'DEVOLVIDO_SECRETARIO' ? 'Resubmeter Solicitação' : 'Enviar Solicitação'}
           </button>
         </div>
       </div>

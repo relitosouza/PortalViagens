@@ -18,7 +18,7 @@ export async function PATCH(
 
   // Regras de Autenticação/Autorização baseadas em Status e Role
   const canEditAsDemandante = (sol.status === 'RASCUNHO' || sol.status === 'DEVOLVIDO_SECRETARIO') && (user.id === sol.userId || user.role === 'ADMIN')
-  const canEditAsSecretario = sol.status === 'AGUARDANDO_SECRETARIO' && (user.role === 'SECRETARIO' || user.role === 'ADMIN')
+  const canEditAsSecretario = sol.status === 'AGUARDANDO_APROVACAO_PASTA' && (user.role === 'SECRETARIO' || user.role === 'ADMIN')
 
   if (!canEditAsDemandante && !canEditAsSecretario) {
     return NextResponse.json({ error: 'Você não tem permissão para editar esta solicitação no status atual.' }, { status: 403 })
@@ -58,7 +58,7 @@ export async function PATCH(
       indicacaoHospedagem: body.indicacaoHospedagem ?? null,
       status: isRascunho 
         ? sol.status === 'DEVOLVIDO_SECRETARIO' ? 'DEVOLVIDO_SECRETARIO' : 'RASCUNHO'
-        : canEditAsSecretario ? 'AGUARDANDO_COTACAO' : 'AGUARDANDO_SECRETARIO',
+        : canEditAsSecretario ? 'EM_COTACAO' : 'AGUARDANDO_APROVACAO_PASTA',
     }
   })
 
