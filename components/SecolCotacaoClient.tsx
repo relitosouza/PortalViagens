@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { parseCurrency } from '@/lib/utils/budget-utils'
 import BudgetTetoInfo from './BudgetTetoInfo'
+import PdfQuoteImport from './PdfQuoteImport'
 
 type OpcaoVoo = {
   id: number
@@ -61,6 +62,7 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
   const [voos, setVoos] = useState<OpcaoVoo[]>([])
   const [hoteis, setHoteis] = useState<OpcaoHotel[]>([])
   const [addingVoo, setAddingVoo] = useState(false)
+  const [showPdfImport, setShowPdfImport] = useState(false)
   const [addingHotel, setAddingHotel] = useState(false)
   const [novoVoo, setNovoVoo] = useState({ ...EMPTY_VOO })
   const [novoHotel, setNovoHotel] = useState({ ...EMPTY_HOTEL })
@@ -263,9 +265,18 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
 
   return (
     <div className="p-8">
-
-
-        {/* Breadcrumb & Header */}
+      {showPdfImport && (
+        <PdfQuoteImport
+          onClose={() => setShowPdfImport(false)}
+          onImport={(selecionados) => {
+            setVoos(v => [
+              ...v,
+              ...selecionados.map((item, idx) => ({ ...item, id: Date.now() + idx }))
+            ])
+            setShowPdfImport(false)
+          }}
+        />
+      )}
         <div className="mb-8">
           <div className="flex flex-wrap gap-2 text-sm text-slate-500 mb-4">
             <Link href="/dashboard" className="hover:text-blue-600">Painel</Link>
@@ -417,13 +428,22 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
                   <span className="material-symbols-outlined text-blue-600">flight_takeoff</span>
                   <h3 className="font-bold text-lg">Opções de Voos</h3>
                 </div>
-                <button
-                  onClick={() => setAddingVoo(v => !v)}
-                  className="text-sm font-bold text-blue-600 flex items-center gap-1 hover:underline"
-                >
-                  <span className="material-symbols-outlined text-sm">add_circle</span>
-                  Adicionar Opção
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setShowPdfImport(true)}
+                    className="text-sm font-bold text-slate-600 flex items-center gap-1 hover:text-blue-600 transition-colors bg-white px-3 py-1.5 rounded-lg border border-slate-200 hover:border-blue-300 shadow-sm"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">upload_file</span>
+                    Importar de PDF
+                  </button>
+                  <button
+                    onClick={() => setAddingVoo(v => !v)}
+                    className="text-sm font-bold text-blue-600 flex items-center gap-1 hover:underline bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">add_circle</span>
+                    Manual
+                  </button>
+                </div>
               </div>
 
               {addingVoo && (
