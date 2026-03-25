@@ -30,7 +30,25 @@ export async function POST(req: NextRequest) {
     });
     
     await parser.load();
-    const text = await parser.getText();
+    const textResult = await parser.getText();
+    
+    // getText() pode retornar string ou objeto com páginas dependendo do contexto
+    let text: string;
+    if (typeof textResult === 'string') {
+      text = textResult;
+    } else if (textResult && typeof textResult === 'object') {
+      // Tenta extrair o texto de um objeto de páginas
+      const asAny = textResult as any;
+      if (typeof asAny.text === 'string') {
+        text = asAny.text;
+      } else if (Array.isArray(asAny.pages)) {
+        text = asAny.pages.map((p: any) => p.text ?? p.content ?? '').join('\n');
+      } else {
+        text = JSON.stringify(textResult);
+      }
+    } else {
+      text = String(textResult ?? '');
+    }
     console.log(`>>> [PDF PARSER] Extracted ${text.length} characters`);
     
     const voosEncontrados: any[] = [];
