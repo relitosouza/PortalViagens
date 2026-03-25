@@ -22,16 +22,16 @@ export type VooParsed = {
   chegada: string
   duracao: string
   escalas: number
+  sentido: 'ida' | 'volta' // Novo campo
   tarifas: TarifaParsed[]
 }
 
 type Props = {
-  trecho: 'IDA' | 'VOLTA'
   onImport: (selecionados: any[]) => void
   onClose: () => void
 }
 
-export default function PdfQuoteImport({ trecho, onImport, onClose }: Props) {
+export default function PdfQuoteImport({ onImport, onClose }: Props) {
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [voos, setVoos] = useState<VooParsed[]>([])
@@ -88,13 +88,13 @@ export default function PdfQuoteImport({ trecho, onImport, onClose }: Props) {
         if (selecionados.has(t.id)) {
           toImport.push({
             companhia: `${voo.companhia} (${t.familia})`,
-            numeroVoo: `${voo.numeroVoo} [${trecho}]`,
+            numeroVoo: `${voo.numeroVoo} [${voo.sentido.toUpperCase()}]`,
             origem: voo.origem,
             destino: voo.destino,
             horario: `${voo.partida.split(' ')[1]} - ${voo.chegada.split(' ')[1]} (${voo.duracao})`,
             preco: t.valorTarifa,
             taxa: t.taxaEmbarque,
-            passag: t.passag, // Passando o novo campo
+            passag: t.passag,
             total: t.valorTotal
           })
         }
@@ -114,13 +114,8 @@ export default function PdfQuoteImport({ trecho, onImport, onClose }: Props) {
               <span className="material-symbols-outlined">document_scanner</span>
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-slate-800">Importação Inteligente</h2>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${trecho === 'IDA' ? 'bg-blue-600 text-white' : 'bg-orange-500 text-white'}`}>
-                  TRECHO: {trecho}
-                </span>
-              </div>
-              <p className="text-sm text-slate-500">Selecione os voos de {trecho.toLowerCase()} no PDF da agência</p>
+              <h2 className="text-xl font-bold text-slate-800">Importação Inteligente de Cotação</h2>
+              <p className="text-sm text-slate-500">Selecione os voos extraídos do PDF da agência</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-slate-400 hover:text-red-500 transition-colors rounded-lg hover:bg-slate-100">
@@ -199,98 +194,112 @@ export default function PdfQuoteImport({ trecho, onImport, onClose }: Props) {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 gap-6">
-                {voos.map(voo => (
-                  <div key={voo.id} className="bg-white border text-left border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                    {/* Infos Voo */}
-                    <div className="p-5 border-b border-slate-100 bg-slate-50 flex flex-wrap gap-y-4 items-center justify-between">
-                      <div className="flex items-center gap-4 min-w-[300px]">
-                        <div className="w-12 h-12 bg-white border border-slate-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <span className="material-symbols-outlined text-slate-400">flight</span>
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-black text-slate-900">{voo.companhia}</span>
-                            <span className="px-2 py-0.5 bg-slate-200 text-slate-600 text-xs font-bold rounded-full">
-                              {voo.numeroVoo}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-slate-600">
-                            <span className="font-bold">{voo.origem}</span>
-                            <span className="material-symbols-outlined text-[16px] text-blue-500">trending_flat</span>
-                            <span className="font-bold">{voo.destino}</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-8 text-sm">
-                        <div>
-                          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Horário</p>
-                          <p className="font-medium text-slate-800">{voo.partida.split(' ')[1]} - {voo.chegada.split(' ')[1]}</p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Duração</p>
-                          <p className="font-medium text-slate-800">{voo.duracao}</p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Escalas</p>
-                          <p className="font-medium text-slate-800">{voo.escalas} Paradas</p>
-                        </div>
-                      </div>
+              {[ { key: 'ida', label: '1. Selecione os Voos de IDA' }, { key: 'volta', label: '2. Selecione os Voos de VOLTA' } ].map(section => {
+                const filteredVoos = voos.filter(v => v.sentido === section.key);
+                if (filteredVoos.length === 0) return null;
+
+                return (
+                  <div key={section.key} className="space-y-4">
+                    <div className="flex items-center gap-3 py-2 border-b border-slate-200">
+                      <div className={`w-2 h-6 rounded-full ${section.key === 'ida' ? 'bg-blue-600' : 'bg-orange-500'}`}></div>
+                      <h3 className="font-black text-slate-800 uppercase tracking-tight">{section.label}</h3>
                     </div>
 
-                    {/* Tarifas */}
-                    <div className="p-0">
-                      <table className="w-full text-sm text-left">
-                        <thead className="text-xs text-slate-400 uppercase bg-slate-50 border-b border-slate-100">
-                          <tr>
-                            <th className="px-5 py-3 font-bold w-12"></th>
-                            <th className="px-5 py-3 font-bold">Tipo / Família</th>
-                            <th className="px-3 py-3 font-bold text-center">Bag.</th>
-                            <th className="px-3 py-3 font-bold text-right">Tarifa (R$)</th>
-                            <th className="px-3 py-3 font-bold text-right">Taxa (R$)</th>
-                            <th className="px-3 py-3 font-bold text-center">Passag.</th>
-                            <th className="px-3 py-3 font-bold text-right">Total (R$)</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {voo.tarifas.map(t => (
-                            <tr 
-                              key={t.id} 
-                              onClick={() => toggleSelect(t.id)}
-                              className={`cursor-pointer transition-colors hover:bg-slate-50 ${selecionados.has(t.id) ? 'bg-blue-50/50' : ''}`}
-                            >
-                              <td className="px-5 py-4">
-                                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${selecionados.has(t.id) ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300'}`}>
-                                  {selecionados.has(t.id) && <span className="material-symbols-outlined text-[14px] font-bold">check</span>}
+                    <div className="grid grid-cols-1 gap-6">
+                      {filteredVoos.map(voo => (
+                        <div key={voo.id} className="bg-white border text-left border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                          {/* Infos Voo */}
+                          <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-wrap gap-y-4 items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <span className="material-symbols-outlined text-slate-400">flight</span>
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-black text-slate-900">{voo.companhia}</span>
+                                  <span className="px-2 py-0.5 bg-white border border-slate-200 text-slate-600 text-[10px] font-bold rounded">
+                                    {voo.numeroVoo}
+                                  </span>
                                 </div>
-                              </td>
-                              <td className="px-5 py-4">
-                                <span className="font-bold text-slate-700 mr-2">{t.familia}</span>
-                                <span className="text-xs text-slate-500">{t.tipo}</span>
-                              </td>
-                              <td className="px-3 py-4 text-center">
-                                <div className="flex items-center justify-center gap-1 text-slate-600">
-                                  <span className="material-symbols-outlined text-[16px]">luggage</span>
-                                  <span>{t.bagagens}</span>
+                                <div className="flex items-center gap-2 text-sm text-slate-600">
+                                  <span className="font-bold">{voo.origem}</span>
+                                  <span className="material-symbols-outlined text-[14px] text-blue-500">trending_flat</span>
+                                  <span className="font-bold">{voo.destino}</span>
                                 </div>
-                              </td>
-                              <td className="px-3 py-4 text-right text-slate-600 font-mono">R$ {t.valorTarifa}</td>
-                              <td className="px-3 py-4 text-right text-slate-500 font-mono text-xs">R$ {t.taxaEmbarque}</td>
-                              <td className="px-3 py-4 text-center">
-                                <span className="bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full text-xs">
-                                  {t.passag}x
-                                </span>
-                              </td>
-                              <td className="px-3 py-4 font-black tracking-tight text-right text-blue-700 font-mono">R$ {t.valorTotal}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                              </div>
+                            </div>
+                            
+                            <div className="flex gap-6 text-xs">
+                              <div>
+                                <p className="text-slate-400 font-bold uppercase tracking-widest mb-0.5">Horário</p>
+                                <p className="font-medium text-slate-800">{voo.partida.split(' ')[1]} - {voo.chegada.split(' ')[1]}</p>
+                              </div>
+                              <div>
+                                <p className="text-slate-400 font-bold uppercase tracking-widest mb-0.5">Duração</p>
+                                <p className="font-medium text-slate-800">{voo.duracao}</p>
+                              </div>
+                              <div>
+                                <p className="text-slate-400 font-bold uppercase tracking-widest mb-0.5">Escalas</p>
+                                <p className="font-medium text-slate-800">{voo.escalas}</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Tarifas */}
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-[13px] text-left">
+                              <thead className="text-[10px] text-slate-400 uppercase bg-slate-50/80 border-b border-slate-100">
+                                <tr>
+                                  <th className="px-4 py-2 w-10"></th>
+                                  <th className="px-4 py-2 font-bold min-w-[140px]">Tipo / Família</th>
+                                  <th className="px-2 py-2 font-bold text-center w-14">Bag.</th>
+                                  <th className="px-3 py-2 font-bold text-right w-24">Tarifa (R$)</th>
+                                  <th className="px-3 py-2 font-bold text-right w-24">Taxa (R$)</th>
+                                  <th className="px-2 py-2 font-bold text-center w-14">Passag.</th>
+                                  <th className="px-4 py-2 font-bold text-right w-28">Total (R$)</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {voo.tarifas.map(t => (
+                                  <tr 
+                                    key={t.id} 
+                                    onClick={() => toggleSelect(t.id)}
+                                    className={`cursor-pointer transition-colors hover:bg-slate-50 ${selecionados.has(t.id) ? 'bg-blue-50/50' : ''}`}
+                                  >
+                                    <td className="px-4 py-3">
+                                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selecionados.has(t.id) ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300'}`}>
+                                        {selecionados.has(t.id) && <span className="material-symbols-outlined text-[12px] font-bold">check</span>}
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <span className="font-bold text-slate-700 block line-clamp-1">{t.familia}</span>
+                                      <span className="text-[10px] text-slate-500">{t.tipo}</span>
+                                    </td>
+                                    <td className="px-2 py-3 text-center">
+                                      <div className="flex items-center justify-center gap-0.5 text-slate-600">
+                                        <span className="material-symbols-outlined text-[14px]">luggage</span>
+                                        <span>{t.bagagens}</span>
+                                      </div>
+                                    </td>
+                                    <td className="px-3 py-3 text-right text-slate-600 font-mono">R$ {t.valorTarifa}</td>
+                                    <td className="px-3 py-3 text-right text-slate-500 font-mono text-[11px]">R$ {t.taxaEmbarque}</td>
+                                    <td className="px-2 py-3 text-center">
+                                      <span className="bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded text-[10px]">
+                                        {t.passag}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-3 font-black tracking-tight text-right text-blue-700 font-mono">R$ {t.valorTotal}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
+                )
+              })}
             </div>
           )}
         </div>

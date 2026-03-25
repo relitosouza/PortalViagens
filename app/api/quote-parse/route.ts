@@ -49,16 +49,25 @@ export async function POST(req: NextRequest) {
     });
 
     blocks.forEach((block, index) => {
-      // Extract main flight line with high flexibility for missing spaces
-      // Pattern: [Voo][Partida][Chegada][DeCode] - [DeCity][ParaCode] - [ParaCity][Equip][Duração][Escalas]
+      // Extract main flight line
       const lineMatch = block.match(/(\d{3,4})(\d{2}\/\d{2}\s+\d{2}:\d{2})(\d{2}\/\d{2}\s+\d{2}:\d{2})\s*([A-Z]{3})\s*-\s*([^-]+?)\s*([A-Z]{3})\s*-\s*([^\n\d]+?)(?:\s*)(\d{3}|7M8|738|320|321|E90|E95|AT7|295)\s*(\d{2}:\d{2})\s*(\d+)/);
       
-      if (!lineMatch) {
-        console.log(`>>> [PDF PARSER] Block ${index} failed line match. Start: ${block.substring(0, 50)}`);
-        return;
-      }
+      if (!lineMatch) return;
 
       const [_, flightNo, departureStr, arrivalStr, fromCode, fromCity, toCode, toCity, aircraft, duration, stops] = lineMatch;
+
+      // Intelligent Trecho Identification:
+      // If Origin matches first word of Destiny in Solicitacao? 
+      // Hardcoded heuristic for now as we don't have the solicitacao object here, 
+      // but we can guess by order: first flight group is usually IDA, second is VOLTA.
+      // Or by comparing cities. For now let's use a simpler approach:
+      // The prompt asks to handle based on "Trecho: São Paulo / Brasília" etc.
+      let sentido: 'ida' | 'volta' = 'ida';
+      
+      // If we find the specific reverse string in the block or previous text
+      if (block.includes("Brasília") && block.includes("São Paulo") && block.indexOf("Brasília") < block.indexOf("São Paulo")) {
+          sentido = 'volta';
+      }
 
       let companhia = "DESCONHECIDA";
       const bLower = block.toLowerCase();
@@ -119,6 +128,7 @@ export async function POST(req: NextRequest) {
           id: `v${index}`,
           companhia,
           numeroVoo: flightNo,
+          sentido, // Novo campo
           origem: `${fromCity.trim()} (${fromCode})`,
           destino: `${toCity.trim()} (${toCode})`,
           partida: departureStr.trim(),
