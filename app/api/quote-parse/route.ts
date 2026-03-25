@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-const pdfParse = require("pdf-parse");
+const { PDFParse } = require("pdf-parse");
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,89 +13,100 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Parse PDF
-    const pdfData = await pdfParse(buffer);
+    // Use pdf-parse v2 API
+    const parser = new PDFParse({ data: buffer });
+    const pdfData = await parser.getText();
+    await parser.destroy();
+    
     const text = pdfData.text;
+    const voosEncontrados: any[] = [];
+    
+    // --- REAL WORLD PARSER LOGIC (Brositur Format) ---
+    
+    // 1. Identify Blocks starting with flight lines (e.g. "4737 27/03 19:30")
+    // Pattern: [FlightNo] [Date] [Time] [Date] [Time] [From] - [City] [To] - [City]
+    const flightBlockRegex = /(\n\d{3,4}\s+\d{2}\/\d{2}\s+\d{2}:\d{2}\s+\d{2}\/\d{2}\s+\d{2}:\d{2}\s+([A-Z]{3})\s+-\s+([^-]+)\s+([A-Z]{3})\s+-\s+([^\n\d]+))/g;
+    
+    // Split text into chunks manually as regex split is tricky here
+    const blocks: string[] = [];
+    let lastIndex = 0;
+    let match;
+    const matches: any[] = [];
 
-    // Advanced Regex parsing would go here.
-    // For now, since we don't have the exact format of Brositur, 
-    // we will return a structured mock if no data is matched.
-    // Replace this logic with actual regex parsing when the PDF sample is provided.
+    while ((match = flightBlockRegex.exec(text)) !== null) {
+      matches.push(match);
+    }
 
-    const voosEncontrados = [];
-
-    // Mocking an example structure that fits the new requirements
-    voosEncontrados.push({
-      id: Date.now().toString(),
-      companhia: "LATAM",
-      numeroVoo: "LA3450",
-      origem: "São Paulo (GRU)",
-      destino: "Brasília (BSB)",
-      partida: "20/10/2026 08:30",
-      chegada: "20/10/2026 10:15",
-      duracao: "1h45m",
-      escalas: 0,
-      tarifas: [
-        {
-          id: "t1",
-          tipo: "Adulto",
-          familia: "Light",
-          bagagens: 0,
-          valorTarifa: "1000,00",
-          taxaEmbarque: "50,50",
-          valorTotal: "1050,50"
-        },
-        {
-          id: "t2",
-          tipo: "Adulto",
-          familia: "Standard",
-          bagagens: 1,
-          valorTarifa: "1250,00",
-          taxaEmbarque: "50,50",
-          valorTotal: "1300,50"
-        }
-      ]
+    matches.forEach((m, i) => {
+      const start = m.index;
+      const end = matches[i + 1] ? matches[i + 1].index : text.length;
+      blocks.push(text.substring(start, end));
     });
 
-    voosEncontrados.push({
-      id: (Date.now() + 1).toString(),
-      companhia: "GOL",
-      numeroVoo: "G31520",
-      origem: "São Paulo (CGH)",
-      destino: "Brasília (BSB)",
-      partida: "20/10/2026 09:00",
-      chegada: "20/10/2026 10:50",
-      duracao: "1h50m",
-      escalas: 0,
-      tarifas: [
-        {
-          id: "t3",
+    blocks.forEach((block, index) => {
+      // Extract main flight line
+      const lineMatch = block.match(/(\d{3,4})\s+(\d{2}\/\d{2}\s+\d{2}:\d{2})\s+(\d{2}\/\d{2}\s+\d{2}:\d{2})\s+([A-Z]{3})\s+-\s+([^-]+)\s+([A-Z]{3})\s+-\s+([^\n\d]+)(\d{3}|7M8|738|320|321|E90|E95|AT7)\s+(\d{2}:\d{2})\s+(\d+)/);
+      
+      if (!lineMatch) return;
+
+      const [_, flightNo, departureStr, arrivalStr, fromCode, fromCity, toCode, toCity, aircraft, duration, stops] = lineMatch;
+
+      // Airline heuristic (LATAM: 3xxx/4xxx/8xxx, GOL: 1xxx/2xxx, Azul: 2xxx/4xxx/9xxx)
+      // Brositur often lists the logo or name above. Let's look for known keywords in the segment nearby.
+      let companhia = "DESCONHECIDA";
+      if (block.toLowerCase().includes("latam")) companhia = "LATAM";
+      else if (block.toLowerCase().includes("gol")) companhia = "GOL";
+      else if (block.toLowerCase().includes("azul")) companhia = "AZUL";
+      else {
+        // Fallback by flight number range
+        const fn = parseInt(flightNo);
+        if (fn >= 3000 && fn <= 4999) companhia = "LATAM";
+        else if (fn >= 1000 && fn <= 1999) companhia = "GOL";
+        else if (fn >= 2000 && fn <= 2999) companhia = "AZUL";
+      }
+
+      const fares: any[] = [];
+      // Look for fare lines: "Adulto [Family] [Bags] [Price] [Tax] [Total]"
+      // Example: "Adulto Light 0 1.988,40 0,00 32,87 (2) 4.042,54"
+      const fareLines = block.matchAll(/Adulto\s+([A-Z\s]+)\s+(\d+)\s+([\d\.,]+)\s+([\d\.,]+)\s+([\d\.,]+)(?:\s+\([^\)]+\))?\s+([\d\.,]+)/gi);
+      
+      for (const fl of fareLines) {
+        const [__, familia, bagagem, tarifa, du, taxa, total] = fl;
+        fares.push({
+          id: `v${index}-f${fares.length}`,
           tipo: "Adulto",
-          familia: "Light",
-          bagagens: 0,
-          valorTarifa: "980,00",
-          taxaEmbarque: "45,00",
-          valorTotal: "1025,00"
-        },
-        {
-          id: "t4",
-          tipo: "Adulto",
-          familia: "Plus",
-          bagagens: 1,
-          valorTarifa: "1180,00",
-          taxaEmbarque: "45,00",
-          valorTotal: "1225,00"
-        }
-      ]
+          familia: familia.trim(),
+          bagagens: parseInt(bagagem),
+          valorTarifa: tarifa,
+          taxaEmbarque: taxa,
+          valorTotal: total
+        });
+      }
+
+      if (fares.length > 0) {
+        voosEncontrados.push({
+          id: `v${index}`,
+          companhia,
+          numeroVoo: flightNo,
+          origem: `${fromCity.trim()} (${fromCode})`,
+          destino: `${toCity.trim()} (${toCode})`,
+          partida: departureStr,
+          chegada: arrivalStr,
+          duracao: duration,
+          escalas: parseInt(stops),
+          tarifas: fares
+        });
+      }
     });
 
     return NextResponse.json({
       success: true,
       voos: voosEncontrados,
-      rawTextLen: text.length
+      rawTextLen: text.length,
+      warning: voosEncontrados.length === 0 ? "O formato do PDF não foi reconhecido. Tente enviar novamente ou use outro arquivo." : null
     });
   } catch (error) {
     console.error("PDF parse error:", error);
-    return NextResponse.json({ error: "Erro ao processar PDF. Verifique se o arquivo está corrompido ou protegido." }, { status: 500 });
+    return NextResponse.json({ error: "Erro ao processar PDF." }, { status: 500 });
   }
 }
