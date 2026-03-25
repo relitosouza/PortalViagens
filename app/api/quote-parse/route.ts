@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-const { PDFParse } = require("pdf-parse/node");
+const pdfParse = require("pdf-parse");
 import { auth } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
@@ -23,12 +23,8 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    console.log(">>> [PDF PARSER] Initializing PDFParse v2 (Node explicitly)...");
-    const parser = new PDFParse({ data: buffer });
-    
-    console.log(">>> [PDF PARSER] Extracting text...");
-    const pdfData = await parser.getText();
-    await parser.destroy();
+    console.log(">>> [PDF PARSER] Initializing pdf-parse v1.1.1...");
+    const pdfData = await pdfParse(buffer);
     
     const text = pdfData.text;
     console.log(`>>> [PDF PARSER] Extracted ${text.length} characters`);
