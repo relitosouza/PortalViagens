@@ -26,11 +26,12 @@ export type VooParsed = {
 }
 
 type Props = {
+  trecho: 'IDA' | 'VOLTA'
   onImport: (selecionados: any[]) => void
   onClose: () => void
 }
 
-export default function PdfQuoteImport({ onImport, onClose }: Props) {
+export default function PdfQuoteImport({ trecho, onImport, onClose }: Props) {
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [voos, setVoos] = useState<VooParsed[]>([])
@@ -87,7 +88,7 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
         if (selecionados.has(t.id)) {
           toImport.push({
             companhia: `${voo.companhia} (${t.familia})`,
-            numeroVoo: voo.numeroVoo,
+            numeroVoo: `${voo.numeroVoo} [${trecho}]`,
             origem: voo.origem,
             destino: voo.destino,
             horario: `${voo.partida.split(' ')[1]} - ${voo.chegada.split(' ')[1]} (${voo.duracao})`,
@@ -113,8 +114,13 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
               <span className="material-symbols-outlined">document_scanner</span>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-800">Importação Inteligente de Cotação</h2>
-              <p className="text-sm text-slate-500">Leia os voos diretamente do PDF enviado pela agência</p>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-bold text-slate-800">Importação Inteligente</h2>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${trecho === 'IDA' ? 'bg-blue-600 text-white' : 'bg-orange-500 text-white'}`}>
+                  TRECHO: {trecho}
+                </span>
+              </div>
+              <p className="text-sm text-slate-500">Selecione os voos de {trecho.toLowerCase()} no PDF da agência</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-slate-400 hover:text-red-500 transition-colors rounded-lg hover:bg-slate-100">

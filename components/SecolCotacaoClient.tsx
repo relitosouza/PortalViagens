@@ -269,6 +269,7 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
     <div className="p-8">
       {showPdfImport && (
         <PdfQuoteImport
+          trecho={voos.length === 0 ? 'IDA' : 'VOLTA'}
           onClose={() => setShowPdfImport(false)}
           onImport={(selecionados) => {
             setVoos(v => [
@@ -436,7 +437,7 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
                     className="text-sm font-bold text-slate-600 flex items-center gap-1 hover:text-blue-600 transition-colors bg-white px-3 py-1.5 rounded-lg border border-slate-200 hover:border-blue-300 shadow-sm"
                   >
                     <span className="material-symbols-outlined text-[18px]">upload_file</span>
-                    Importar de PDF
+                    Importar {voos.length === 0 ? 'Ida' : 'Volta'} (PDF)
                   </button>
                   <button
                     onClick={() => setAddingVoo(v => !v)}
