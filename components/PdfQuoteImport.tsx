@@ -53,15 +53,21 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
   const [selecionadosHoteis, setSelecionadosHoteis] = useState<Record<string, number | string>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleProcessPdf = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!file) return
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0]
+    if (selectedFile) {
+      setFile(selectedFile)
+      // Dispara o processamento automaticamente assim que o arquivo é escolhido
+      processPdf(selectedFile)
+    }
+  }
 
+  const processPdf = async (targetFile: File) => {
     setLoading(true)
     setError('')
     try {
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', targetFile)
 
       const res = await fetch('/api/quote-parse', {
         method: 'POST',
@@ -75,13 +81,19 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
 
       setVoos(data.voos || [])
       setHoteis(data.hoteis || [])
-      setSelecionados({}) // Limpa selecoes antigas
+      setSelecionados({})
       setSelecionadosHoteis({})
     } catch (err: any) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleProcessPdf = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!file) return
+    processPdf(file)
   }
 
   const toggleSelect = (tarifaId: string, currentPassag: number | string) => {
@@ -232,7 +244,7 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
                   accept=".pdf" 
                   ref={fileInputRef} 
                   className="hidden" 
-                  onChange={e => setFile(e.target.files?.[0] || null)}
+                  onChange={handleFileChange}
                 />
                 <span className="material-symbols-outlined text-4xl text-blue-600 mb-4">upload_file</span>
                 {file ? (
@@ -255,23 +267,21 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
                 </div>
               )}
 
+              {loading && (
+                <div className="flex flex-col items-center justify-center py-6 gap-3">
+                  <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-sm font-bold text-blue-600">Extraindo dados do PDF...</p>
+                </div>
+              )}
+
               <div className="flex justify-end">
                 <button
                   type="submit"
                   disabled={!file || loading}
                   className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-lg shadow-blue-600/20"
                 >
-                  {loading ? (
-                    <>
-                      <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-                      Processando...
-                    </>
-                  ) : (
-                    <>
-                      <span className="material-symbols-outlined text-sm">search</span>
-                      Analisar Documento
-                    </>
-                  )}
+                  <span className="material-symbols-outlined text-sm">{loading ? 'progress_activity' : 'search'}</span>
+                  {loading ? 'Processando...' : 'Analisar Documento'}
                 </button>
               </div>
             </form>
