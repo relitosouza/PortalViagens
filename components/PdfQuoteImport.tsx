@@ -8,6 +8,7 @@ export type TarifaParsed = {
   bagagens: number
   valorTarifa: string
   taxaEmbarque: string
+  passag: number // Novo campo
   valorTotal: string
 }
 
@@ -90,9 +91,10 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
             origem: voo.origem,
             destino: voo.destino,
             horario: `${voo.partida.split(' ')[1]} - ${voo.chegada.split(' ')[1]} (${voo.duracao})`,
-            preco: t.valorTarifa, // Apenas a Tarifa base aqui
-            taxa: t.taxaEmbarque, // Passando a Taxa separada
-            total: t.valorTotal    // Valor final para conferência
+            preco: t.valorTarifa,
+            taxa: t.taxaEmbarque,
+            passag: t.passag, // Passando o novo campo
+            total: t.valorTotal
           })
         }
       }
@@ -238,10 +240,11 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
                           <tr>
                             <th className="px-5 py-3 font-bold w-12"></th>
                             <th className="px-5 py-3 font-bold">Tipo / Família</th>
-                            <th className="px-5 py-3 font-bold">Bagagem</th>
-                            <th className="px-5 py-3 font-bold">Tarifa (R$)</th>
-                            <th className="px-5 py-3 font-bold">Taxa (R$)</th>
-                            <th className="px-5 py-3 font-bold text-right">Total (R$)</th>
+                            <th className="px-3 py-3 font-bold text-center">Bag.</th>
+                            <th className="px-3 py-3 font-bold text-right">Tarifa (R$)</th>
+                            <th className="px-3 py-3 font-bold text-right">Taxa (R$)</th>
+                            <th className="px-3 py-3 font-bold text-center">Passag.</th>
+                            <th className="px-3 py-3 font-bold text-right">Total (R$)</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -260,15 +263,20 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
                                 <span className="font-bold text-slate-700 mr-2">{t.familia}</span>
                                 <span className="text-xs text-slate-500">{t.tipo}</span>
                               </td>
-                              <td className="px-5 py-4">
-                                <div className="flex items-center gap-1 text-slate-600">
+                              <td className="px-3 py-4 text-center">
+                                <div className="flex items-center justify-center gap-1 text-slate-600">
                                   <span className="material-symbols-outlined text-[16px]">luggage</span>
-                                  <span>{t.bagagens} pç</span>
+                                  <span>{t.bagagens}</span>
                                 </div>
                               </td>
-                              <td className="px-5 py-4 text-slate-600">R$ {t.valorTarifa}</td>
-                              <td className="px-5 py-4 text-slate-500 text-xs">R$ {t.taxaEmbarque}</td>
-                              <td className="px-5 py-4 font-black tracking-tight text-right text-blue-700">R$ {t.valorTotal}</td>
+                              <td className="px-3 py-4 text-right text-slate-600 font-mono">R$ {t.valorTarifa}</td>
+                              <td className="px-3 py-4 text-right text-slate-500 font-mono text-xs">R$ {t.taxaEmbarque}</td>
+                              <td className="px-3 py-4 text-center">
+                                <span className="bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full text-xs">
+                                  {t.passag}x
+                                </span>
+                              </td>
+                              <td className="px-3 py-4 font-black tracking-tight text-right text-blue-700 font-mono">R$ {t.valorTotal}</td>
                             </tr>
                           ))}
                         </tbody>

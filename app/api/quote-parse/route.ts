@@ -88,13 +88,18 @@ export async function POST(req: NextRequest) {
         let tarifa = "0,00";
         let du = "0,00";
         let taxa = "0,00";
+        let passag = "1";
 
         if (moneyMatches && moneyMatches.length >= 1) {
           tarifa = moneyMatches[0];
           if (moneyMatches.length >= 2) du = moneyMatches[1];
           if (moneyMatches.length >= 3) taxa = moneyMatches[2];
-          // If the chunk only had 2 parts (Tarifa and Taxa without DU), 
-          // we might need to adjust, but based on the prompt, it's Tarifa -> Du -> Taxa
+        }
+
+        // Extract passengers between parentheses: (2)
+        const passMatch = block.match(/\((\d+)\)/);
+        if (passMatch) {
+          passag = passMatch[1];
         }
 
         fares.push({
@@ -104,6 +109,7 @@ export async function POST(req: NextRequest) {
           bagagens: parseInt(bagagem),
           valorTarifa: tarifa,
           taxaEmbarque: taxa,
+          passag: parseInt(passag),
           valorTotal: total.trim()
         });
       }
