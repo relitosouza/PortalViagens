@@ -31,10 +31,11 @@ export async function POST(req: NextRequest) {
     
     const voosEncontrados: any[] = [];
     
-    // --- REAL WORLD PARSER LOGIC (Brositur Format) ---
-    // (regex logic remains the same)
-    const flightBlockRegex = /(\n\d{3,4}\s+\d{2}\/\d{2}\s+\d{2}:\d{2}\s+\d{2}\/\d{2}\s+\d{2}:\d{2}\s+([A-Z]{3})\s+-\s+([^-]+)\s+([A-Z]{3})\s+-\s+([^\n\d]+))/g;
+    // 1. Identify Blocks starting with flight lines (e.g. "473727/03 19:3027/03 21:25")
+    // Note: v1.1.1 output is often "smashed" without spaces.
+    const flightBlockRegex = /(\d{3,4}\d{2}\/\d{2}\s+\d{2}:\d{2}\d{2}\/\d{2}\s+\d{2}:\d{2}\s*[A-Z]{3})/g;
     
+    // Split text into chunks
     const blocks: string[] = [];
     let match;
     const matches: any[] = [];
@@ -48,14 +49,22 @@ export async function POST(req: NextRequest) {
     });
 
     blocks.forEach((block, index) => {
-      const lineMatch = block.match(/(\d{3,4})\s+(\d{2}\/\d{2}\s+\d{2}:\d{2})\s+(\d{2}\/\d{2}\s+\d{2}:\d{2})\s+([A-Z]{3})\s+-\s+([^-]+)\s+([A-Z]{3})\s+-\s+([^\n\d]+)(\d{3}|7M8|738|320|321|E90|E95|AT7)\s+(\d{2}:\d{2})\s+(\d+)/);
-      if (!lineMatch) return;
+      // Extract main flight line with high flexibility for missing spaces
+      // Pattern: [Voo][Partida][Chegada][DeCode] - [DeCity][ParaCode] - [ParaCity][Equip][Duração][Escalas]
+      const lineMatch = block.match(/(\d{3,4})(\d{2}\/\d{2}\s+\d{2}:\d{2})(\d{2}\/\d{2}\s+\d{2}:\d{2})\s*([A-Z]{3})\s*-\s*([^-]+?)\s*([A-Z]{3})\s*-\s*([^\n\d]+?)(?:\s*)(\d{3}|7M8|738|320|321|E90|E95|AT7|295)\s*(\d{2}:\d{2})\s*(\d+)/);
+      
+      if (!lineMatch) {
+        console.log(`>>> [PDF PARSER] Block ${index} failed line match. Start: ${block.substring(0, 50)}`);
+        return;
+      }
+
       const [_, flightNo, departureStr, arrivalStr, fromCode, fromCity, toCode, toCity, aircraft, duration, stops] = lineMatch;
 
       let companhia = "DESCONHECIDA";
-      if (block.toLowerCase().includes("latam")) companhia = "LATAM";
-      else if (block.toLowerCase().includes("gol")) companhia = "GOL";
-      else if (block.toLowerCase().includes("azul")) companhia = "AZUL";
+      const bLower = block.toLowerCase();
+      if (bLower.includes("latam")) companhia = "LATAM";
+      else if (bLower.includes("gol")) companhia = "GOL";
+      else if (bLower.includes("azul")) companhia = "AZUL";
       else {
         const fn = parseInt(flightNo);
         if (fn >= 3000 && fn <= 4999) companhia = "LATAM";
@@ -64,7 +73,10 @@ export async function POST(req: NextRequest) {
       }
 
       const fares: any[] = [];
-      const fareLines = block.matchAll(/Adulto\s+([A-Z\s]+)\s+(\d+)\s+([\d\.,]+)\s+([\d\.,]+)\s+([\d\.,]+)(?:\s+\([^\)]+\))?\s+([\d\.,]+)/gi);
+      // Fare Regex (Compact): "Adulto[Family][Bags][Tarifa][DU][Taxa](Scale) [Total]"
+      // Example: "AdultoLight01.813,000,0062,14(2) 3.750,28"
+      const fareLines = block.matchAll(/Adulto\s*([A-Z\s]+?)\s*(\d+)\s*([\d\.,]+)\s*([\d\.,]+)\s*([\d\.,]+)(?:\s*\(\d+\))?\s+([\d\.,]+)/gi);
+      
       for (const fl of fareLines) {
         const [__, familia, bagagem, tarifa, du, taxa, total] = fl;
         fares.push({
@@ -77,6 +89,7 @@ export async function POST(req: NextRequest) {
           valorTotal: total
         });
       }
+
       if (fares.length > 0) {
         voosEncontrados.push({
           id: `v${index}`,
@@ -84,8 +97,8 @@ export async function POST(req: NextRequest) {
           numeroVoo: flightNo,
           origem: `${fromCity.trim()} (${fromCode})`,
           destino: `${toCity.trim()} (${toCode})`,
-          partida: departureStr,
-          chegada: arrivalStr,
+          partida: departureStr.trim(),
+          chegada: arrivalStr.trim(),
           duracao: duration,
           escalas: parseInt(stops),
           tarifas: fares
@@ -93,7 +106,7 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    console.log(`>>> [PDF PARSER] Found ${voosEncontrados.length} flights`);
+    console.log(`>>> [PDF PARSER] Total flights items: ${voosEncontrados.length}`);
     return NextResponse.json({
       success: true,
       voos: voosEncontrados,
