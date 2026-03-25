@@ -32,8 +32,8 @@ export async function POST(req: NextRequest) {
     const voosEncontrados: any[] = [];
     
     // 1. Identify Blocks starting with flight lines (e.g. "473727/03 19:3027/03 21:25")
-    // Note: v1.1.1 output is often "smashed" without spaces.
-    const flightBlockRegex = /(\d{3,4}\d{2}\/\d{2}\s+\d{2}:\d{2}\d{2}\/\d{2}\s+\d{2}:\d{2}\s*[A-Z]{3})/g;
+    // Refined regex to match even if spaces are missing near the flight number
+    const flightBlockRegex = /(\d{3,4}\d{2}\/\d{2}\s*\d{2}:\d{2}\d{2}\/\d{2}\s*\d{2}:\d{2}\s*[A-Z]{3})/g;
     
     // Split text into chunks
     const blocks: string[] = [];
@@ -145,10 +145,14 @@ export async function POST(req: NextRequest) {
     // ----------------------------------------------------
     const hoteisEncontrados: any[] = [];
     
-    // Extract Check-in and Check-out dates if present
     let checkIn = "";
     let checkOut = "";
-    let cidadeHotel = "Brasília"; // Default hardcoded for now
+    let cidadeHotel = "";
+    
+    // Try to find the city before the hotel blocks
+    const cityMatch = text.match(/Trecho:\s*([^-]+?)\s*-[^-]+?-[^-]+?\s*Hospedagem/i) || text.match(/Local:\s*([A-Z\s]{3,})/i);
+    if (cityMatch) cidadeHotel = cityMatch[1].trim();
+    if (!cidadeHotel) cidadeHotel = "Brasília"; // Default fallback
     
     const checkInMatch = text.match(/Check[- ]?in:\s*(\d{2}\/\d{2}\/\d{4}|\d{2}\/\d{2})/i) || text.match(/Período.*?(?:a|até).*?(\d{2}\/\d{2}\/\d{4}|\d{2}\/\d{2})/i);
     const checkOutMatch = text.match(/Check[- ]?out:\s*(\d{2}\/\d{2}\/\d{4}|\d{2}\/\d{2})/i) || text.match(/(?:a|até)\s*(\d{2}\/\d{2}\/\d{4}|\d{2}\/\d{2})/i);
@@ -169,13 +173,19 @@ export async function POST(req: NextRequest) {
       let hotelName = "HOTEL DESCONHECIDO";
       
       // Look for common hotel name endings in uppercase
-      const nameMatch = context.match(/([A-Z0-9][A-Z0-9\s]+(?:PLAZA|HOTEL|EXECUTIVE|VISION|RESORT|INN|PALACE|SUITES|LODGE|HPLUS))/);
+      const nameMatch = context.match(/([A-Z0-9][A-Z0-9\s,]{5,}(?:PLAZA|HOTEL|EXECUTIVE|VISION|RESORT|INN|PALACE|SUITES|LODGE|HPLUS|FLAT|STAY|RESIDENCE|GARDEN|COSMOPOLITAN|B-HOTEL))/i);
       if (nameMatch) {
-        hotelName = nameMatch[1].trim();
+        hotelName = nameMatch[1].trim().toUpperCase();
       } else {
-        // Fallback: look for 2+ uppercase words in a row near the beginning of the context
-        const upMatch = context.match(/([A-Z]{4,}(?:\s+[A-Z]{3,})+)/);
-        if (upMatch) hotelName = upMatch[1].trim();
+        // Fallback: look for established hotel names in context (Brositur specific)
+        const commonHotels = ["KUBITSCHEK PLAZA", "MANHATTAN PLAZA", "B-HOTEL", "VISION EXECUTIVE", "STAYBRIDGE", "MELIA", "WINDSOR", "MERCURE"];
+        const found = commonHotels.find(h => context.toUpperCase().includes(h));
+        if (found) hotelName = found;
+        else {
+           // Last resort: look for a block of uppercase text 
+           const upMatch = context.match(/([A-Z\s]{8,})/);
+           if (upMatch) hotelName = upMatch[1].trim();
+        }
       }
 
       hoteisEncontrados.push({
