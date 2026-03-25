@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-const pdfParse = require("pdf-parse");
+const { PDFParse, VerbosityLevel } = require("pdf-parse");
 import { auth } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
@@ -23,10 +23,14 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    console.log(">>> [PDF PARSER] Initializing pdf-parse v1.1.1...");
-    const pdfData = await pdfParse(buffer);
+    console.log(">>> [PDF PARSER] Initializing pdf-parse v2.4.5...");
+    const parser = new PDFParse({ 
+      data: buffer, 
+      verbosity: VerbosityLevel.ERRORS 
+    });
     
-    const text = pdfData.text;
+    await parser.load();
+    const text = await parser.getText();
     console.log(`>>> [PDF PARSER] Extracted ${text.length} characters`);
     
     const voosEncontrados: any[] = [];
@@ -169,7 +173,7 @@ export async function POST(req: NextRequest) {
     if (!cidadeHotel) cidadeHotel = "Brasília";
 
     // Look for Room matches around "Café da manhã" or other regimes
-    const roomRegex = /(Double.*?|Single.*?|Quarto.*?|Standard.*?|Superior.*?|Luxo|Executive.*?|Twin.*?)\s+(Café da manhã|Sem café|Meia pensão|Pensao completa)\s+([\d\.,]+)/gi;
+    const roomRegex = /(Double.*?|Single.*?|Quarto.*?|Standard.*?|Superior.*?|Luxo|Executive.*?|Twin.*?|Room.*?|Suite.*?|NON SMOKING.*?)\s+(Café da manhã|Sem café|Meia pensão|Pensao completa)\s+([\d\.,]+)/gi;
     const roomMatches = Array.from(text.matchAll(roomRegex)) as RegExpMatchArray[];
     
     roomMatches.forEach((rm, idx) => {
@@ -181,11 +185,11 @@ export async function POST(req: NextRequest) {
       let hotelName = "HOTEL DESCONHECIDO";
       
       // Nova Lógica: Procura por padrões de nome de hotel que contenham "Estrela(s)" ou nomes em CAIXA ALTA perto de palavras chave
-      const starMatch = context.match(/(?:Hotel\s+)?([A-Z0-9\s]{5,})\s*-\s*\d+\s*Estrela\(s\)/i);
+      const starMatch = context.match(/(?:Hotel\s+)?([A-Z0-9\s,]{5,})\s*-\s*[\d\.]+\s*Estrela\(s\)/i);
       if (starMatch) {
         hotelName = starMatch[1].trim().toUpperCase();
       } else {
-        const nameMatch = context.match(/([A-Z0-9][A-Z0-9\s,]{5,}(?:PLAZA|HOTEL|EXECUTIVE|VISION|RESORT|INN|PALACE|SUITES|LODGE|HPLUS|FLAT|STAY|RESIDENCE|GARDEN|COSMOPOLITAN|B-HOTEL|WDS))/);
+        const nameMatch = context.match(/([A-Z0-9][A-Z0-9\s,]{5,}(?:PLAZA|HOTEL|EXECUTIVE|VISION|RESORT|INN|PALACE|SUITES|LODGE|HPLUS|FLAT|STAY|RESIDENCE|GARDEN|COSMOPOLITAN|B-HOTEL|WDS|WYNDHAM|TRYP|RAMADA))/);
         if (nameMatch) {
           hotelName = nameMatch[1].trim().toUpperCase();
         } else {
