@@ -73,20 +73,29 @@ export async function POST(req: NextRequest) {
       }
 
       const fares: any[] = [];
-      // Fare Regex (Compact): "Adulto[Family][Bags][Tarifa][DU][Taxa](Scale) [Total]"
-      // Example: "AdultoLight01.813,000,0062,14(2) 3.750,28"
-      const fareLines = block.matchAll(/Adulto\s*([A-Z\s]+?)\s*(\d+)\s*([\d\.,]+)\s*([\d\.,]+)\s*([\d\.,]+)(?:\s*\(\d+\))?\s+([\d\.,]+)/gi);
+      // Fare Regex (Refined with images context):
+      // Pattern: Tipo[Family]BagagensTarifaDuTxTotal
+      // Example on Image: Adulto Light 0 1.813,00 0,00 62,14 (2) 3.750,28
+      // The extracted text often loses spaces: "AdultoLight01.813,000,0062,14(2) 3.750,28"
+      const fareLines = block.matchAll(/Adulto\s*(.*?)\s*(\d)\s*([\d\.,]+)\s*([\d\.,]+)\s*([\d\.,]+)(?:\s*\(\d+\))?\s+([\d\.,]+)/gi);
       
       for (const fl of fareLines) {
-        const [__, familia, bagagem, tarifa, du, taxa, total] = fl;
+        let [__, familia, bagagem, tarifa, du, taxa, total] = fl;
+        
+        // Cleanup: If the family name ends with a number (due to missing space with baggage), fix it
+        if (familia.match(/\d$/)) {
+          bagagem = familia.slice(-1);
+          familia = familia.slice(0, -1);
+        }
+
         fares.push({
           id: `v${index}-f${fares.length}`,
           tipo: "Adulto",
           familia: familia.trim(),
           bagagens: parseInt(bagagem),
-          valorTarifa: tarifa,
-          taxaEmbarque: taxa,
-          valorTotal: total
+          valorTarifa: tarifa.trim(),
+          taxaEmbarque: taxa.trim(),
+          valorTotal: total.trim()
         });
       }
 
