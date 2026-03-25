@@ -90,7 +90,9 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
             origem: voo.origem,
             destino: voo.destino,
             horario: `${voo.partida.split(' ')[1]} - ${voo.chegada.split(' ')[1]} (${voo.duracao})`,
-            preco: t.valorTotal
+            preco: t.valorTarifa, // Apenas a Tarifa base aqui
+            taxa: t.taxaEmbarque, // Passando a Taxa separada
+            total: t.valorTotal    // Valor final para conferência
           })
         }
       }

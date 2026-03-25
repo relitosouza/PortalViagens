@@ -14,6 +14,7 @@ type OpcaoVoo = {
   destino: string
   horario: string
   preco: string
+  taxa?: string // Novo campo
 }
 
 type OpcaoHotel = {
@@ -54,7 +55,7 @@ type Props = {
   }
 }
 
-const EMPTY_VOO: Omit<OpcaoVoo, 'id'> = { companhia: '', numeroVoo: '', origem: '', destino: '', horario: '', preco: '' }
+const EMPTY_VOO: Omit<OpcaoVoo, 'id'> = { companhia: '', numeroVoo: '', origem: '', destino: '', horario: '', preco: '', taxa: '0,00' }
 const EMPTY_HOTEL: Omit<OpcaoHotel, 'id'> = { nome: '', quarto: '', noites: 1, precoPorNoite: '' }
 
 export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }: Props) {
@@ -145,7 +146,7 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
 
   useEffect(() => {
     if (valorPassagemEditado) return
-    const total = voos.reduce((acc, v) => acc + parseCurrency(v.preco), 0)
+    const total = voos.reduce((acc, v) => acc + parseCurrency(v.preco) + parseCurrency(v.taxa || '0'), 0)
     setValorPassagemStr(total.toFixed(2))
   }, [voos, valorPassagemEditado])
 
@@ -211,7 +212,8 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
     if (voos.length > 0) {
       partes.push('=== OPÇÕES DE VOO ===')
       voos.forEach((v, i) => {
-        partes.push(`[${i + 1}] ${v.companhia} ${v.numeroVoo} | ${v.origem} → ${v.destino} | ${v.horario} | R$ ${v.preco}`)
+        const taxaStr = v.taxa ? ` | Taxa: R$ ${v.taxa}` : ''
+        partes.push(`[${i + 1}] ${v.companhia} ${v.numeroVoo} | ${v.origem} → ${v.destino} | ${v.horario} | Tarifa: R$ ${v.preco}${taxaStr}`)
       })
     }
     if (hoteis.length > 0) {
@@ -455,7 +457,8 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
                     <input className="border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="Origem (ex: GRU)" value={novoVoo.origem} onChange={e => setNovoVoo(v => ({ ...v, origem: e.target.value }))} />
                     <input className="border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="Destino (ex: BSB)" value={novoVoo.destino} onChange={e => setNovoVoo(v => ({ ...v, destino: e.target.value }))} />
                     <input className="border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="Horário (ex: 08:30 - 10:15)" value={novoVoo.horario} onChange={e => setNovoVoo(v => ({ ...v, horario: e.target.value }))} />
-                    <input className="border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="Preço (ex: 1240,50)" value={novoVoo.preco} onChange={e => setNovoVoo(v => ({ ...v, preco: e.target.value }))} />
+                    <input className="border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="Tarifa (ex: 1813,00)" value={novoVoo.preco} onChange={e => setNovoVoo(v => ({ ...v, preco: e.target.value }))} />
+                    <input className="border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="Taxa (ex: 62,14)" value={novoVoo.taxa} onChange={e => setNovoVoo(v => ({ ...v, taxa: e.target.value }))} />
                   </div>
                   <div className="flex gap-3 mt-3">
                     <button onClick={adicionarVoo} className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors">{editingVooId !== null ? 'Salvar Alteração' : 'Confirmar'}</button>
@@ -470,14 +473,15 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
                     <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-widest font-bold">
                       <th className="px-6 py-4">Companhia / Voo</th>
                       <th className="px-6 py-4">Horários</th>
-                      <th className="px-6 py-4">Preço (R$)</th>
-                      <th className="px-6 py-4 text-right">Ação</th>
-                    </tr>
+                    <th className="px-6 py-4">Tarifa (R$)</th>
+                    <th className="px-6 py-4">Taxa (R$)</th>
+                    <th className="px-6 py-4 text-right">Ação</th>
+                  </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {voos.length === 0 && (
                       <tr>
-                        <td colSpan={4} className="px-6 py-8 text-center text-slate-400 text-sm">
+                        <td colSpan={5} className="px-6 py-8 text-center text-slate-400 text-sm">
                           Nenhuma opção de voo adicionada. Clique em &quot;Adicionar Opção&quot; para incluir.
                         </td>
                       </tr>
@@ -502,6 +506,7 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
                           </div>
                         </td>
                         <td className="px-6 py-4 font-bold">R$ {v.preco}</td>
+                        <td className="px-6 py-4 text-slate-500 text-sm">R$ {v.taxa || '0,00'}</td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-1">
                             <button onClick={() => iniciarEdicaoVoo(v)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
