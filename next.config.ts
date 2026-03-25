@@ -18,9 +18,16 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: '/(.*)', headers: securityHeaders }]
   },
-  serverExternalPackages: ['@prisma/client', 'better-sqlite3', '@prisma/adapter-better-sqlite3', 'pdf-parse'],
+  serverExternalPackages: ['@prisma/client', 'better-sqlite3', '@prisma/adapter-better-sqlite3', 'pdf-parse', 'pdfjs-dist', '@napi-rs/canvas'],
   outputFileTracingIncludes: {
-    '/api/quote-parse': ['./node_modules/pdf-parse/**/*'],
+    '/api/quote-parse': [
+      './node_modules/pdf-parse/**/*',
+      './node_modules/pdfjs-dist/**/*',
+      './node_modules/@napi-rs/canvas/**/*',
+      './node_modules/@napi-rs/canvas-linux-x64-gnu/**/*',
+      './node_modules/@napi-rs/canvas-linux-x64-musl/**/*',
+      './node_modules/@napi-rs/canvas-linux-arm64-gnu/**/*',
+    ],
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {
