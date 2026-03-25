@@ -561,13 +561,22 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
                   <span className="material-symbols-outlined text-blue-600">hotel</span>
                   <h3 className="font-bold text-lg">Opções de Hospedagem</h3>
                 </div>
-                <button
-                  onClick={() => setAddingHotel(v => !v)}
-                  className="text-sm font-bold text-blue-600 flex items-center gap-1 hover:underline"
-                >
-                  <span className="material-symbols-outlined text-sm">add_circle</span>
-                  Adicionar Opção
-                </button>
+                <div className="flex gap-4 items-center">
+                  <button
+                    onClick={() => setShowPdfImport(true)}
+                    className="text-sm font-bold text-slate-600 flex items-center gap-1 hover:text-emerald-600 transition-colors bg-white px-3 py-1.5 rounded-lg border border-slate-200 hover:border-emerald-300 shadow-sm"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">upload_file</span>
+                    Importar Hospedagem
+                  </button>
+                  <button
+                    onClick={() => setAddingHotel(v => !v)}
+                    className="text-sm font-bold text-blue-600 flex items-center gap-1 hover:underline"
+                  >
+                    <span className="material-symbols-outlined text-sm">add_circle</span>
+                    Adicionar Opção
+                  </button>
+                </div>
               </div>
 
               {addingHotel && (
