@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-const { PDFParse, VerbosityLevel } = require("pdf-parse");
+const { PDFParse, VerbosityLevel } = require("e:/projetos/PortalVIagens/node_modules/pdf-parse/dist/pdf-parse/cjs/index.cjs");
 import { auth } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
@@ -35,9 +35,9 @@ export async function POST(req: NextRequest) {
     
     const voosEncontrados: any[] = [];
     
-    // 1. Identify Blocks starting with flight lines (e.g. "473727/03 19:3027/03 21:25")
-    // Refined regex to match even if spaces are missing near the flight number
-    const flightBlockRegex = /(\d{3,4}\d{2}\/\d{2}\s*\d{2}:\d{2}\d{2}\/\d{2}\s*\d{2}:\d{2}\s*[A-Z]{3})/g;
+    // 1. Identify Blocks starting with flight lines (e.g. "3000 26/03 06:00 26/03 07:45 CGH")
+    // \s* handles both concatenated and space-separated text from pdf-parse
+    const flightBlockRegex = /(\d{3,4}\s*\d{2}\/\d{2}\s*\d{2}:\d{2}\s*\d{2}\/\d{2}\s*\d{2}:\d{2}\s*[A-Z]{3})/g;
     
     // Split text into chunks
     const blocks: string[] = [];
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
 
     blocks.forEach((block, index) => {
       // Extract main flight line
-      const lineMatch = block.match(/(\d{3,4})(\d{2}\/\d{2}\s+\d{2}:\d{2})(\d{2}\/\d{2}\s+\d{2}:\d{2})\s*([A-Z]{3})\s*-\s*([^-]+?)\s*([A-Z]{3})\s*-\s*([^\n\d]+?)(?:\s*)(\d{3}|7M8|738|320|321|E90|E95|AT7|295)\s*(\d{2}:\d{2})\s*(\d+)/);
+      const lineMatch = block.match(/(\d{3,4})\s*(\d{2}\/\d{2}\s*\d{2}:\d{2})\s*(\d{2}\/\d{2}\s*\d{2}:\d{2})\s*([A-Z]{3})\s*-\s*([^-]+?)\s*([A-Z]{3})\s*-\s*([^\n\d]+?)(?:\s*)(\d{3}|7M8|738|320|321|E90|E95|AT7|295)\s*(\d{2}:\d{2})\s*(\d+)/);
       
       if (!lineMatch) return;
 

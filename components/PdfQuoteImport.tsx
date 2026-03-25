@@ -186,7 +186,7 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
             numeroVoo: `${voo.numeroVoo} [${voo.sentido.toUpperCase()}]`,
             origem: voo.origem,
             destino: voo.destino,
-            horario: `${voo.partida.split(' ')[1]} - ${voo.chegada.split(' ')[1]} (${voo.duracao})`,
+            horario: `${voo.partida.match(/\d{2}:\d{2}/)?.[0] ?? voo.partida} - ${voo.chegada.match(/\d{2}:\d{2}/)?.[0] ?? voo.chegada} (${voo.duracao})`,
             preco: t.valorTarifa,
             taxa: t.taxaEmbarque,
             passag: selecionados[t.id], // Usa a quantidade vinculada no objeto
@@ -293,88 +293,91 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
                   <p className="font-bold text-blue-800 text-sm">Extração Concluída</p>
                   <p className="text-blue-600 text-xs">Selecione as tarifas que deseja adicionar à avaliação técnica.</p>
                 </div>
-                <button onClick={() => { setVoos([]); setFile(null) }} className="text-sm font-bold text-blue-700 hover:text-blue-900 underline">
+                <button onClick={() => { setVoos([]); setHoteis([]); setFile(null) }} className="text-sm font-bold text-blue-700 hover:text-blue-900 underline">
                   Analisar outro arquivo
                 </button>
               </div>
 
-              <div className="bg-white border rounded-xl overflow-hidden shadow-sm border-slate-200">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-[13px] text-left">
-                    <thead className="text-[10px] text-slate-500 uppercase bg-slate-100 border-b border-slate-200">
-                      <tr>
-                        <th className="px-4 py-3 w-10"></th>
-                        <th className="px-3 py-3 font-bold w-20">Sentido</th>
-                        <th className="px-4 py-3 font-bold">Cia / Voo / Detalhes</th>
-                        <th className="px-3 py-3 font-bold text-right w-24">Tarifa (R$)</th>
-                        <th className="px-3 py-3 font-bold text-right w-24">Taxa (R$)</th>
-                        <th className="px-3 py-3 font-bold text-center w-24">Passag.</th>
-                        <th className="px-4 py-3 font-bold text-right w-28">Total (R$)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200">
-                      {voos.map(voo => {
-                        const isIda = voo.sentido === 'ida';
-                        const rowBg = isIda ? 'bg-blue-50/60 hover:bg-blue-100/40' : 'bg-red-50/60 hover:bg-red-100/40';
-                        const tagClasses = isIda 
-                          ? 'bg-blue-500 text-white' 
-                          : 'bg-red-500 text-white';
+              {voos.length > 0 && (
+                <div className="bg-white border rounded-xl overflow-hidden shadow-sm border-slate-200">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[13px] text-left">
+                      <thead className="text-[10px] text-slate-500 uppercase bg-slate-100 border-b border-slate-200">
+                        <tr>
+                          <th className="px-4 py-3 w-10"></th>
+                          <th className="px-3 py-3 font-bold w-20">Sentido</th>
+                          <th className="px-4 py-3 font-bold">Cia / Voo / Detalhes</th>
+                          <th className="px-3 py-3 font-bold text-right w-24">Tarifa (R$)</th>
+                          <th className="px-3 py-3 font-bold text-right w-24">Taxa (R$)</th>
+                          <th className="px-3 py-3 font-bold text-center w-24">Passag.</th>
+                          <th className="px-4 py-3 font-bold text-right w-28">Total (R$)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {voos.map(voo => {
+                          const isIda = voo.sentido === 'ida';
+                          const rowBg = isIda ? 'bg-blue-50/60 hover:bg-blue-100/40' : 'bg-red-50/60 hover:bg-red-100/40';
+                          const tagClasses = isIda
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-red-500 text-white';
+                          const timeOf = (s: string) => s.match(/\d{2}:\d{2}/)?.[0] ?? s;
 
-                        return voo.tarifas.map(t => {
-                          const isSelected = selecionados[t.id] !== undefined;
-                          return (
-                            <tr key={t.id} className={`transition-colors ${rowBg}`}>
-                              <td className="px-4 py-4" onClick={() => toggleSelect(t.id, t.passag)}>
-                                <div className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-colors ${isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-400'}`}>
-                                  {isSelected && <span className="material-symbols-outlined text-[12px] font-bold">check</span>}
-                                </div>
-                              </td>
-                              
-                              <td className="px-3 py-4">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${tagClasses}`}>
-                                  {voo.sentido}
-                                </span>
-                              </td>
+                          return voo.tarifas.map(t => {
+                            const isSelected = selecionados[t.id] !== undefined;
+                            return (
+                              <tr key={t.id} className={`transition-colors ${rowBg}`}>
+                                <td className="px-4 py-4" onClick={() => toggleSelect(t.id, t.passag)}>
+                                  <div className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-colors ${isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-400'}`}>
+                                    {isSelected && <span className="material-symbols-outlined text-[12px] font-bold">check</span>}
+                                  </div>
+                                </td>
 
-                              <td className="px-4 py-4">
-                                <span className="block font-bold text-slate-800 text-sm">
-                                  {voo.companhia} {voo.numeroVoo} <span className="text-slate-500 font-normal">({t.familia})</span>
-                                </span>
-                                <span className="block text-[11px] text-slate-600 mt-0.5">
-                                  {voo.origem} → {voo.destino} | {voo.partida.split(' ')[1]} - {voo.chegada.split(' ')[1]} | <span className="material-symbols-outlined text-[12px] align-middle">luggage</span> {t.bagagens}
-                                </span>
-                              </td>
+                                <td className="px-3 py-4">
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${tagClasses}`}>
+                                    {voo.sentido}
+                                  </span>
+                                </td>
 
-                              <td className="px-3 py-4 text-right text-slate-700 font-mono">
-                                R$ {t.valorTarifa}
-                              </td>
+                                <td className="px-4 py-4">
+                                  <span className="block font-bold text-slate-800 text-sm">
+                                    {voo.companhia} {voo.numeroVoo} <span className="text-slate-500 font-normal">({t.familia})</span>
+                                  </span>
+                                  <span className="block text-[11px] text-slate-600 mt-0.5">
+                                    {voo.origem} → {voo.destino} | {timeOf(voo.partida)} - {timeOf(voo.chegada)} | <span className="material-symbols-outlined text-[12px] align-middle">luggage</span> {t.bagagens}
+                                  </span>
+                                </td>
 
-                              <td className="px-3 py-4 text-right text-slate-600 font-mono text-[11px]">
-                                R$ {t.taxaEmbarque}
-                              </td>
+                                <td className="px-3 py-4 text-right text-slate-700 font-mono">
+                                  R$ {t.valorTarifa}
+                                </td>
 
-                              <td className="px-3 py-4 text-center">
-                                <input
-                                  type="number"
-                                  min={1}
-                                  value={t.passag === '' ? '' : t.passag}
-                                  onChange={(e) => handlePassagChange(voo.id, t.id, e.target.value)}
-                                  className="w-16 text-center border border-slate-300 rounded-lg px-2 py-1 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-inner"
-                                  placeholder="0"
-                                />
-                              </td>
+                                <td className="px-3 py-4 text-right text-slate-600 font-mono text-[11px]">
+                                  R$ {t.taxaEmbarque}
+                                </td>
 
-                              <td className="px-4 py-4 font-black tracking-tight text-right text-slate-800 font-mono">
-                                R$ {t.valorTotal}
-                              </td>
-                            </tr>
-                          );
-                        });
-                      })}
-                    </tbody>
-                  </table>
+                                <td className="px-3 py-4 text-center">
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    value={t.passag === '' ? '' : t.passag}
+                                    onChange={(e) => handlePassagChange(voo.id, t.id, e.target.value)}
+                                    className="w-16 text-center border border-slate-300 rounded-lg px-2 py-1 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-inner"
+                                    placeholder="0"
+                                  />
+                                </td>
+
+                                <td className="px-4 py-4 font-black tracking-tight text-right text-slate-800 font-mono">
+                                  R$ {t.valorTotal}
+                                </td>
+                              </tr>
+                            );
+                          });
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
