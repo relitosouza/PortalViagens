@@ -26,8 +26,20 @@ export type VooParsed = {
   tarifas: TarifaParsed[]
 }
 
+export type HotelParsed = {
+  id: string
+  nome: string
+  quarto: string
+  regime: string
+  valorTotal: string
+  cidade: string
+  checkIn: string
+  checkOut: string
+  qtde: number | string
+}
+
 type Props = {
-  onImport: (selecionados: any[]) => void
+  onImport: (selecionadosVoos: any[], selecionadosHoteis: any[]) => void
   onClose: () => void
 }
 
@@ -35,8 +47,10 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [voos, setVoos] = useState<VooParsed[]>([])
+  const [hoteis, setHoteis] = useState<HotelParsed[]>([])
   const [error, setError] = useState('')
   const [selecionados, setSelecionados] = useState<Record<string, number | string>>({})
+  const [selecionadosHoteis, setSelecionadosHoteis] = useState<Record<string, number | string>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleProcessPdf = async (e: React.FormEvent) => {
@@ -60,7 +74,9 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
       }
 
       setVoos(data.voos || [])
+      setHoteis(data.hoteis || [])
       setSelecionados({}) // Limpa selecoes antigas
+      setSelecionadosHoteis({})
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -75,6 +91,18 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
         delete next[tarifaId]
       } else {
         next[tarifaId] = currentPassag
+      }
+      return next
+    })
+  }
+
+  const toggleSelectHotel = (hotelId: string, currentQtde: number | string) => {
+    setSelecionadosHoteis(prev => {
+      const next = { ...prev }
+      if (next[hotelId] !== undefined) {
+        delete next[hotelId]
+      } else {
+        next[hotelId] = currentQtde
       }
       return next
     })
@@ -117,13 +145,31 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
     }));
   }
 
+  const handleQtdeHotelChange = (hotelId: string, newValStr: string) => {
+    const val = newValStr === '' ? '' : parseInt(newValStr);
+    if (val !== '' && (isNaN(val) || val < 1)) return;
+
+    setSelecionadosHoteis(prev => {
+      if (prev[hotelId] !== undefined) {
+        return { ...prev, [hotelId]: val }
+      }
+      return prev
+    })
+
+    setHoteis(prev => prev.map(h => {
+      if (h.id !== hotelId) return h;
+      return { ...h, qtde: val }
+    }));
+  }
+
   const handleConfirm = () => {
-    const toImport: any[] = []
+    const toImportVoos: any[] = []
+    const toImportHoteis: any[] = []
     
     for (const voo of voos) {
       for (const t of voo.tarifas) {
         if (selecionados[t.id] !== undefined) {
-          toImport.push({
+          toImportVoos.push({
             companhia: `${voo.companhia} (${t.familia})`,
             numeroVoo: `${voo.numeroVoo} [${voo.sentido.toUpperCase()}]`,
             origem: voo.origem,
@@ -138,7 +184,18 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
       }
     }
 
-    onImport(toImport)
+    for (const h of hoteis) {
+      if (selecionadosHoteis[h.id] !== undefined) {
+        toImportHoteis.push({
+          nome: h.nome,
+          quarto: `${h.quarto} (${h.regime})`,
+          noites: selecionadosHoteis[h.id],
+          precoPorNoite: h.valorTotal
+        })
+      }
+    }
+
+    onImport(toImportVoos, toImportHoteis)
   }
 
   return (
@@ -152,7 +209,7 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
             </div>
             <div>
               <h2 className="text-xl font-bold text-slate-800">Importação Inteligente de Cotação</h2>
-              <p className="text-sm text-slate-500">Selecione os voos extraídos do PDF da agência</p>
+              <p className="text-sm text-slate-500">Selecione opções logísticas (Voos e Hotéis) extraídas do PDF</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-slate-400 hover:text-red-500 transition-colors rounded-lg hover:bg-slate-100">
@@ -163,8 +220,8 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
         {/* Content */}
         <div className="p-6 overflow-y-auto flex-1 bg-slate-50/30">
           
-          {/* Upload Area se ainda não processou voos */}
-          {voos.length === 0 ? (
+          {/* Upload Area se ainda não processou */}
+          {voos.length === 0 && hoteis.length === 0 ? (
             <form onSubmit={handleProcessPdf} className="space-y-6">
               <div 
                 className="border-2 border-dashed border-slate-300 rounded-xl p-10 flex flex-col items-center justify-center text-center hover:bg-blue-50/50 hover:border-blue-400 transition-colors cursor-pointer"
@@ -310,13 +367,84 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
               </div>
             </div>
           )}
+
+          {/* HOTELS SECTION */}
+          {(voos.length > 0 || hoteis.length > 0) && hoteis.length > 0 && (
+            <div className="space-y-4 mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {/* Hotel Header Info */}
+              <div className="flex items-center gap-3 py-2 border-b border-emerald-200">
+                <div className="w-2 h-6 rounded-full bg-emerald-500"></div>
+                <div>
+                  <h3 className="font-black text-slate-800 uppercase tracking-tight">HOSPEDAGEM</h3>
+                  <p className="text-xs text-slate-500">
+                    {hoteis[0]?.cidade} | Check-in: <span className="font-bold text-slate-700">{hoteis[0]?.checkIn || '?'}</span> | Check-out: <span className="font-bold text-slate-700">{hoteis[0]?.checkOut || '?'}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-white border rounded-xl overflow-hidden shadow-sm border-slate-200">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-[13px]">
+                    <thead className="bg-emerald-50 text-[10px] text-emerald-800 uppercase border-b border-emerald-100">
+                      <tr>
+                        <th className="px-4 py-3 w-10"></th>
+                        <th className="px-4 py-3 font-bold">Hotel</th>
+                        <th className="px-4 py-3 font-bold">Quarto</th>
+                        <th className="px-4 py-3 font-bold text-center">Regime</th>
+                        <th className="px-4 py-3 font-bold text-right w-28">Total (R$)</th>
+                        <th className="px-4 py-3 font-bold text-center w-24">Qtde.</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-emerald-50/50">
+                      {hoteis.map(h => {
+                        const isSelected = selecionadosHoteis[h.id] !== undefined;
+                        return (
+                          <tr key={h.id} className="transition-colors bg-emerald-50/20 hover:bg-emerald-50/50 border-l-4 border-l-emerald-400">
+                            <td className="px-4 py-4" onClick={() => toggleSelectHotel(h.id, h.qtde)}>
+                              <div className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-colors ${isSelected ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-400'}`}>
+                                {isSelected && <span className="material-symbols-outlined text-[12px] font-bold">check</span>}
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 font-bold text-slate-800 text-sm">
+                              {h.nome}
+                            </td>
+                            <td className="px-4 py-4 text-slate-600">
+                              {h.quarto}
+                            </td>
+                            <td className="px-4 py-4 text-center">
+                              <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold">
+                                {h.regime}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 text-right text-slate-700 font-mono font-bold">
+                              R$ {h.valorTotal}
+                            </td>
+                            <td className="px-4 py-4 text-center">
+                              <input
+                                type="number"
+                                min={1}
+                                value={h.qtde === '' ? '' : h.qtde}
+                                onChange={(e) => handleQtdeHotelChange(h.id, e.target.value)}
+                                className="w-16 text-center border border-emerald-200 rounded-lg px-2 py-1 text-sm font-bold text-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white shadow-inner"
+                                placeholder="0"
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
-        {voos.length > 0 && (
+        {(voos.length > 0 || hoteis.length > 0) && (
           <div className="p-6 border-t border-slate-100 bg-white flex items-center justify-between">
             <p className="text-sm font-bold text-slate-600">
-              <span className="text-blue-600">{Object.keys(selecionados).length}</span> tarifa(s) selecionada(s)
+              <span className="text-blue-600">{Object.keys(selecionados).length} voo(s)</span> e <span className="text-emerald-600">{Object.keys(selecionadosHoteis).length} hotel(s)</span> selecionado(s)
             </p>
             <div className="flex gap-3">
               <button onClick={onClose} className="px-5 py-2.5 rounded-lg text-sm font-bold border border-slate-200 hover:bg-slate-50 transition-colors">
@@ -324,10 +452,10 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
               </button>
               <button 
                 onClick={handleConfirm}
-                disabled={Object.keys(selecionados).length === 0}
+                disabled={Object.keys(selecionados).length === 0 && Object.keys(selecionadosHoteis).length === 0}
                 className="px-6 py-2.5 rounded-lg text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-lg shadow-blue-600/20"
               >
-                Importar {Object.keys(selecionados).length} Selecionados
+                Importar Selecionados
               </button>
             </div>
           </div>

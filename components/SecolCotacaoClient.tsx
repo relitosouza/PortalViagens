@@ -276,11 +276,19 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
       {showPdfImport && (
         <PdfQuoteImport
           onClose={() => setShowPdfImport(false)}
-          onImport={(selecionados) => {
-            setVoos(v => [
-              ...v,
-              ...selecionados.map((item, idx) => ({ ...item, id: Date.now() + idx }))
-            ])
+          onImport={(selecionadosVoos, selecionadosHoteis) => {
+            if (selecionadosVoos && selecionadosVoos.length > 0) {
+              setVoos(v => [
+                ...v,
+                ...selecionadosVoos.map((item, idx) => ({ ...item, id: Date.now() + idx }))
+              ])
+            }
+            if (selecionadosHoteis && selecionadosHoteis.length > 0) {
+              setHoteis(h => [
+                ...h,
+                ...selecionadosHoteis.map((item, idx) => ({ ...item, id: Date.now() + 1000 + idx }))
+              ])
+            }
             setShowPdfImport(false)
           }}
         />

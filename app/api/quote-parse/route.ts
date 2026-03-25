@@ -140,12 +140,64 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    console.log(`>>> [PDF PARSER] Total flights items: ${voosEncontrados.length}`);
+    // ----------------------------------------------------
+    // EXTRAÇÃO DE HOSPEDAGEM (HOTÉIS)
+    // ----------------------------------------------------
+    const hoteisEncontrados: any[] = [];
+    
+    // Extract Check-in and Check-out dates if present
+    let checkIn = "";
+    let checkOut = "";
+    let cidadeHotel = "Brasília"; // Default hardcoded for now
+    
+    const checkInMatch = text.match(/Check[- ]?in:\s*(\d{2}\/\d{2}\/\d{4}|\d{2}\/\d{2})/i) || text.match(/Período.*?(?:a|até).*?(\d{2}\/\d{2}\/\d{4}|\d{2}\/\d{2})/i);
+    const checkOutMatch = text.match(/Check[- ]?out:\s*(\d{2}\/\d{2}\/\d{4}|\d{2}\/\d{2})/i) || text.match(/(?:a|até)\s*(\d{2}\/\d{2}\/\d{4}|\d{2}\/\d{2})/i);
+    
+    if (checkInMatch) checkIn = checkInMatch[1];
+    if (checkOutMatch) checkOut = checkOutMatch[1];
+
+    // Look for Room matches around "Café da manhã" or other regimes
+    const roomRegex = /(Double.*?|Single.*?|Quarto.*?|Standard.*?|Superior.*?|Luxo|Executive.*?|Twin.*?)\s+(Café da manhã|Sem café|Meia pensão|Pensao completa)\s+([\d\.,]+)/gi;
+    const roomMatches = Array.from(text.matchAll(roomRegex)) as RegExpMatchArray[];
+    
+    roomMatches.forEach((rm, idx) => {
+      // Look 300 chars before and after for the Hotel Name
+      const start = Math.max(0, (rm.index || 0) - 300);
+      const end = Math.min(text.length, (rm.index || 0) + 300);
+      const context = text.substring(start, end);
+      
+      let hotelName = "HOTEL DESCONHECIDO";
+      
+      // Look for common hotel name endings in uppercase
+      const nameMatch = context.match(/([A-Z0-9][A-Z0-9\s]+(?:PLAZA|HOTEL|EXECUTIVE|VISION|RESORT|INN|PALACE|SUITES|LODGE|HPLUS))/);
+      if (nameMatch) {
+        hotelName = nameMatch[1].trim();
+      } else {
+        // Fallback: look for 2+ uppercase words in a row near the beginning of the context
+        const upMatch = context.match(/([A-Z]{4,}(?:\s+[A-Z]{3,})+)/);
+        if (upMatch) hotelName = upMatch[1].trim();
+      }
+
+      hoteisEncontrados.push({
+        id: `h${idx}`,
+        nome: hotelName,
+        quarto: rm[1].trim(),
+        regime: rm[2].trim(),
+        valorTotal: rm[3].trim(),
+        cidade: cidadeHotel,
+        checkIn,
+        checkOut,
+        qtde: 1
+      });
+    });
+
+    console.log(`>>> [PDF PARSER] Total flights items: ${voosEncontrados.length}, Total hotel items: ${hoteisEncontrados.length}`);
     return NextResponse.json({
       success: true,
       voos: voosEncontrados,
+      hoteis: hoteisEncontrados,
       rawTextLen: text.length,
-      warning: voosEncontrados.length === 0 ? "O formato do PDF não foi reconhecido. Tente enviar novamente ou use outro arquivo." : null
+      warning: (voosEncontrados.length === 0 && hoteisEncontrados.length === 0) ? "O formato do PDF não foi reconhecido. Tente enviar novamente ou use outro arquivo." : null
     });
   } catch (error: any) {
     console.error(">>> [PDF PARSER] CRASH:", error);
