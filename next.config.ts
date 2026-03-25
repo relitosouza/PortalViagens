@@ -19,6 +19,9 @@ const nextConfig: NextConfig = {
     return [{ source: '/(.*)', headers: securityHeaders }]
   },
   serverExternalPackages: ['@prisma/client', 'better-sqlite3', '@prisma/adapter-better-sqlite3', 'pdf-parse'],
+  outputFileTracingIncludes: {
+    '/api/quote-parse': ['./node_modules/pdf-parse/**/*'],
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // Externalize all Prisma/sqlite server-only modules from client bundle
