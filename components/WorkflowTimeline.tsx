@@ -9,6 +9,7 @@ type WorkflowStep = {
 }
 
 const ETAPAS = [
+  { key: 'SECRETARIO', label: 'Gabinete do Secretário', ator: 'Secretário / Gabinete', desc: 'Preenchimento de mérito público e autorização hierárquica' },
   { key: 'COTACAO', label: 'Cotação Técnica', ator: 'SECOL / DRP', desc: 'Consulta à Ata de Registro de Preços e upload de opções de voos/hotéis' },
   { key: 'VIABILIDADE', label: 'Análise de Viabilidade', ator: 'SEGOV — Gabinete', desc: 'Avaliação de conveniência e oportunidade política/financeira' },
   { key: 'EMISSAO', label: 'Emissão de OS e Vouchers', ator: 'SECOL', desc: 'Emissão da Ordem de Serviço e envio de vouchers ao servidor' },
@@ -16,7 +17,9 @@ const ETAPAS = [
 ]
 
 const STATUS_ETAPA_MAP: Record<string, string> = {
-  AGUARDANDO_COTACAO: 'COTACAO',
+  AGUARDANDO_APROVACAO_PASTA: 'SECRETARIO',
+  DEVOLVIDO_SECRETARIO: 'SECRETARIO',
+  EM_COTACAO: 'COTACAO',
   AGUARDANDO_VIABILIDADE: 'VIABILIDADE',
   AGUARDANDO_EMISSAO: 'EMISSAO',
   AGUARDANDO_EXECUCAO: 'EXECUCAO',

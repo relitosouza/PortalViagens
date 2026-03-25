@@ -6,7 +6,9 @@ import BudgetTetoInfo from '@/components/BudgetTetoInfo'
 
 const STATUS_LABELS: Record<string, string> = {
   RASCUNHO: 'Rascunho',
-  AGUARDANDO_COTACAO: 'Aguardando Cotação',
+  AGUARDANDO_APROVACAO_PASTA: 'Gabinete do Secretário',
+  DEVOLVIDO_SECRETARIO: 'Ajustes Necessários',
+  EM_COTACAO: 'Aguardando Cotação',
   AGUARDANDO_VIABILIDADE: 'Análise de Viabilidade',
   AGUARDANDO_EMISSAO: 'Aguardando Emissão OS',
   AGUARDANDO_EXECUCAO: 'Execução Orçamentária',
@@ -16,17 +18,20 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_BADGE: Record<string, string> = {
   RASCUNHO: 'bg-slate-100 text-slate-800',
-  AGUARDANDO_COTACAO: 'bg-amber-100 text-amber-800',
+  AGUARDANDO_APROVACAO_PASTA: 'bg-indigo-100 text-indigo-800',
+  DEVOLVIDO_SECRETARIO: 'bg-amber-100 text-amber-800',
+  EM_COTACAO: 'bg-blue-100 text-blue-800',
   AGUARDANDO_VIABILIDADE: 'bg-orange-100 text-orange-800',
-  AGUARDANDO_EMISSAO: 'bg-blue-100 text-blue-800',
+  AGUARDANDO_EMISSAO: 'bg-cyan-100 text-cyan-800',
   AGUARDANDO_EXECUCAO: 'bg-purple-100 text-purple-800',
   CONCLUIDA: 'bg-emerald-100 text-emerald-800',
   REPROVADA: 'bg-rose-100 text-rose-800',
 }
 
 const ROLE_STATUS_MAP: Record<string, string[]> = {
-  DEMANDANTE: ['RASCUNHO', 'AGUARDANDO_COTACAO', 'AGUARDANDO_VIABILIDADE', 'AGUARDANDO_EMISSAO', 'AGUARDANDO_EXECUCAO', 'CONCLUIDA', 'REPROVADA'],
-  SECOL: ['AGUARDANDO_COTACAO', 'AGUARDANDO_EMISSAO'],
+  DEMANDANTE: ['RASCUNHO', 'AGUARDANDO_APROVACAO_PASTA', 'DEVOLVIDO_SECRETARIO', 'EM_COTACAO', 'AGUARDANDO_VIABILIDADE', 'AGUARDANDO_EMISSAO', 'AGUARDANDO_EXECUCAO', 'CONCLUIDA', 'REPROVADA'],
+  SECRETARIO: ['AGUARDANDO_APROVACAO_PASTA'],
+  SECOL: ['EM_COTACAO', 'AGUARDANDO_EMISSAO'],
   SEGOV: ['AGUARDANDO_VIABILIDADE'],
   SF: ['AGUARDANDO_EXECUCAO'],
 }
@@ -45,9 +50,15 @@ export default async function DashboardPage() {
   const role: string = user.role
   const userId: string = user.id
 
-  let where: Record<string, unknown> = {}
+  let where: Record<string, any> = {}
   if (role === 'DEMANDANTE') {
     where = { userId, status: { in: ROLE_STATUS_MAP[role] } }
+  } else if (role === 'SECRETARIO') {
+    const dbUser = await prisma.user.findUnique({ where: { id: userId } })
+    where = { 
+      secretariaId: dbUser?.secretariaId,
+      status: { in: ROLE_STATUS_MAP[role] }
+    }
   } else if (role !== 'ADMIN') {
     where = { status: { in: ROLE_STATUS_MAP[role] ?? [] } }
   }
@@ -128,6 +139,7 @@ export default async function DashboardPage() {
           />
         </div>
       )}
+
       {/* Alert Banner — pending prestações */}
       {role === 'DEMANDANTE' && pendentesCount > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between">

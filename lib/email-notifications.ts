@@ -52,6 +52,30 @@ export async function notificarNovaSolicitacaoParaSecol(
   )
 }
 
+/** Notifica os secretários de uma secretaria específica */
+export async function notificarSecretarioParaAprovacao(
+  sol: SolicitacaoComUser
+): Promise<void> {
+  if (!sol.secretariaId) return
+
+  const usuarios = await prisma.user.findMany({
+    where: { role: 'SECRETARIO', secretariaId: sol.secretariaId, ativo: true },
+  })
+
+  for (const u of usuarios) {
+    try {
+      logEmail({
+        para: u.email,
+        assunto: '[Viagens Osasco] Nova solicitação aguardando sua validação',
+        corpo: `Prezado(a) Secretário(a),\n\nUma nova solicitação de viagem para ${sol.destino} de ${sol.nomeCompleto} foi submetida por um servidor da sua pasta e aguarda sua validação de mérito e aprovação hierárquica.\n\nAcesse o sistema: ${APP_URL}/solicitacoes/${sol.id}`,
+        tipo: 'VALIDACAO_SECRETARIO'
+      })
+    } catch {
+      // silent
+    }
+  }
+}
+
 /** SECOL concluiu cotação → notificar SEGOV para analisar viabilidade */
 export async function notificarCotacaoParaSegov(
   sol: SolicitacaoComUser

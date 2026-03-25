@@ -29,11 +29,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (existing) return NextResponse.json({ error: 'E-mail já cadastrado por outro usuário' }, { status: 409 })
     updateData.email = body.email
   }
+  if (body.secretariaId !== undefined) updateData.secretariaId = body.secretariaId
 
   const usuario = await prisma.user.update({
     where: { id },
     data: updateData,
-    select: { id: true, name: true, email: true, role: true, cpfBloqueado: true, ativo: true, createdAt: true },
+    select: { id: true, name: true, email: true, role: true, cpfBloqueado: true, ativo: true, createdAt: true, secretariaId: true },
   })
 
   return NextResponse.json(usuario)

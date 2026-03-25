@@ -2,7 +2,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import BudgetTetoInfo from './BudgetTetoInfo'
 
 type WorkflowStep = {
   etapa: string

@@ -17,9 +17,11 @@ type FormData = {
 type Props = {
   initialData?: FormData
   userName: string
+  userRole?: string
+  status?: string
 }
 
-export function SolicitacaoFormClient({ initialData, userName }: Props) {
+export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMANDANTE', status = 'RASCUNHO' }: Props) {
   const router = useRouter()
   const [erro, setErro] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -75,15 +77,20 @@ export function SolicitacaoFormClient({ initialData, userName }: Props) {
 
   function validar(): boolean {
     setErro('')
-    if (!form.nomeCompleto || !form.matricula || !form.cpf || !form.dataNascimento || !form.celular || !form.emailServidor) {
+    if ((status === 'RASCUNHO' || status === 'DEVOLVIDO_SECRETARIO') && (!form.nomeCompleto || !form.matricula || !form.cpf || !form.dataNascimento || !form.celular || !form.emailServidor)) {
       setErro('Preencha todos os campos obrigatórios na seção "Dados do Servidor"')
       return false
     }
-    if (!form.justificativaPublica || !form.nexoCargo) {
-      setErro('Preencha todos os campos obrigatórios na seção "Detalhes da Missão"')
-      return false
+    
+    // Na etapa do secretário, estes campos são obrigatórios
+    if (status === 'AGUARDANDO_APROVACAO_PASTA' && (userRole === 'SECRETARIO' || userRole === 'ADMIN')) {
+      if (!form.justificativaPublica || !form.nexoCargo) {
+        setErro('Atenção: Para prosseguir com a aprovação, é obrigatório preencher a Justificativa de Interesse Público e o Nexo com as Atribuições do Cargo.')
+        return false
+      }
     }
-    if (!form.destino || !form.dataIda || !form.dataVolta || !form.justificativaLocal || !form.fichaOrcamentaria) {
+
+    if ((status === 'RASCUNHO' || status === 'DEVOLVIDO_SECRETARIO') && (!form.destino || !form.dataIda || !form.dataVolta || !form.justificativaLocal || !form.fichaOrcamentaria)) {
       setErro('Preencha todos os campos obrigatórios na seção "Logística"')
       return false
     }
@@ -148,6 +155,24 @@ export function SolicitacaoFormClient({ initialData, userName }: Props) {
     }
   }
 
+  async function devolverParaAjuste() {
+    if (!form.id) return
+    setEnviando(true)
+    try {
+      const res = await fetch(`/api/workflow/${form.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decisao: 'AJUSTE_DEMANDANTE', observacao: 'Retornado pelo Secretário para ajustes.' }),
+      })
+      if (!res.ok) throw new Error('Erro ao devolver')
+      router.push('/dashboard')
+      router.refresh()
+    } catch (err: any) {
+      setErro(err.message)
+      setEnviando(false)
+    }
+  }
+
   const inputCls = "w-full rounded-lg border-slate-300 bg-[#f6f6f8] focus:ring-blue-600 focus:border-blue-600 text-slate-900 h-10 px-4 text-sm"
   const textareaCls = "w-full rounded-lg border-slate-300 bg-[#f6f6f8] focus:ring-blue-600 focus:border-blue-600 text-slate-900 px-4 py-3 text-sm"
   const labelCls = "block text-xs font-bold text-slate-600 mb-1.5 uppercase"
@@ -160,9 +185,15 @@ export function SolicitacaoFormClient({ initialData, userName }: Props) {
             {form.id ? 'Editar Solicitação' : 'Requisição de Viagem'}
           </h2>
           <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest ${form.id ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-            {form.id ? 'Ajustes no Processo' : 'Novo Processo'}
+            {status === 'AGUARDANDO_APROVACAO_PASTA' ? 'Gabinete do Secretário' : form.id ? 'Ajustes no Processo' : 'Novo Processo'}
           </span>
         </div>
+        {status === 'AGUARDANDO_APROVACAO_PASTA' && (
+          <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-4 py-2 flex items-center gap-2">
+            <span className="material-symbols-outlined text-indigo-600 text-sm">info</span>
+            <span className="text-xs text-indigo-700 font-medium italic">"Sua solicitação foi encaminhada para o Gabinete do Secretário para preenchimento dos detalhes da missão e aprovação de mérito."</span>
+          </div>
+        )}
       </header>
 
       {/* Importação via Excel */}
@@ -241,14 +272,35 @@ export function SolicitacaoFormClient({ initialData, userName }: Props) {
           </div>
           <div className="space-y-6">
             <div>
-              <label className={labelCls}>Justificativa do Interesse Público</label>
-              <textarea className={textareaCls} rows={4} value={form.justificativaPublica} onChange={update('justificativaPublica')}
-                placeholder="Descreva os benefícios da viagem para o município de Osasco..." />
+              <label className={labelCls}>
+                Justificativa do Interesse Público
+                {(userRole === 'SECRETARIO' || userRole === 'ADMIN') && status === 'AGUARDANDO_SECRETARIO' && <span className="text-red-500 ml-1">*</span>}
+              </label>
+              <textarea 
+                className={textareaCls} 
+                rows={4} 
+                value={form.justificativaPublica} 
+                onChange={update('justificativaPublica')}
+                disabled={!(userRole === 'SECRETARIO' || userRole === 'ADMIN') || status !== 'AGUARDANDO_APROVACAO_PASTA'}
+                placeholder={status === 'AGUARDANDO_APROVACAO_PASTA' ? "Preencha a justificativa de mérito público para o município..." : "A ser preenchido pelo Secretário..."} 
+              />
+              {status === 'AGUARDANDO_APROVACAO_PASTA' && userRole === 'DEMANDANTE' && (
+                <p className="text-[10px] text-indigo-600 mt-1 italic font-medium">Aguardando preenchimento do Secretário</p>
+              )}
             </div>
             <div>
-              <label className={labelCls}>Nexo com as Atribuições do Cargo</label>
-              <textarea className={textareaCls} rows={3} value={form.nexoCargo} onChange={update('nexoCargo')}
-                placeholder="Explique como este evento se relaciona com suas funções atuais..." />
+              <label className={labelCls}>
+                Nexo com as Atribuições do Cargo
+                {(userRole === 'SECRETARIO' || userRole === 'ADMIN') && status === 'AGUARDANDO_SECRETARIO' && <span className="text-red-500 ml-1">*</span>}
+              </label>
+              <textarea 
+                className={textareaCls} 
+                rows={3} 
+                value={form.nexoCargo} 
+                onChange={update('nexoCargo')}
+                disabled={!(userRole === 'SECRETARIO' || userRole === 'ADMIN') || status !== 'AGUARDANDO_APROVACAO_PASTA'}
+                placeholder={status === 'AGUARDANDO_APROVACAO_PASTA' ? "Explique como o evento se relaciona com o cargo..." : "A ser preenchido pelo Secretário..."} 
+              />
             </div>
           </div>
         </section>
@@ -351,13 +403,23 @@ export function SolicitacaoFormClient({ initialData, userName }: Props) {
           >
             {salvando ? 'Salvando...' : 'Salvar Rascunho'}
           </button>
+          {status === 'AGUARDANDO_APROVACAO_PASTA' && (userRole === 'SECRETARIO' || userRole === 'ADMIN') && (
+            <button
+              type="button"
+              onClick={devolverParaAjuste}
+              disabled={enviando || salvando || importing}
+              className="w-full md:w-auto px-8 py-2.5 rounded-lg border border-red-300 text-red-700 font-bold hover:bg-red-50 transition-colors text-sm"
+            >
+              Devolver para Ajuste
+            </button>
+          )}
           <button
             type="button"
             onClick={() => enviar(false)}
             disabled={enviando || salvando || importing}
             className="w-full md:w-auto px-10 py-2.5 rounded-lg bg-blue-600 text-white font-bold hover:shadow-lg hover:shadow-blue-600/30 hover:bg-blue-700 transition-all disabled:opacity-50 text-sm"
           >
-            {enviando ? 'Enviando...' : 'Enviar Solicitação'}
+            {enviando ? 'Processando...' : status === 'AGUARDANDO_APROVACAO_PASTA' ? 'Aprovar e Seguir' : status === 'DEVOLVIDO_SECRETARIO' ? 'Resubmeter Solicitação' : 'Enviar Solicitação'}
           </button>
         </div>
       </div>

@@ -15,10 +15,12 @@ model User {
   name         String
   email        String        @unique
   password     String
-  role         String        // DEMANDANTE | SECOL | SEGOV | SF | ADMIN
+  role         String        // DEMANDANTE | SECOL | SEGOV | SF | ADMIN | SECRETARIO
   cpfBloqueado Boolean       @default(false)
   ativo        Boolean       @default(true)
   createdAt    DateTime      @default(now())
+  secretariaId String?
+  secretaria   Secretaria?   @relation(fields: [secretariaId], references: [id])
   solicitacoes Solicitacao[]
 }
 
@@ -51,6 +53,8 @@ model Solicitacao {
   updatedAt            DateTime       @updatedAt
   userId               String
   user                 User           @relation(fields: [userId], references: [id])
+  secretariaId         String?
+  secretaria           Secretaria?    @relation(fields: [secretariaId], references: [id])
   anexos               Anexo[]
   steps                WorkflowStep[]
   prestacao            Prestacao?
@@ -91,4 +95,13 @@ model Anexo {
   solicitacao   Solicitacao? @relation(fields: [solicitacaoId], references: [id])
   prestacaoId   String?
   prestacao     Prestacao?   @relation(fields: [prestacaoId], references: [id])
+}
+
+model Secretaria {
+  id           String        @id @default(cuid())
+  nome         String        @unique
+  ativo        Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  users        User[]
+  solicitacoes Solicitacao[]
 }

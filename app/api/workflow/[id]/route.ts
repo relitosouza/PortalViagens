@@ -20,13 +20,18 @@ const TRANSICOES: Record<string, {
   proximoStatus: string
   rolePermitido: string
 }[]> = {
-  AGUARDANDO_COTACAO: [
+  AGUARDANDO_APROVACAO_PASTA: [
+    { etapa: 'SECRETARIO', decisao: 'APROVADO', proximoStatus: 'EM_COTACAO', rolePermitido: 'SECRETARIO' },
+    { etapa: 'SECRETARIO', decisao: 'AJUSTE_DEMANDANTE', proximoStatus: 'DEVOLVIDO_SECRETARIO', rolePermitido: 'SECRETARIO' },
+    { etapa: 'SECRETARIO', decisao: 'REPROVADO', proximoStatus: 'REPROVADA', rolePermitido: 'SECRETARIO' },
+  ],
+  EM_COTACAO: [
     { etapa: 'COTACAO', decisao: 'APROVADO', proximoStatus: 'AGUARDANDO_VIABILIDADE', rolePermitido: 'SECOL' },
   ],
   AGUARDANDO_VIABILIDADE: [
     { etapa: 'VIABILIDADE', decisao: 'APROVADO', proximoStatus: 'AGUARDANDO_EMISSAO', rolePermitido: 'SEGOV' },
     { etapa: 'VIABILIDADE', decisao: 'REPROVADO', proximoStatus: 'REPROVADA', rolePermitido: 'SEGOV' },
-    { etapa: 'VIABILIDADE', decisao: 'AJUSTE_SECOL', proximoStatus: 'AGUARDANDO_COTACAO', rolePermitido: 'SEGOV' },
+    { etapa: 'VIABILIDADE', decisao: 'AJUSTE_SECOL', proximoStatus: 'EM_COTACAO', rolePermitido: 'SEGOV' },
     { etapa: 'VIABILIDADE', decisao: 'AJUSTE_DEMANDANTE', proximoStatus: 'RASCUNHO', rolePermitido: 'SEGOV' },
   ],
   AGUARDANDO_EMISSAO: [
@@ -101,39 +106,77 @@ export async function POST(
       orderBy: { createdAt: 'desc' },
     })
 
-    if (cotacaoStep && (cotacaoStep.valorPassagem != null || cotacaoStep.valorHospedagem != null)) {
+    console.log('[workflow/VIABILIDADE] cotacaoStep:', cotacaoStep
+      ? { id: cotacaoStep.id, valorPassagem: cotacaoStep.valorPassagem, valorHospedagem: cotacaoStep.valorHospedagem }
+      : null)
+
+    const valorPassagem = cotacaoStep?.valorPassagem ?? 0
+    const valorHospedagem = cotacaoStep?.valorHospedagem ?? 0
+
+    if (valorPassagem <= 0 && valorHospedagem <= 0) {
+      console.warn('[workflow/VIABILIDADE] Débito ignorado: valorPassagem e valorHospedagem são 0 ou null na cotação aprovada')
+    }
+
+    if (valorPassagem > 0 || valorHospedagem > 0) {
       const { notasDebito, notasAlerta } = await prisma.$transaction(async (tx) => {
         const notasDebito: string[] = []
         const notasAlerta: string[] = []
 
-        if (cotacaoStep.valorPassagem != null) {
+        if (valorPassagem > 0) {
           const cfg = await tx.configuracaoSistema.findUnique({ where: { chave: 'SALDO_EMPENHO_PASSAGEM' } })
-          if (cfg) {
+          if (!cfg) {
+            console.error('[workflow/VIABILIDADE] Config SALDO_EMPENHO_PASSAGEM não encontrada no banco')
+          } else {
             const saldoAtual = parseFloat(cfg.valor)
-            const novoSaldo = Math.max(0, saldoAtual - cotacaoStep.valorPassagem)
+            const novoSaldo = Math.max(0, saldoAtual - valorPassagem)
             await tx.configuracaoSistema.update({
               where: { chave: 'SALDO_EMPENHO_PASSAGEM' },
               data: { valor: novoSaldo.toFixed(2) },
             })
-            notasDebito.push(`Passagem: R$ ${cotacaoStep.valorPassagem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (saldo: R$ ${novoSaldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})`)
-            if (cotacaoStep.valorPassagem > saldoAtual) {
+            console.log(`[workflow/VIABILIDADE] Passagem debitada: ${valorPassagem} | saldo: ${saldoAtual} → ${novoSaldo}`)
+            notasDebito.push(`Passagem: R$ ${valorPassagem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (saldo: R$ ${novoSaldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})`)
+            if (valorPassagem > saldoAtual) {
               notasAlerta.push(`PASSAGEM com saldo insuficiente (saldo era R$ ${saldoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})`)
             }
           }
         }
 
-        if (cotacaoStep.valorHospedagem != null) {
+        if (valorHospedagem > 0) {
           const cfg = await tx.configuracaoSistema.findUnique({ where: { chave: 'SALDO_EMPENHO_HOSPEDAGEM' } })
-          if (cfg) {
+          if (!cfg) {
+            console.error('[workflow/VIABILIDADE] Config SALDO_EMPENHO_HOSPEDAGEM não encontrada no banco')
+          } else {
             const saldoAtual = parseFloat(cfg.valor)
-            const novoSaldo = Math.max(0, saldoAtual - cotacaoStep.valorHospedagem)
+            const novoSaldo = Math.max(0, saldoAtual - valorHospedagem)
             await tx.configuracaoSistema.update({
               where: { chave: 'SALDO_EMPENHO_HOSPEDAGEM' },
               data: { valor: novoSaldo.toFixed(2) },
             })
-            notasDebito.push(`Hospedagem: R$ ${cotacaoStep.valorHospedagem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (saldo: R$ ${novoSaldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})`)
-            if (cotacaoStep.valorHospedagem > saldoAtual) {
+            console.log(`[workflow/VIABILIDADE] Hospedagem debitada: ${valorHospedagem} | saldo: ${saldoAtual} → ${novoSaldo}`)
+            notasDebito.push(`Hospedagem: R$ ${valorHospedagem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (saldo: R$ ${novoSaldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})`)
+            if (valorHospedagem > saldoAtual) {
               notasAlerta.push(`HOSPEDAGEM com saldo insuficiente (saldo era R$ ${saldoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})`)
+            }
+          }
+        }
+
+        // Débito consolidado no Saldo do Teto (Passagem + Hospedagem)
+        const debitoTeto = valorPassagem + valorHospedagem
+        if (debitoTeto > 0) {
+          const cfgTeto = await tx.configuracaoSistema.findUnique({ where: { chave: 'SALDO_EMPENHO' } })
+          if (!cfgTeto) {
+            console.error('[workflow/VIABILIDADE] Config SALDO_EMPENHO (Teto) não encontrada no banco')
+          } else {
+            const saldoAtual = parseFloat(cfgTeto.valor)
+            const novoSaldo = Math.max(0, saldoAtual - debitoTeto)
+            await tx.configuracaoSistema.update({
+              where: { chave: 'SALDO_EMPENHO' },
+              data: { valor: novoSaldo.toFixed(2) },
+            })
+            console.log(`[workflow/VIABILIDADE] Teto debitado: ${debitoTeto} | saldo: ${saldoAtual} → ${novoSaldo}`)
+            notasDebito.push(`Teto: R$ ${debitoTeto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (saldo: R$ ${novoSaldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})`)
+            if (debitoTeto > saldoAtual) {
+              notasAlerta.push(`TETO com saldo insuficiente (saldo era R$ ${saldoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})`)
             }
           }
         }

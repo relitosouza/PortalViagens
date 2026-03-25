@@ -97,26 +97,16 @@ export default function BudgetTetoInfo({
   numeroEmpenhoHospedagem, valorEmpenhoHospedagem, saldoEmpenhoHospedagem,
   destacado = false,
 }: Props) {
-  if (!numeroEmpenho && !saldoEmpenho) return null
-
   const hasPassagem = !!(numeroEmpenhoPassagem || saldoEmpenhoPassagem)
   const hasHospedagem = !!(numeroEmpenhoHospedagem || saldoEmpenhoHospedagem)
+
+  if (!hasPassagem && !hasHospedagem) return null
 
   if (destacado) {
     return (
       <div className={`grid gap-4 ${
-        hasPassagem && hasHospedagem ? 'grid-cols-1 md:grid-cols-3' :
-        hasPassagem || hasHospedagem ? 'grid-cols-1 md:grid-cols-2' :
-        'grid-cols-1'
+        hasPassagem && hasHospedagem ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'
       }`}>
-        <EmpenhoCard
-          numeroEmpenho={numeroEmpenho}
-          valorEmpenho={valorEmpenho}
-          saldoEmpenho={saldoEmpenho}
-          label="Teto Orçamentário"
-          colorClass="bg-blue-600 text-white border-blue-400"
-          iconName="account_balance_wallet"
-        />
         {hasPassagem && (
           <EmpenhoCard
             numeroEmpenho={numeroEmpenhoPassagem}
@@ -141,49 +131,27 @@ export default function BudgetTetoInfo({
     )
   }
 
-  const saldo = parseFloat(saldoEmpenho || '0')
-  const total = parseFloat(valorEmpenho || '0')
-  const percent = total > 0 ? (saldo / total) * 100 : 0
-  const isLow = percent < 15
-  const isCritical = percent < 5
-
   const saldoPass = parseFloat(saldoEmpenhoPassagem || '0')
   const saldoHosp = parseFloat(saldoEmpenhoHospedagem || '0')
 
   return (
     <div className="flex items-center gap-6 py-2 px-4 bg-slate-50 rounded-lg border border-slate-200 flex-wrap">
-      <div className="flex flex-col">
-        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Empenho</span>
-        <span className="text-sm font-black text-slate-700 font-mono">{numeroEmpenho || 'N/A'}</span>
-      </div>
-      <div className="w-px h-8 bg-slate-200" />
-      <div className="flex flex-col">
-        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Saldo Disponível</span>
-        <span className={`text-sm font-black ${isCritical ? 'text-red-600' : isLow ? 'text-amber-600' : 'text-blue-600'}`}>
-          R$ {saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-        </span>
-      </div>
       {hasPassagem && (
-        <>
-          <div className="w-px h-8 bg-slate-200" />
-          <div className="flex flex-col">
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Passagens ({numeroEmpenhoPassagem || 'N/A'})</span>
-            <span className="text-sm font-black text-emerald-700">
-              R$ {saldoPass.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </span>
-          </div>
-        </>
+        <div className="flex flex-col">
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Passagens ({numeroEmpenhoPassagem || 'N/A'})</span>
+          <span className="text-sm font-black text-emerald-700">
+            R$ {saldoPass.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </span>
+        </div>
       )}
+      {hasPassagem && hasHospedagem && <div className="w-px h-8 bg-slate-200" />}
       {hasHospedagem && (
-        <>
-          <div className="w-px h-8 bg-slate-200" />
-          <div className="flex flex-col">
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Hospedagem ({numeroEmpenhoHospedagem || 'N/A'})</span>
-            <span className="text-sm font-black text-orange-600">
-              R$ {saldoHosp.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </span>
-          </div>
-        </>
+        <div className="flex flex-col">
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Hospedagem ({numeroEmpenhoHospedagem || 'N/A'})</span>
+          <span className="text-sm font-black text-orange-600">
+            R$ {saldoHosp.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </span>
+        </div>
       )}
     </div>
   )
