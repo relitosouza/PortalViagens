@@ -269,7 +269,6 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
     <div className="p-8">
       {showPdfImport && (
         <PdfQuoteImport
-          trecho={voos.length === 0 ? 'IDA' : 'VOLTA'}
           onClose={() => setShowPdfImport(false)}
           onImport={(selecionados) => {
             setVoos(v => [
@@ -487,39 +486,51 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
                         </td>
                       </tr>
                     )}
-                    {voos.map(v => (
-                      <tr key={v.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center">
-                              <span className="material-symbols-outlined text-slate-400 text-sm">flight</span>
+                    {voos.map(v => {
+                      const isIda = v.numeroVoo.includes('[IDA]')
+                      const isVolta = v.numeroVoo.includes('[VOLTA]')
+                      
+                      return (
+                        <tr 
+                          key={v.id} 
+                          className={`transition-colors border-l-4 ${
+                            isIda ? 'bg-blue-50/40 border-l-blue-400 hover:bg-blue-50/60' : 
+                            isVolta ? 'bg-red-50/40 border-l-red-400 hover:bg-red-50/60' : 
+                            'hover:bg-slate-50/50 border-l-transparent'
+                          }`}
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded flex items-center justify-center ${isIda ? 'bg-blue-100/50 text-blue-600' : isVolta ? 'bg-red-100/50 text-red-600' : 'bg-slate-100 text-slate-400'}`}>
+                                <span className="material-symbols-outlined text-sm">flight</span>
+                              </div>
+                              <div>
+                                <p className="font-bold text-sm">{v.companhia}{v.numeroVoo ? ` - ${v.numeroVoo}` : ''}</p>
+                                <p className="text-xs text-slate-500 italic">Classe Econômica</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-bold text-sm">{v.companhia}{v.numeroVoo ? ` - ${v.numeroVoo}` : ''}</p>
-                              <p className="text-xs text-slate-500 italic">Classe Econômica</p>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm">
+                              <p>{v.origem} <span className={`${isIda ? 'text-blue-500' : isVolta ? 'text-red-500' : 'text-slate-400'} font-bold`}>→</span> {v.destino}</p>
+                              {v.horario && <p className="text-xs text-slate-500 font-medium">{v.horario}</p>}
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm">
-                            <p>{v.origem} <span className="text-blue-600 font-bold">→</span> {v.destino}</p>
-                            {v.horario && <p className="text-xs text-slate-500">{v.horario}</p>}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 font-bold">R$ {v.preco}</td>
-                        <td className="px-6 py-4 text-slate-500 text-sm">R$ {v.taxa || '0,00'}</td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-1">
-                            <button onClick={() => iniciarEdicaoVoo(v)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
-                              <span className="material-symbols-outlined text-[20px]">edit</span>
-                            </button>
-                            <button onClick={() => setVoos(vs => vs.filter(x => x.id !== v.id))} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
-                              <span className="material-symbols-outlined text-[20px]">delete</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-6 py-4 font-bold">R$ {v.preco}</td>
+                          <td className="px-6 py-4 text-slate-500 text-sm">R$ {v.taxa || '0,00'}</td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex justify-end gap-1">
+                              <button onClick={() => iniciarEdicaoVoo(v)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
+                                <span className="material-symbols-outlined text-[20px]">edit</span>
+                              </button>
+                              <button onClick={() => setVoos(vs => vs.filter(x => x.id !== v.id))} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
+                                <span className="material-symbols-outlined text-[20px]">delete</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
