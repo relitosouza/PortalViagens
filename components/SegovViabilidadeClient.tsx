@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { parsePreco, calcularNoites, parseCurrency } from '@/lib/utils/budget-utils'
+import { calcularNoites, parseCurrency } from '@/lib/utils/budget-utils'
 
 type WorkflowStep = {
   id: string
@@ -24,6 +24,28 @@ type Solicitacao = {
   fichaOrcamentaria: string
   user: { name: string }
   steps: WorkflowStep[]
+}
+
+type OpcaoVoo = {
+  id: string
+  companhia: string
+  numeroVoo: string
+  origem: string
+  destino: string
+  horario: string
+  preco: string
+  taxa: string
+  passag: number
+  sentido: 'ida' | 'volta'
+}
+
+type OpcaoHotel = {
+  id: string
+  nome: string
+  quarto: string
+  noites: number
+  precoPorNoite: string
+  total: number
 }
 
 type Props = {
@@ -53,35 +75,75 @@ function formatarDataHora(iso: string) {
   })
 }
 
+function extrairOpcoesVoo(obs: string | null): OpcaoVoo[] {
+  if (!obs) return []
+  const voos: OpcaoVoo[] = []
+  const section = obs.match(/=== OPÇÕES DE VOO ===([\s\S]*?)(?:===|$)/)
+  if (!section) return []
 
-function extrairDetalhesCotacao(obs: string | null) {
-  const padrao = {
-    voo: 0, vooDesc: 'Não cotado',
-    hotel: 0, hotelDesc: 'Não cotado',
-  }
-  if (!obs) return padrao
+  const lines = section[1].trim().split('\n')
+  lines.forEach((line, idx) => {
+    if (line.startsWith('[')) {
+      const parts = line.split('|').map(s => s.trim())
+      if (parts.length >= 4) {
+        const header = parts[0].replace(/\[\d+\]\s+/, '')
+        const sentido: 'ida' | 'volta' = header.toUpperCase().includes('[VOLTA]') ? 'volta' : 'ida'
+        const compNum = header.replace(/\[(IDA|VOLTA)\]/gi, '').trim()
+        const [comp, ...numArr] = compNum.split(' ')
+        
+        const rota = parts[1].split('→')
+        const tarifaMatch = parts[3]?.match(/R\$\s?([\d.,]+)/)
+        const taxaMatch = parts[4]?.match(/R\$\s?([\d.,]+)/)
+        const qtdeMatch = parts[5]?.match(/Qtde:\s?(\d+)/)
 
-  // Extrair preços usando a mesma lógica do parsePreco em budget-utils
-  const regexPreco = /R\$\s?([\d.,]+)/g
-  const matches = [...obs.matchAll(regexPreco)]
-  
-  // Usar parseCurrency para consistência
-  const valores = matches.map(m => parseCurrency(m[1]))
+        voos.push({
+          id: `v-${idx}`,
+          companhia: comp || '',
+          numeroVoo: numArr.join(' ') || '',
+          origem: rota[0]?.trim() || '',
+          destino: rota[1]?.trim() || '',
+          horario: parts[2] || '',
+          preco: tarifaMatch ? tarifaMatch[1] : '0,00',
+          taxa: taxaMatch ? taxaMatch[1] : '0,00',
+          passag: qtdeMatch ? parseInt(qtdeMatch[1]) : 1,
+          sentido
+        })
+      }
+    }
+  })
+  return voos
+}
 
-  // Extrair Descrição do Voo
-  const vooMatch = obs.match(/=== OPÇÕES DE VOO ===\s+\[1\]\s+([^|]+)/)
-  const vooDesc = vooMatch ? vooMatch[1].trim() : 'Voo não identificado'
+function extrairOpcoesHotel(obs: string | null): OpcaoHotel[] {
+  if (!obs) return []
+  const hoteis: OpcaoHotel[] = []
+  const section = obs.match(/=== OPÇÕES DE HOSPEDAGEM ===([\s\S]*?)(?:===|$)/)
+  if (!section) return []
 
-  // Extrair Descrição do Hotel
-  const hotelMatch = obs.match(/=== OPÇÕES DE HOSPEDAGEM ===\s+\[1\]\s+([^|]+)/)
-  const hotelDesc = hotelMatch ? hotelMatch[1].trim() : 'Hotel não identificado'
+  const lines = section[1].trim().split('\n')
+  lines.forEach((line, idx) => {
+    if (line.startsWith('[')) {
+      const parts = line.split('|').map(s => s.trim())
+      if (parts.length >= 3) {
+        const nome = parts[0].replace(/\[\d+\]\s+/, '')
+        const quarto = parts[1]
+        const logistica = parts[2].split('×')
+        const noitesMatch = logistica[0]?.match(/\d+/)
+        const precoMatch = logistica[1]?.split('=')[0]?.match(/R\$\s?([\d.,]+)/)
+        const totalMatch = logistica[1]?.split('=')[1]?.match(/R\$\s?([\d.,]+)/)
 
-  return {
-    voo: valores[0] || 0,
-    vooDesc,
-    hotel: valores[valores.length - 1] || 0,
-    hotelDesc,
-  }
+        hoteis.push({
+          id: `h-${idx}`,
+          nome,
+          quarto,
+          noites: noitesMatch ? parseInt(noitesMatch[0]) : 1,
+          precoPorNoite: precoMatch ? precoMatch[1] : '0,00',
+          total: totalMatch ? parseCurrency(totalMatch[1]) : 0
+        })
+      }
+    }
+  })
+  return hoteis
 }
 
 export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
@@ -91,23 +153,58 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
   const [erro, setErro] = useState('')
 
   const cotacaoStep = sol.steps.find(s => s.etapa === 'COTACAO')
+  const [voos, setVoos] = useState<OpcaoVoo[]>(() => extrairOpcoesVoo(cotacaoStep?.observacao ?? null))
+  const [hoteis, setHoteis] = useState<OpcaoHotel[]>(() => extrairOpcoesHotel(cotacaoStep?.observacao ?? null))
+  
   const noites = calcularNoites(sol.dataIda, sol.dataVolta)
   const dias = noites + 1
-  const detalhes = extrairDetalhesCotacao(cotacaoStep?.observacao ?? null)
-  const custoTotal = detalhes.voo + detalhes.hotel
+  
+  const custoVoo = voos.reduce((acc, v) => acc + (parseCurrency(v.preco) + parseCurrency(v.taxa)) * v.passag, 0)
+  const custoHotel = hoteis.reduce((acc, h) => acc + h.total, 0)
+  const custoTotal = custoVoo + custoHotel
+
+  function formatarObservacaoEnvio(obsOriginal: string): string {
+    const partes: string[] = []
+    if (voos.length > 0) {
+      partes.push('=== OPÇÕES DE VOO SELECIONADAS ===')
+      voos.forEach((v, i) => {
+        partes.push(`[${i + 1}] ${v.companhia} ${v.numeroVoo} [${v.sentido.toUpperCase()}] | ${v.origem} → ${v.destino} | ${v.horario} | R$ ${v.preco} + R$ ${v.taxa} | Qtde: ${v.passag}`)
+      })
+    }
+    if (hoteis.length > 0) {
+      partes.push('=== OPÇÕES DE HOSPEDAGEM SELECIONADAS ===')
+      hoteis.forEach((h, i) => {
+        partes.push(`[${i + 1}] ${h.nome} | ${h.quarto} | ${h.noites} noite(s) × R$ ${h.precoPorNoite} = R$ ${h.total.toFixed(2).replace('.', ',')}`)
+      })
+    }
+    partes.push('=== PARECER SEGOV ===')
+    partes.push(observacao)
+    return partes.join('\n')
+  }
 
   async function executar(decisao: string) {
     if (!observacao.trim() && decisao !== 'APROVADO') {
       setErro('Informe o parecer ou os motivos do ajuste/reprovação antes de prosseguir.')
       return
     }
+    
+    if (decisao === 'APROVADO' && voos.length === 0 && hoteis.length === 0) {
+      setErro('Não é possível aprovar uma solicitação sem nenhuma opção de voo ou hotel selecionada.')
+      return
+    }
+
     setLoading(decisao)
     setErro('')
     try {
       const res = await fetch(`/api/workflow/${sol.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ decisao, observacao }),
+        body: JSON.stringify({ 
+          decisao, 
+          observacao: formatarObservacaoEnvio(observacao),
+          valorPassagem: custoVoo,
+          valorHospedagem: custoHotel
+        }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -140,351 +237,309 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
         </div>
       </header>
 
-        {/* Content */}
-        <div className="p-8 space-y-6 max-w-6xl">
-
-          {/* Breadcrumb & Title */}
-          <div className="space-y-2">
-            <nav className="flex text-sm text-slate-500 gap-2">
-              <Link href="/dashboard" className="hover:text-blue-600">Gestão de Viagens</Link>
-              <span>/</span>
-              <span>Protocolo #{sol.id.slice(-8).toUpperCase()}</span>
-              <span>/</span>
-              <span className="text-blue-600 font-medium">Análise SEGOV</span>
-            </nav>
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-3xl font-black text-slate-900 tracking-tight">Etapa 2: Avaliação Política e Financeira</h3>
-                <p className="text-slate-500 mt-1">Decisão baseada em Conveniência e Oportunidade do interesse público.</p>
-              </div>
-
-              {/* Painel Orçamentário */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Duração Total */}
-                <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Duração Total</p>
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-3xl font-black text-slate-900 leading-none">{dias}</p>
-                    <p className="text-sm font-bold text-slate-500 uppercase">Dias</p>
-                  </div>
-                  <p className="mt-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest">{noites} Noites Planejadas</p>
-                </div>
-
-                {/* Custo Estimado */}
-                <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Custo Estimado</p>
-                  <p className="text-xl font-black text-blue-600 leading-none mb-1">
-                    <span className="text-xs mr-0.5">R$</span> {custoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </p>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-3">Impacto no Saldo</p>
-                </div>
-              </div>
-              {/* Empenhos Separados — Passagem e Hospedagem */}
-              {(budgetData?.saldoEmpenhoPassagem || budgetData?.saldoEmpenhoHospedagem) && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {budgetData?.saldoEmpenhoPassagem && (
-                    <div className="bg-emerald-900 p-6 rounded-3xl shadow-xl border border-emerald-700 relative overflow-hidden">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="material-symbols-outlined text-emerald-400 text-[18px]">flight</span>
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Empenho Passagens</p>
-                          </div>
-                          <p className="text-2xl font-black text-white tracking-tight">
-                            <span className="text-emerald-400">R$</span> {parseFloat(budgetData.saldoEmpenhoPassagem || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 mb-1">Teto</p>
-                          <p className="text-sm font-bold text-emerald-300">
-                            R$ {parseFloat(budgetData.valorEmpenhoPassagem || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-emerald-400 rounded-full transition-all duration-1000"
-                          style={{ width: `${Math.min(100, (parseFloat(budgetData.saldoEmpenhoPassagem || '0') / parseFloat(budgetData.valorEmpenhoPassagem || '1')) * 100)}%` }}
-                        />
-                      </div>
-                      <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-2">
-                        Nº {budgetData.numeroEmpenhoPassagem}
-                      </p>
-                    </div>
-                  )}
-                  {budgetData?.saldoEmpenhoHospedagem && (
-                    <div className="bg-orange-900 p-6 rounded-3xl shadow-xl border border-orange-700 relative overflow-hidden">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="material-symbols-outlined text-orange-400 text-[18px]">hotel</span>
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-400">Empenho Hospedagem</p>
-                          </div>
-                          <p className="text-2xl font-black text-white tracking-tight">
-                            <span className="text-orange-400">R$</span> {parseFloat(budgetData.saldoEmpenhoHospedagem || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500 mb-1">Teto</p>
-                          <p className="text-sm font-bold text-orange-300">
-                            R$ {parseFloat(budgetData.valorEmpenhoHospedagem || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-orange-400 rounded-full transition-all duration-1000"
-                          style={{ width: `${Math.min(100, (parseFloat(budgetData.saldoEmpenhoHospedagem || '0') / parseFloat(budgetData.valorEmpenhoHospedagem || '1')) * 100)}%` }}
-                        />
-                      </div>
-                      <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest mt-2">
-                        Nº {budgetData.numeroEmpenhoHospedagem}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-12 gap-6">
-
-            {/* Left Column */}
-            <div className="col-span-12 lg:col-span-8 space-y-6">
-
-              {/* Request Summary */}
-              <section className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-                  <h4 className="font-bold flex items-center gap-2">
-                    <span className="material-symbols-outlined text-blue-600">info</span>
-                    Resumo da Solicitação
-                  </h4>
-                  <span className="text-xs font-mono text-slate-500">#{sol.id.slice(-8).toUpperCase()}</span>
-                </div>
-                <div className="p-6 grid grid-cols-3 gap-6">
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase">Solicitante</p>
-                    <p className="text-sm font-semibold">{sol.nomeCompleto}</p>
-                    <p className="text-xs text-slate-500">{sol.user.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase">Destino</p>
-                    <p className="text-sm font-semibold">{sol.destino}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase">Período</p>
-                    <p className="text-sm font-semibold">{formatarData(sol.dataIda)} a {formatarData(sol.dataVolta)}</p>
-                    <p className="text-xs text-slate-500">{dias} dia{dias !== 1 ? 's' : ''} / {noites} noite{noites !== 1 ? 's' : ''}</p>
-                  </div>
-                </div>
-              </section>
-
-              {/* Fundamentação */}
-              <section className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-200">
-                  <h4 className="font-bold flex items-center gap-2">
-                    <span className="material-symbols-outlined text-blue-600">psychology</span>
-                    Fundamentação do Demandante
-                  </h4>
-                </div>
-                <div className="p-6 space-y-6">
-                  <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase mb-2">Justificativa do Interesse Público</p>
-                    <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-lg border border-slate-100">
-                      {sol.justificativaPublica}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase mb-2">Nexo com o Cargo / Atribuições</p>
-                    <p className="text-sm text-slate-700 leading-relaxed">
-                      {sol.nexoCargo}
-                    </p>
-                  </div>
-                </div>
-              </section>
-
-              {/* Decision Panel */}
-              <section className="bg-white rounded-xl border-2 border-blue-600/20 shadow-xl shadow-blue-600/5 overflow-hidden">
-                <div className="px-6 py-4 bg-blue-600 text-white">
-                  <h4 className="font-bold flex items-center gap-2">
-                    <span className="material-symbols-outlined">gavel</span>
-                    Painel de Decisão SEGOV
-                  </h4>
-                </div>
-                <div className="p-6 space-y-6">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">
-                      Parecer da SEGOV (Observações Oficiais)
-                    </label>
-                    <textarea
-                      className="w-full rounded-xl border-slate-300 text-base focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 bg-white shadow-inner p-4 transition-all min-h-[160px] text-slate-700"
-                      placeholder="Descreva aqui os motivos da aprovação, reprovação ou necessidade de ajustes de forma clara e detalhada..."
-                      value={observacao}
-                      onChange={e => setObservacao(e.target.value)}
-                    />
-                  </div>
-
-                  {erro && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm flex gap-2">
-                      <span className="material-symbols-outlined text-[18px] flex-shrink-0">error</span>
-                      {erro}
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                    <button
-                      onClick={() => executar('APROVADO')}
-                      disabled={loading !== null}
-                      className="md:col-span-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50"
-                    >
-                      <span className="material-symbols-outlined">check_circle</span>
-                      {loading === 'APROVADO' ? 'Aprovando...' : 'Aprovar Solicitação'}
-                    </button>
-                    
-                    <button
-                      onClick={() => executar('AJUSTE_SECOL')}
-                      disabled={loading !== null}
-                      className="bg-white border border-slate-200 text-slate-700 font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-50 transition-all disabled:opacity-50"
-                    >
-                      <span className="material-symbols-outlined text-blue-600">replay</span>
-                      {loading === 'AJUSTE_SECOL' ? 'Enviando...' : 'Voltar para SECOL'}
-                    </button>
-
-                    <button
-                      onClick={() => executar('AJUSTE_DEMANDANTE')}
-                      disabled={loading !== null}
-                      className="bg-white border border-slate-200 text-slate-700 font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-50 transition-all disabled:opacity-50"
-                    >
-                      <span className="material-symbols-outlined text-amber-600">person_search</span>
-                      {loading === 'AJUSTE_DEMANDANTE' ? 'Enviando...' : 'Voltar para Demandante'}
-                    </button>
-
-                    <button
-                      onClick={() => executar('REPROVADO')}
-                      disabled={loading !== null}
-                      className="md:col-span-2 bg-white border-2 border-red-500 text-red-600 font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 hover:bg-red-50 transition-all disabled:opacity-50"
-                    >
-                      <span className="material-symbols-outlined">cancel</span>
-                      {loading === 'REPROVADO' ? 'Reprovando...' : 'Reprovar Definitivamente'}
-                    </button>
-                  </div>
-                </div>
-              </section>
-            </div>
-
-            {/* Right Column */}
-            <div className="col-span-12 lg:col-span-4 space-y-6">
-
-              {/* Detalhamento de Custos */}
-              <section className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                <div className="px-6 py-4 border-b border-slate-200 flex items-center gap-2 bg-slate-50/50">
-                  <span className="material-symbols-outlined text-blue-600">inventory_2</span>
-                  <h4 className="font-bold text-slate-800 uppercase tracking-tight text-sm">
-                    Detalhamento de Custos
-                  </h4>
-                </div>
-                <div className="p-5 space-y-4">
-                  {/* Passagem */}
-                  <div className="p-4 rounded-xl border border-blue-50 bg-white shadow-sm flex justify-between items-start">
-                    <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Passagem Aérea</p>
-                      <p className="text-sm font-bold text-slate-900 leading-none mb-1">{detalhes.vooDesc}</p>
-                      <p className="text-[10px] text-slate-500">Ida e Volta</p>
-                    </div>
-                    <p className="text-lg font-black text-slate-900">
-                      R$ {detalhes.voo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </p>
-                  </div>
-
-                  {/* Hospedagem */}
-                  <div className="p-4 rounded-xl border border-blue-50 bg-white shadow-sm flex justify-between items-start">
-                    <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Hospedagem</p>
-                      <p className="text-sm font-bold text-slate-900 leading-none mb-1">{detalhes.hotelDesc}</p>
-                      <p className="text-[10px] text-slate-500">{noites} Diárias</p>
-                    </div>
-                    <p className="text-lg font-black text-slate-900">
-                      R$ {detalhes.hotel.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </p>
-                  </div>
-
-                </div>
-              </section>
-
-              {/* Cotação da SECOL Original (Opcional ou Minimizada) */}
-              <section className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-200">
-                  <h4 className="font-bold flex items-center gap-2 text-sm uppercase tracking-wide">
-                    <span className="material-symbols-outlined text-blue-600 text-lg">receipt_long</span>
-                    Análise Técnica da SECOL
-                  </h4>
-                </div>
-                <div className="p-6">
-                  {cotacaoStep?.observacao ? (
-                    <pre className="text-[10px] text-slate-500 whitespace-pre-wrap leading-relaxed bg-slate-50 rounded-lg p-3 border border-slate-100 font-sans">
-                      {cotacaoStep.observacao}
-                    </pre>
-                  ) : (
-                    <p className="text-sm text-slate-400 italic">Nenhuma observação registrada.</p>
-                  )}
-                </div>
-              </section>
-
-              {/* Budget */}
-              <section className="bg-slate-900 text-white rounded-xl border border-slate-800 p-6 space-y-4">
-                <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-blue-600 text-base">account_balance_wallet</span>
-                  Ficha Orçamentária
-                </h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-slate-400">Ficha / Dotação</span>
-                    <span className="font-mono bg-slate-800 px-2 py-0.5 rounded text-white">{sol.fichaOrcamentaria}</span>
-                  </div>
-                  <div className="h-px bg-slate-800" />
-                  <p className="text-[10px] text-slate-500 italic text-center">
-                    Verificar saldo junto à Secretaria de Finanças
-                  </p>
-                </div>
-              </section>
-
-              {/* Workflow History */}
-              <section className="p-4 bg-white rounded-xl border border-slate-200">
-                <h4 className="text-xs font-bold uppercase text-slate-400 mb-4">Fluxo do Processo</h4>
-                <div className="space-y-4 relative before:absolute before:left-[9px] before:top-2 before:bottom-2 before:w-px before:bg-slate-200">
-                  {TIMELINE.map(({ etapa, label }) => {
-                    const step = sol.steps.find(s => s.etapa === etapa)
-                    const done = step?.decisao === 'APROVADO'
-                    const isCurrent = etapa === 'VIABILIDADE'
-                    return (
-                      <div key={etapa} className="relative pl-7">
-                        <div className={`absolute left-0 top-1 size-[18px] rounded-full flex items-center justify-center border-4 border-white shadow-sm
-                          ${done ? 'bg-green-500' : isCurrent ? 'bg-blue-600' : 'bg-slate-300'}`}>
-                          <span className="material-symbols-outlined text-[10px] text-white">
-                            {done ? 'check' : isCurrent ? 'schedule' : 'more_horiz'}
-                          </span>
-                        </div>
-                        <p className={`text-xs font-bold ${isCurrent ? 'text-blue-600' : done ? 'text-slate-700' : 'text-slate-400'}`}>
-                          {label}
-                        </p>
-                        <p className="text-[10px] text-slate-500">
-                          {step ? formatarDataHora(step.createdAt) + (step.atorNome ? ` — ${step.atorNome}` : '') : isCurrent ? 'Aguardando decisão' : '—'}
-                        </p>
-                      </div>
-                    )
-                  })}
-                </div>
-              </section>
-
-            </div>
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="space-y-2">
+          <nav className="flex text-sm text-slate-500 gap-2">
+            <Link href="/dashboard" className="hover:text-blue-600">Gestão de Viagens</Link>
+            <span>/</span>
+            <span>Protocolo #{sol.id.slice(-8).toUpperCase()}</span>
+            <span>/</span>
+            <span className="text-blue-600 font-medium">Análise SEGOV</span>
+          </nav>
+          <div>
+            <h3 className="text-3xl font-black text-slate-900 tracking-tight">Etapa 2: Avaliação Política e Financeira</h3>
+            <p className="text-slate-500 mt-1">Decisão baseada em Conveniência e Oportunidade do interesse público.</p>
           </div>
         </div>
 
-        <footer className="mt-auto py-6 px-8 border-t border-slate-200 text-center">
-          <p className="text-xs text-slate-400">
-            Prefeitura Municipal de Osasco - Gabinete do Secretário de Governo (SEGOV) © {new Date().getFullYear()}
-          </p>
-        </footer>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Duração Total</p>
+            <div className="flex items-baseline gap-2">
+              <p className="text-3xl font-black text-slate-900 leading-none">{dias}</p>
+              <p className="text-sm font-bold text-slate-500 uppercase">Dias</p>
+            </div>
+            <p className="mt-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest">{noites} Noites Planejadas</p>
+          </div>
+
+          <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Custo Estimado</p>
+            <p className="text-xl font-black text-blue-600 leading-none mb-1">
+              <span className="text-xs mr-0.5">R$</span> {custoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-3">Impacto no Saldo</p>
+          </div>
+        </div>
+
+        {(budgetData?.saldoEmpenhoPassagem || budgetData?.saldoEmpenhoHospedagem) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {budgetData?.saldoEmpenhoPassagem && (
+              <div className="bg-emerald-900 p-6 rounded-3xl shadow-xl border border-emerald-700 relative overflow-hidden">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="material-symbols-outlined text-emerald-400 text-[18px]">flight</span>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Empenho Passagens</p>
+                    </div>
+                    <p className="text-2xl font-black text-white tracking-tight">
+                      <span className="text-emerald-400">R$</span> {parseFloat(budgetData.saldoEmpenhoPassagem || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 mb-1">Teto</p>
+                    <p className="text-sm font-bold text-emerald-300">
+                      R$ {parseFloat(budgetData.valorEmpenhoPassagem || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                </div>
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-400 rounded-full transition-all duration-1000"
+                    style={{ width: `${Math.min(100, (parseFloat(budgetData.saldoEmpenhoPassagem || '0') / parseFloat(budgetData.valorEmpenhoPassagem || '1')) * 100)}%` }}
+                  />
+                </div>
+                <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-2">
+                  Nº {budgetData.numeroEmpenhoPassagem}
+                </p>
+              </div>
+            )}
+            {budgetData?.saldoEmpenhoHospedagem && (
+              <div className="bg-orange-900 p-6 rounded-3xl shadow-xl border border-orange-700 relative overflow-hidden">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="material-symbols-outlined text-orange-400 text-[18px]">hotel</span>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-400">Empenho Hospedagem</p>
+                    </div>
+                    <p className="text-2xl font-black text-white tracking-tight">
+                      <span className="text-orange-400">R$</span> {parseFloat(budgetData.saldoEmpenhoHospedagem || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500 mb-1">Teto</p>
+                    <p className="text-sm font-bold text-orange-300">
+                      R$ {parseFloat(budgetData.valorEmpenhoHospedagem || '0').toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                </div>
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-orange-400 rounded-full transition-all duration-1000"
+                    style={{ width: `${Math.min(100, (parseFloat(budgetData.saldoEmpenhoHospedagem || '0') / parseFloat(budgetData.valorEmpenhoHospedagem || '1')) * 100)}%` }}
+                  />
+                </div>
+                <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest mt-2">
+                  Nº {budgetData.numeroEmpenhoHospedagem}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="grid grid-cols-12 gap-6">
+          <div className="col-span-12 lg:col-span-8 space-y-6">
+            <section className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                <h4 className="font-bold flex items-center gap-2">
+                  <span className="material-symbols-outlined text-blue-600">info</span>
+                  Resumo da Solicitação
+                </h4>
+                <span className="text-xs font-mono text-slate-500">#{sol.id.slice(-8).toUpperCase()}</span>
+              </div>
+              <div className="p-6 grid grid-cols-3 gap-6">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Solicitante</p>
+                  <p className="text-sm font-semibold">{sol.nomeCompleto}</p>
+                  <p className="text-xs text-slate-500">{sol.user.name}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Destino</p>
+                  <p className="text-sm font-semibold">{sol.destino}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Período</p>
+                  <p className="text-sm font-semibold">{formatarData(sol.dataIda)} a {formatarData(sol.dataVolta)}</p>
+                  <p className="text-xs text-slate-500">{dias} dia{dias !== 1 ? 's' : ''} / {noites} noite{noites !== 1 ? 's' : ''}</p>
+                </div>
+              </div>
+            </section>
+
+            <section className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+              <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-blue-600">flight_takeoff</span>
+                  <h4 className="font-bold text-slate-800 uppercase tracking-tight text-sm">Opções de Voos</h4>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-[13px]">
+                  <thead className="bg-slate-50 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-200">
+                    <tr>
+                      <th className="px-6 py-3">Cia / Voo</th>
+                      <th className="px-6 py-3">Horários</th>
+                      <th className="px-6 py-3 text-right">Tarifa (R$)</th>
+                      <th className="px-6 py-3 text-right">Taxa (R$)</th>
+                      <th className="px-6 py-3 text-center">Qtde.</th>
+                      <th className="px-6 py-3 text-right">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {voos.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-8 text-center text-slate-400 italic">Nenhum voo selecionado.</td>
+                      </tr>
+                    ) : (
+                      voos.map((v) => (
+                        <tr key={v.id} className={`hover:bg-slate-50 transition-colors border-l-4 ${v.sentido === 'ida' ? 'border-l-blue-500' : 'border-l-red-500'}`}>
+                          <td className="px-6 py-4">
+                            <p className="font-bold">{v.companhia} {v.numeroVoo}</p>
+                            <span className={`text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded ${v.sentido === 'ida' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
+                              {v.sentido}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <p className="font-medium text-slate-600">{v.horario}</p>
+                            <p className="text-[10px] text-slate-400">{v.origem} → {v.destino}</p>
+                          </td>
+                          <td className="px-6 py-4 text-right font-mono">R$ {v.preco}</td>
+                          <td className="px-6 py-4 text-right font-mono text-slate-500 text-[11px]">R$ {v.taxa}</td>
+                          <td className="px-6 py-4 text-center font-bold">{v.passag}x</td>
+                          <td className="px-6 py-4 text-right">
+                            <button onClick={() => setVoos(vs => vs.filter(x => x.id !== v.id))} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
+                              <span className="material-symbols-outlined text-[20px]">delete</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+              <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-emerald-600">hotel</span>
+                  <h4 className="font-bold text-slate-800 uppercase tracking-tight text-sm">Opções de Hospedagem</h4>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-[13px]">
+                  <thead className="bg-slate-50 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-200">
+                    <tr>
+                      <th className="px-6 py-3">Hotel / Acomodação</th>
+                      <th className="px-6 py-3 text-center">Diárias</th>
+                      <th className="px-6 py-3 text-right">Total (R$)</th>
+                      <th className="px-6 py-3 text-right">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {hoteis.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-8 text-center text-slate-400 italic">Nenhuma hospedagem selecionada.</td>
+                      </tr>
+                    ) : (
+                      hoteis.map((h) => (
+                        <tr key={h.id} className="hover:bg-slate-50 transition-colors border-l-4 border-l-emerald-500">
+                          <td className="px-6 py-4">
+                            <p className="font-bold">{h.nome}</p>
+                            <p className="text-[11px] text-slate-500">{h.quarto}</p>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <p className="font-bold">{h.noites}x</p>
+                            <p className="text-[10px] text-slate-400">R$ {h.precoPorNoite}</p>
+                          </td>
+                          <td className="px-6 py-4 text-right font-mono font-black text-slate-800">
+                            R$ {h.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <button onClick={() => setHoteis(hs => hs.filter(x => x.id !== h.id))} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
+                              <span className="material-symbols-outlined text-[20px]">delete</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className="bg-white rounded-xl border-2 border-blue-600/20 shadow-xl shadow-blue-600/5 overflow-hidden">
+              <div className="px-6 py-4 bg-blue-600 text-white">
+                <h4 className="font-bold flex items-center gap-2">
+                  <span className="material-symbols-outlined">gavel</span>
+                  Painel de Decisão SEGOV
+                </h4>
+              </div>
+              <div className="p-6 space-y-6">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Parecer da SEGOV</label>
+                  <textarea
+                    className="w-full rounded-xl border-slate-200 text-sm focus:ring-blue-600 focus:border-blue-600 p-4 min-h-[120px]"
+                    placeholder="Descreva aqui os motivos da sua decisão..."
+                    value={observacao}
+                    onChange={e => setObservacao(e.target.value)}
+                  />
+                </div>
+
+                {erro && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">{erro}</div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <button
+                    onClick={() => executar('APROVADO')}
+                    disabled={loading !== null}
+                    className="md:col-span-2 bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 transition-all disabled:opacity-50"
+                  >
+                    {loading === 'APROVADO' ? 'Aprovando...' : 'Aprovar Solicitação'}
+                  </button>
+                  <button onClick={() => executar('AJUSTE_SECOL')} disabled={loading !== null} className="border border-slate-200 py-3 rounded-xl font-bold">Voltar para SECOL</button>
+                  <button onClick={() => executar('AJUSTE_DEMANDANTE')} disabled={loading !== null} className="border border-slate-200 py-3 rounded-xl font-bold">Voltar para Demandante</button>
+                  <button onClick={() => executar('REPROVADO')} disabled={loading !== null} className="md:col-span-2 border-2 border-red-500 text-red-500 py-3 rounded-xl font-bold">Reprovar Definitivamente</button>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div className="col-span-12 lg:col-span-4 space-y-6">
+            <section className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-200">
+                <h4 className="font-bold flex items-center gap-2 text-sm uppercase">Cotação SECOL Original</h4>
+              </div>
+              <div className="p-6">
+                <pre className="text-[10px] text-slate-500 whitespace-pre-wrap leading-relaxed bg-slate-50 rounded-lg p-3 font-sans">
+                  {cotacaoStep?.observacao || 'Nenhuma observação.'}
+                </pre>
+              </div>
+            </section>
+
+            <section className="bg-slate-900 text-white rounded-xl p-6 space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500">Fluxo do Processo</h4>
+              <div className="space-y-4">
+                {TIMELINE.map(({ etapa, label }) => {
+                  const step = sol.steps.find(s => s.etapa === etapa)
+                  return (
+                    <div key={etapa} className="flex gap-3">
+                      <div className={`size-4 rounded-full mt-0.5 ${step ? 'bg-green-500' : etapa === 'VIABILIDADE' ? 'bg-blue-600' : 'bg-slate-700'}`} />
+                      <div>
+                        <p className="text-xs font-bold">{label}</p>
+                        <p className="text-[10px] text-slate-500">{step ? formatarDataHora(step.createdAt) : '—'}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <footer className="mt-8 py-6 border-t border-slate-200 text-center text-xs text-slate-400">
+        Prefeitura Municipal de Osasco © {new Date().getFullYear()}
+      </footer>
     </div>
   )
 }

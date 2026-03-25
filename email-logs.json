@@ -1,5 +1,21 @@
 [
   {
+    "para": "segov@osasco.sp.gov.br",
+    "assunto": "[Viagens Osasco] Solicitação aguardando análise de viabilidade",
+    "corpo": "A cotação da viagem para Brasília, DF de João da Silva foi concluída pela SECOL. A solicitação aguarda análise de viabilidade.\n\nAcesse: http://localhost:3000/solicitacoes/cmn4ijq8n0001kqhy87c17663",
+    "tipo": "NOVA_VIABILIDADE_SEGOV",
+    "id": "1774473690207-ioolkewdh6",
+    "timestamp": "2026-03-25T21:21:30.207Z"
+  },
+  {
+    "para": "joao.silva@osasco.sp.gov.br",
+    "assunto": "[Viagens Osasco] Cotação concluída — aguardando análise de viabilidade",
+    "corpo": "Prezado(a) João da Silva,\n\nA cotação da sua viagem para Brasília, DF foi concluída pela SECOL. A solicitação aguarda análise de viabilidade pela SEGOV.",
+    "tipo": "COTACAO_CONCLUIDA",
+    "id": "1774473689876-0uydpxuonbu",
+    "timestamp": "2026-03-25T21:21:29.876Z"
+  },
+  {
     "para": "ricardo@osasco.sp.gov.br",
     "assunto": "[Viagens Osasco] Cotação concluída — aguardando análise de viabilidade",
     "corpo": "Prezado(a) Ricardo,\n\nA cotação da sua viagem para maceio foi concluída pela SECOL. A solicitação aguarda agora a análise de viabilidade pela SEGOV.",
