@@ -8,7 +8,7 @@ export type TarifaParsed = {
   bagagens: number
   valorTarifa: string
   taxaEmbarque: string
-  passag: number // Novo campo
+  passag: number | string // Aceita string vazia para facilitar edição
   valorTotal: string
 }
 
@@ -36,7 +36,7 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
   const [loading, setLoading] = useState(false)
   const [voos, setVoos] = useState<VooParsed[]>([])
   const [error, setError] = useState('')
-  const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
+  const [selecionados, setSelecionados] = useState<Record<string, number | string>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleProcessPdf = async (e: React.FormEvent) => {
@@ -60,7 +60,7 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
       }
 
       setVoos(data.voos || [])
-      setSelecionados(new Set()) // Limpa selecoes antigas
+      setSelecionados({}) // Limpa selecoes antigas
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -68,21 +68,30 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
     }
   }
 
-  const toggleSelect = (tarifaId: string) => {
+  const toggleSelect = (tarifaId: string, currentPassag: number | string) => {
     setSelecionados(prev => {
-      const next = new Set(prev)
-      if (next.has(tarifaId)) {
-        next.delete(tarifaId)
+      const next = { ...prev }
+      if (next[tarifaId] !== undefined) {
+        delete next[tarifaId]
       } else {
-        next.add(tarifaId)
+        next[tarifaId] = currentPassag
       }
       return next
     })
   }
 
   const handlePassagChange = (vooId: string, tarifaId: string, newValStr: string) => {
-    const val = parseInt(newValStr);
-    if (isNaN(val) || val < 1) return;
+    // Permite que o usuário apague tudo (string vazia) para digitar um novo número
+    const val = newValStr === '' ? '' : parseInt(newValStr);
+    if (val !== '' && (isNaN(val) || val < 1)) return; // Impede números inválidos ou negativos
+
+    // Atualiza SELECIONADOS IMEDIATAMENTE caso a tarifa já esteja selecionada
+    setSelecionados(prev => {
+      if (prev[tarifaId] !== undefined) {
+        return { ...prev, [tarifaId]: val }
+      }
+      return prev
+    })
 
     setVoos(prev => prev.map(v => {
       if (v.id !== vooId) return v;
@@ -95,12 +104,13 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
         
         const trf = parseMoney(t.valorTarifa) || 0;
         const tx = parseMoney(t.taxaEmbarque) || 0;
-        const newTotal = (trf + tx) * val;
+        const multi = val === '' ? 1 : val; // Se estiver vazio, não quebra a conta
+        const newTotal = (trf + tx) * multi;
         
         return {
           ...t,
           passag: val,
-          valorTotal: formatMoney(newTotal)
+          valorTotal: val === '' ? t.valorTotal : formatMoney(newTotal) // Atualiza visualmente
         };
       });
       return { ...v, tarifas: newTarifas };
@@ -112,7 +122,7 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
     
     for (const voo of voos) {
       for (const t of voo.tarifas) {
-        if (selecionados.has(t.id)) {
+        if (selecionados[t.id] !== undefined) {
           toImport.push({
             companhia: `${voo.companhia} (${t.familia})`,
             numeroVoo: `${voo.numeroVoo} [${voo.sentido.toUpperCase()}]`,
@@ -121,7 +131,7 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
             horario: `${voo.partida.split(' ')[1]} - ${voo.chegada.split(' ')[1]} (${voo.duracao})`,
             preco: t.valorTarifa,
             taxa: t.taxaEmbarque,
-            passag: t.passag,
+            passag: selecionados[t.id], // Usa a quantidade vinculada no objeto
             total: t.valorTotal
           })
         }
@@ -244,10 +254,10 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
                           : 'bg-red-500 text-white';
 
                         return voo.tarifas.map(t => {
-                          const isSelected = selecionados.has(t.id);
+                          const isSelected = selecionados[t.id] !== undefined;
                           return (
                             <tr key={t.id} className={`transition-colors ${rowBg}`}>
-                              <td className="px-4 py-4" onClick={() => toggleSelect(t.id)}>
+                              <td className="px-4 py-4" onClick={() => toggleSelect(t.id, t.passag)}>
                                 <div className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-colors ${isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-400'}`}>
                                   {isSelected && <span className="material-symbols-outlined text-[12px] font-bold">check</span>}
                                 </div>
@@ -280,9 +290,10 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
                                 <input
                                   type="number"
                                   min={1}
-                                  value={t.passag}
+                                  value={t.passag === '' ? '' : t.passag}
                                   onChange={(e) => handlePassagChange(voo.id, t.id, e.target.value)}
-                                  className="w-16 text-center border border-slate-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                  className="w-16 text-center border border-slate-300 rounded-lg px-2 py-1 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-inner"
+                                  placeholder="0"
                                 />
                               </td>
 
@@ -305,7 +316,7 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
         {voos.length > 0 && (
           <div className="p-6 border-t border-slate-100 bg-white flex items-center justify-between">
             <p className="text-sm font-bold text-slate-600">
-              <span className="text-blue-600">{selecionados.size}</span> tarifa(s) selecionada(s)
+              <span className="text-blue-600">{Object.keys(selecionados).length}</span> tarifa(s) selecionada(s)
             </p>
             <div className="flex gap-3">
               <button onClick={onClose} className="px-5 py-2.5 rounded-lg text-sm font-bold border border-slate-200 hover:bg-slate-50 transition-colors">
@@ -313,10 +324,10 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
               </button>
               <button 
                 onClick={handleConfirm}
-                disabled={selecionados.size === 0}
+                disabled={Object.keys(selecionados).length === 0}
                 className="px-6 py-2.5 rounded-lg text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-lg shadow-blue-600/20"
               >
-                Importar {selecionados.size} Selecionados
+                Importar {Object.keys(selecionados).length} Selecionados
               </button>
             </div>
           </div>

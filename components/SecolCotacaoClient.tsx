@@ -15,6 +15,7 @@ type OpcaoVoo = {
   horario: string
   preco: string
   taxa?: string // Novo campo
+  passag?: number | string // Integrando com a quantidade editável da modal importação
 }
 
 type OpcaoHotel = {
@@ -55,7 +56,7 @@ type Props = {
   }
 }
 
-const EMPTY_VOO: Omit<OpcaoVoo, 'id'> = { companhia: '', numeroVoo: '', origem: '', destino: '', horario: '', preco: '', taxa: '0,00' }
+const EMPTY_VOO: Omit<OpcaoVoo, 'id'> = { companhia: '', numeroVoo: '', origem: '', destino: '', horario: '', preco: '', taxa: '0,00', passag: 1 }
 const EMPTY_HOTEL: Omit<OpcaoHotel, 'id'> = { nome: '', quarto: '', noites: 1, precoPorNoite: '' }
 
 export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }: Props) {
@@ -146,7 +147,10 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
 
   useEffect(() => {
     if (valorPassagemEditado) return
-    const total = voos.reduce((acc, v) => acc + parseCurrency(v.preco) + parseCurrency(v.taxa || '0'), 0)
+    const total = voos.reduce((acc, v) => {
+      const qtd = typeof v.passag === 'number' ? v.passag : (parseInt(v.passag as string) || 1)
+      return acc + ((parseCurrency(v.preco) + parseCurrency(v.taxa || '0')) * qtd)
+    }, 0)
     setValorPassagemStr(total.toFixed(2))
   }, [voos, valorPassagemEditado])
 
@@ -213,7 +217,9 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
       partes.push('=== OPÇÕES DE VOO ===')
       voos.forEach((v, i) => {
         const taxaStr = v.taxa ? ` | Taxa: R$ ${v.taxa}` : ''
-        partes.push(`[${i + 1}] ${v.companhia} ${v.numeroVoo} | ${v.origem} → ${v.destino} | ${v.horario} | Tarifa: R$ ${v.preco}${taxaStr}`)
+        const qtd = typeof v.passag === 'number' ? v.passag : (parseInt(v.passag as string) || 1)
+        const totalLinha = typeof v.preco === 'string' && v.taxa ? ((parseCurrency(v.preco) + parseCurrency(v.taxa)) * qtd).toFixed(2).replace('.', ',') : ''
+        partes.push(`[${i + 1}] ${v.companhia} ${v.numeroVoo} | ${v.origem} → ${v.destino} | ${v.horario} | Tarifa: R$ ${v.preco}${taxaStr} | Qtde: ${qtd} | Total: R$ ${totalLinha}`)
       })
     }
     if (hoteis.length > 0) {
@@ -468,17 +474,18 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
               )}
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-widest font-bold">
-                      <th className="px-6 py-4">Companhia / Voo</th>
-                      <th className="px-6 py-4">Horários</th>
-                    <th className="px-6 py-4">Tarifa (R$)</th>
-                    <th className="px-6 py-4">Taxa (R$)</th>
-                    <th className="px-6 py-4 text-right">Ação</th>
-                  </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
+                <table className="w-full text-left bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    <thead className="text-[11px] font-black text-slate-500 uppercase bg-slate-50 border-b border-slate-200 tracking-wider">
+                      <tr>
+                        <th className="px-6 py-4 w-1/4">Companhia / Voo</th>
+                        <th className="px-6 py-4 w-1/4">Horários</th>
+                        <th className="px-6 py-4 w-1/6">Tarifa (R$)</th>
+                        <th className="px-6 py-4 w-1/6">Taxa (R$)</th>
+                        <th className="px-4 py-4 w-16 text-center">Qtde.</th>
+                        <th className="px-6 py-4 text-right">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
                     {voos.length === 0 && (
                       <tr>
                         <td colSpan={5} className="px-6 py-8 text-center text-slate-400 text-sm">
@@ -518,6 +525,9 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
                           </td>
                           <td className="px-6 py-4 font-bold">R$ {v.preco}</td>
                           <td className="px-6 py-4 text-slate-500 text-sm">R$ {v.taxa || '0,00'}</td>
+                          <td className="px-4 py-4 text-center">
+                            <span className="bg-slate-100 text-slate-600 font-bold px-2 py-1 rounded-md text-xs">{typeof v.passag === 'number' || typeof v.passag === 'string' ? v.passag : 1}x</span>
+                          </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex justify-end gap-1">
                               <button onClick={() => iniciarEdicaoVoo(v)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
