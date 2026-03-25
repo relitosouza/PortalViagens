@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-const { PDFParse, VerbosityLevel } = require("e:/projetos/PortalVIagens/node_modules/pdf-parse/dist/pdf-parse/cjs/index.cjs");
+const { PDFParse, VerbosityLevel } = require("pdf-parse");
 import { auth } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
