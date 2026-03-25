@@ -149,51 +149,65 @@ export async function POST(req: NextRequest) {
     let checkOut = "";
     let cidadeHotel = "";
     
-    // Try to find the city before the hotel blocks
-    const cityMatch = text.match(/Trecho:\s*([^-]+?)\s*-[^-]+?-[^-]+?\s*Hospedagem/i) || text.match(/Local:\s*([A-Z\s]{3,})/i);
+    // Melhorando captura de datas (DD/MM ou DD/MM/AAAA)
+    const dateRegex = /(\d{2}\/\d{2}(?:\/\d{4})?)/g;
+    const allDates = text.match(dateRegex) || [];
+    
+    // Na Brositur, as datas de hospedagem costumam vir após "Hospedagem" ou perto de "Check-in"
+    const periodMatch = text.match(/(?:Check-in|Período|Hospedagem).*?(\d{2}\/\d{2}(?:\/\d{4})?).*?(\d{2}\/\d{2}(?:\/\d{4})?)/i);
+    if (periodMatch) {
+      checkIn = periodMatch[1];
+      checkOut = periodMatch[2];
+    } else if (allDates.length >= 2) {
+      // Fallback: pega as duas últimas datas se não achar o rótulo (comum no fim do doc)
+      checkIn = allDates[allDates.length - 2];
+      checkOut = allDates[allDates.length - 1];
+    }
+
+    const cityMatch = text.match(/Trecho:\s*([^-]+?)\s*-[^-]+?-[^-]+?\s*Hospedagem/i) || text.match(/Local:\s*([A-Z\s,]{3,30})/i);
     if (cityMatch) cidadeHotel = cityMatch[1].trim();
-    if (!cidadeHotel) cidadeHotel = "Brasília"; // Default fallback
-    
-    const checkInMatch = text.match(/Check[- ]?in:\s*(\d{2}\/\d{2}\/\d{4}|\d{2}\/\d{2})/i) || text.match(/Período.*?(?:a|até).*?(\d{2}\/\d{2}\/\d{4}|\d{2}\/\d{2})/i);
-    const checkOutMatch = text.match(/Check[- ]?out:\s*(\d{2}\/\d{2}\/\d{4}|\d{2}\/\d{2})/i) || text.match(/(?:a|até)\s*(\d{2}\/\d{2}\/\d{4}|\d{2}\/\d{2})/i);
-    
-    if (checkInMatch) checkIn = checkInMatch[1];
-    if (checkOutMatch) checkOut = checkOutMatch[1];
+    if (!cidadeHotel) cidadeHotel = "Brasília";
 
     // Look for Room matches around "Café da manhã" or other regimes
     const roomRegex = /(Double.*?|Single.*?|Quarto.*?|Standard.*?|Superior.*?|Luxo|Executive.*?|Twin.*?)\s+(Café da manhã|Sem café|Meia pensão|Pensao completa)\s+([\d\.,]+)/gi;
     const roomMatches = Array.from(text.matchAll(roomRegex)) as RegExpMatchArray[];
     
     roomMatches.forEach((rm, idx) => {
-      // Look 300 chars before and after for the Hotel Name
-      const start = Math.max(0, (rm.index || 0) - 300);
-      const end = Math.min(text.length, (rm.index || 0) + 300);
+      // Aumentamos o raio para 600 caracteres para buscar o nome do hotel que pode estar longe (abaixo)
+      const start = Math.max(0, (rm.index || 0) - 400);
+      const end = Math.min(text.length, (rm.index || 0) + 600);
       const context = text.substring(start, end);
       
       let hotelName = "HOTEL DESCONHECIDO";
       
-      // Look for common hotel name endings in uppercase
-      const nameMatch = context.match(/([A-Z0-9][A-Z0-9\s,]{5,}(?:PLAZA|HOTEL|EXECUTIVE|VISION|RESORT|INN|PALACE|SUITES|LODGE|HPLUS|FLAT|STAY|RESIDENCE|GARDEN|COSMOPOLITAN|B-HOTEL))/i);
-      if (nameMatch) {
-        hotelName = nameMatch[1].trim().toUpperCase();
+      // Nova Lógica: Procura por padrões de nome de hotel que contenham "Estrela(s)" ou nomes em CAIXA ALTA perto de palavras chave
+      const starMatch = context.match(/(?:Hotel\s+)?([A-Z0-9\s]{5,})\s*-\s*\d+\s*Estrela\(s\)/i);
+      if (starMatch) {
+        hotelName = starMatch[1].trim().toUpperCase();
       } else {
-        // Fallback: look for established hotel names in context (Brositur specific)
-        const commonHotels = ["KUBITSCHEK PLAZA", "MANHATTAN PLAZA", "B-HOTEL", "VISION EXECUTIVE", "STAYBRIDGE", "MELIA", "WINDSOR", "MERCURE"];
-        const found = commonHotels.find(h => context.toUpperCase().includes(h));
-        if (found) hotelName = found;
-        else {
-           // Last resort: look for a block of uppercase text 
-           const upMatch = context.match(/([A-Z\s]{8,})/);
-           if (upMatch) hotelName = upMatch[1].trim();
+        const nameMatch = context.match(/([A-Z0-9][A-Z0-9\s,]{5,}(?:PLAZA|HOTEL|EXECUTIVE|VISION|RESORT|INN|PALACE|SUITES|LODGE|HPLUS|FLAT|STAY|RESIDENCE|GARDEN|COSMOPOLITAN|B-HOTEL|WDS))/);
+        if (nameMatch) {
+          hotelName = nameMatch[1].trim().toUpperCase();
+        } else {
+          const commonHotels = ["KUBITSCHEK PLAZA", "MANHATTAN PLAZA", "B-HOTEL", "VISION EXECUTIVE", "STAYBRIDGE", "MELIA", "WINDSOR", "MERCURE", "HPLUS"];
+          const found = commonHotels.find(h => context.toUpperCase().includes(h));
+          if (found) hotelName = found;
+          else {
+             const upMatch = context.match(/([A-Z\s]{10,})/);
+             if (upMatch) hotelName = upMatch[1].trim();
+          }
         }
       }
+
+      // Regra de valor: garante que pegamos apenas até as 2 casas decimais
+      const valorLimpo = rm[3].match(/\d[\d.]*,\d{2}/)?.[0] || rm[3].trim();
 
       hoteisEncontrados.push({
         id: `h${idx}`,
         nome: hotelName,
         quarto: rm[1].trim(),
         regime: rm[2].trim(),
-        valorTotal: rm[3].trim(),
+        valorTotal: valorLimpo,
         cidade: cidadeHotel,
         checkIn,
         checkOut,
