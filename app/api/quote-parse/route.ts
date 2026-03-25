@@ -73,19 +73,28 @@ export async function POST(req: NextRequest) {
       }
 
       const fares: any[] = [];
-      // Fare Regex (Refined with images context):
-      // Pattern: Tipo[Family]BagagensTarifaDuTxTotal
-      // Example on Image: Adulto Light 0 1.813,00 0,00 62,14 (2) 3.750,28
-      // The extracted text often loses spaces: "AdultoLight01.813,000,0062,14(2) 3.750,28"
-      const fareLines = block.matchAll(/Adulto\s*(.*?)\s*(\d)\s*([\d\.,]+)\s*([\d\.,]+)\s*([\d\.,]+)(?:\s*\(\d+\))?\s+([\d\.,]+)/gi);
+      // Fare Regex (Refined to handle "smashed" money values: 1.813,000,0062,14)
+      // We look for "Adulto", then the Family Name, then the baggage digit,
+      // then a sequence of money values in the format XXX,XX
+      const fareLines = block.matchAll(/Adulto\s*(.*?)\s*(\d)\s*([\d\.,]+)(?:\s*\(\d+\))?\s+([\d\.,]+)/gi);
       
       for (const fl of fareLines) {
-        let [__, familia, bagagem, tarifa, du, taxa, total] = fl;
+        let [__, familia, bagagem, moneyChunk, total] = fl;
         
-        // Cleanup: If the family name ends with a number (due to missing space with baggage), fix it
-        if (familia.match(/\d$/)) {
-          bagagem = familia.slice(-1);
-          familia = familia.slice(0, -1);
+        // Use the suggested regex for separation: (\d[\d.]*,\d{2})
+        // This will find matches like ["1.813,00", "0,00", "62,14"]
+        const moneyMatches = moneyChunk.match(/(\d[\d.]*,\d{2})/g);
+        
+        let tarifa = "0,00";
+        let du = "0,00";
+        let taxa = "0,00";
+
+        if (moneyMatches && moneyMatches.length >= 1) {
+          tarifa = moneyMatches[0];
+          if (moneyMatches.length >= 2) du = moneyMatches[1];
+          if (moneyMatches.length >= 3) taxa = moneyMatches[2];
+          // If the chunk only had 2 parts (Tarifa and Taxa without DU), 
+          // we might need to adjust, but based on the prompt, it's Tarifa -> Du -> Taxa
         }
 
         fares.push({
@@ -93,8 +102,8 @@ export async function POST(req: NextRequest) {
           tipo: "Adulto",
           familia: familia.trim(),
           bagagens: parseInt(bagagem),
-          valorTarifa: tarifa.trim(),
-          taxaEmbarque: taxa.trim(),
+          valorTarifa: tarifa,
+          taxaEmbarque: taxa,
           valorTotal: total.trim()
         });
       }
