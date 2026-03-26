@@ -79,10 +79,11 @@ function formatarDataHora(iso: string) {
 function extrairOpcoesVoo(obs: string | null): OpcaoVoo[] {
   if (!obs) return []
   const voos: OpcaoVoo[] = []
-  const section = obs.match(/=== OPÇÕES DE VOO ===([\s\S]*?)(?:===|$)/)
-  if (!section) return []
+  // Regex ultra flexível para encontrar a seção de voos
+  const sectionMatch = obs.match(/===[^=]*(?:VOO|VOOS|AÉREO|AEREO)[^=]*===([\s\S]*?)(?:===|$)/i)
+  if (!sectionMatch) return []
 
-  const lines = section[1].trim().split('\n')
+  const lines = sectionMatch[1].trim().split('\n')
   lines.forEach((line, idx) => {
     const trimmedLine = line.trim()
     if (trimmedLine.startsWith('[')) {
@@ -120,38 +121,42 @@ function extrairOpcoesVoo(obs: string | null): OpcaoVoo[] {
 function extrairOpcoesHotel(obs: string | null): OpcaoHotel[] {
   if (!obs) return []
   const hoteis: OpcaoHotel[] = []
-  const section = obs.match(/=== OPÇÕES DE HOSPEDAGEM ===([\s\S]*?)(?:===|$)/)
-  if (!section) return []
+  
+  // Regex ultra flexível para encontrar a seção de hospedagem (Hospedagem, Hospedagen, Hotel, etc)
+  const sectionMatch = obs.match(/===[^=]*(?:HOSPEDAGE[MN]|HOTEL|HOTEIS|ESTADIA)[^=]*===([\s\S]*?)(?:===|$)/i)
+  if (!sectionMatch) return []
 
-  const lines = section[1].trim().split('\n')
+  const lines = sectionMatch[1].trim().split('\n')
   lines.forEach((line, idx) => {
     const trimmedLine = line.trim()
     if (trimmedLine.startsWith('[')) {
       const parts = trimmedLine.split('|').map(s => s.trim())
-      if (parts.length >= 3) {
-        const nome = parts[0].replace(/\[\d+\]\s+/, '')
-        let quarto = parts[1]
+      
+      const noitesMatch = trimmedLine.match(/(\d+)\s*noite/i)
+      const precoMatch = trimmedLine.match(/(?:×|x)\s*R\$\s?([\d.,]+)/i)
+      const totalMatch = trimmedLine.match(/=\s*R\$\s?([\d.,]+)/)
+      const hotelNomeMatch = trimmedLine.match(/^\[\d+\]\s+([^|]+)/)
+
+      if (parts.length >= 2) {
+        const nome = hotelNomeMatch ? hotelNomeMatch[1].trim() : parts[0].replace(/\[\d+\]\s+/, '')
+        let quarto = parts[1] || 'Standard'
         let regime = '-'
 
-        // Tenta extrair regime se estiver entre parênteses no campo quarto
-        const regimeMatch = quarto.match(/\((.*?)\)/)
-        if (regimeMatch) {
-          regime = regimeMatch[1]
-          quarto = quarto.replace(/\s?\(.*?\)/, '').trim()
+        // Tenta extrair regime se estiver entre parênteses no campo quarto ou no nome
+        const regimeRegex = /\((.*?)\)/
+        const rMatch = (quarto.match(regimeRegex) || nome.match(regimeRegex))
+        if (rMatch) {
+          regime = rMatch[1]
+          quarto = quarto.replace(regimeRegex, '').trim()
         }
 
-        const logistica = parts[2].split('×')
-        const noitesMatch = logistica[0]?.match(/\d+/)
-        const precoMatch = logistica[1]?.split('=')[0]?.match(/R\$\s?([\d.,]+)/)
-        const totalMatch = logistica[1]?.split('=')[1]?.match(/R\$\s?([\d.,]+)/)
-
         hoteis.push({
-          id: `h-${idx}`,
+          id: `h-${idx}-${Date.now()}`,
           nome,
           quarto,
           regime,
-          noites: noitesMatch ? parseInt(noitesMatch[0]) : 1,
-          precoPorNoite: precoMatch ? precoMatch[1] : '0,00',
+          noites: noitesMatch ? parseInt(noitesMatch[1], 10) : 1,
+          precoPorNoite: precoMatch ? precoMatch[1] : (totalMatch ? totalMatch[1] : '0,00'),
           total: totalMatch ? parseCurrency(totalMatch[1]) : 0
         })
       }
@@ -166,7 +171,14 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
   const [loading, setLoading] = useState<string | null>(null)
   const [erro, setErro] = useState('')
 
-  const cotacaoStep = [...sol.steps].reverse().find(s => s.etapa === 'COTACAO')
+  const cotacaoStep = [...sol.steps].reverse().find(s => 
+    s.observacao && (
+      s.observacao.includes('VOO') || 
+      s.observacao.includes('HOSPEDAGEM') || 
+      s.observacao.includes('HOTEL') ||
+      s.observacao.includes('AÉREO')
+    )
+  )
   const [voos, setVoos] = useState<OpcaoVoo[]>(() => extrairOpcoesVoo(cotacaoStep?.observacao ?? null))
   const [hoteis, setHoteis] = useState<OpcaoHotel[]>(() => extrairOpcoesHotel(cotacaoStep?.observacao ?? null))
   
