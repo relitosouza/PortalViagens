@@ -184,12 +184,16 @@ export default async function DetalheSolicitacaoPage({
           dataVolta: sol.dataVolta.toISOString(),
           fichaOrcamentaria: sol.fichaOrcamentaria,
           emailServidor: sol.emailServidor,
+          matricula: sol.matricula,
+          justificativaPublica: sol.justificativaPublica,
           user: { name: sol.user.name ?? '' },
           steps: sol.steps.map(s => ({
             etapa: s.etapa,
             atorNome: s.atorNome,
             decisao: s.decisao,
             observacao: s.observacao,
+            valorPassagem: s.valorPassagem,
+            valorHospedagem: s.valorHospedagem,
             createdAt: s.createdAt.toISOString(),
           })),
         }}

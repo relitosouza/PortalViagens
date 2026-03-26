@@ -2,12 +2,15 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { gerarOSPDF, gerarPortariaPDF } from '@/lib/utils/pdf-generator'
 
 type WorkflowStep = {
   etapa: string
   atorNome: string
   decisao: string | null
   observacao: string | null
+  valorPassagem: number | null
+  valorHospedagem: number | null
   createdAt: string
 }
 
@@ -19,6 +22,8 @@ type Solicitacao = {
   dataVolta: string
   fichaOrcamentaria: string
   emailServidor: string
+  matricula: string
+  justificativaPublica: string
   user: { name: string }
   steps: WorkflowStep[]
 }
@@ -33,6 +38,8 @@ export function SecolEmissaoClient({ sol, userName }: Props) {
   const [voucherAereo, setVoucherAereo] = useState<File | null>(null)
   const [voucherHotel, setVoucherHotel] = useState<File | null>(null)
   const [osGerada, setOsGerada] = useState(false)
+  const [portariaGerada, setPortariaGerada] = useState(false)
+  const [nomeEvento, setNomeEvento] = useState(sol.justificativaPublica.split('\n')[0].replace(/\"/g, '').trim() || '')
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState('')
 
@@ -46,31 +53,18 @@ export function SecolEmissaoClient({ sol, userName }: Props) {
       })
     : null
 
-  function gerarOS() {
-    // Simula geração da OS — em produção geraria um PDF
+  function handleGerarOS() {
+    gerarOSPDF(sol)
     setOsGerada(true)
-    const conteudo = [
-      'ORDEM DE SERVIÇO - PREFEITURA DE OSASCO',
-      '=' .repeat(40),
-      `Protocolo: #${sol.id.slice(-8).toUpperCase()}`,
-      `Servidor: ${sol.nomeCompleto}`,
-      `Destino: ${sol.destino}`,
-      `Período: ${new Date(sol.dataIda).toLocaleDateString('pt-BR')} a ${new Date(sol.dataVolta).toLocaleDateString('pt-BR')}`,
-      `Ficha Orçamentária: ${sol.fichaOrcamentaria}`,
-      '',
-      'Aprovado pela SEGOV',
-      viabilidadeStep?.observacao ? `Parecer: ${viabilidadeStep.observacao}` : '',
-      '',
-      'COTAÇÃO TÉCNICA (SECOL):',
-      cotacaoStep?.observacao ?? 'Sem dados de cotação.',
-    ].join('\n')
-    const blob = new Blob([conteudo], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `OS_${sol.id.slice(-8).toUpperCase()}.txt`
-    a.click()
-    URL.revokeObjectURL(url)
+  }
+
+  function handleGerarPortaria() {
+    if (!nomeEvento.trim()) {
+      setErro('Para gerar a portaria, informe o nome do evento.')
+      return
+    }
+    gerarPortariaPDF(sol, nomeEvento)
+    setPortariaGerada(true)
   }
 
   async function finalizar() {
@@ -170,35 +164,34 @@ export function SecolEmissaoClient({ sol, userName }: Props) {
                   <h3 className="font-bold">Emissão de Documentos Oficiais</h3>
                 </div>
                 <div className="p-6">
-                  <div className="bg-slate-50 rounded-lg p-6 border border-dashed border-slate-300 text-center">
-                    {osGerada ? (
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="size-12 rounded-full bg-emerald-100 flex items-center justify-center">
-                          <span className="material-symbols-outlined text-emerald-600">check_circle</span>
-                        </div>
-                        <p className="text-sm font-bold text-emerald-700">Ordem de Serviço gerada com sucesso!</p>
-                        <button
-                          onClick={gerarOS}
-                          className="text-xs text-blue-600 hover:underline flex items-center gap-1"
-                        >
-                          <span className="material-symbols-outlined text-sm">download</span>
-                          Baixar novamente
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <p className="text-sm text-slate-600 mb-4">
-                          A Ordem de Serviço (OS) deve ser gerada antes do upload dos vouchers finais.
-                        </p>
-                        <button
-                          onClick={gerarOS}
-                          className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-600/20"
-                        >
-                          <span className="material-symbols-outlined">print</span>
-                          Gerar Ordem de Serviço (OS)
-                        </button>
-                      </>
-                    )}
+                  <div className="bg-slate-50 rounded-lg p-6 border border-dashed border-slate-300">
+                    <div className="mb-6">
+                      <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Nome do Evento / Motivo (Para a Portaria)</label>
+                      <input 
+                        className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                        value={nomeEvento}
+                        onChange={e => setNomeEvento(e.target.value)}
+                        placeholder="Ex: Reunião do Ministério da Educação"
+                      />
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-3 justify-center">
+                      <button
+                        onClick={handleGerarOS}
+                        className={`inline-flex items-center gap-2 px-6 py-3 font-bold rounded-lg transition-all shadow-md ${osGerada ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20'}`}
+                      >
+                        <span className="material-symbols-outlined">{osGerada ? 'check_circle' : 'picture_as_pdf'}</span>
+                        {osGerada ? 'OS Gerada' : 'Gerar Ordem de Serviço (OS)'}
+                      </button>
+                      
+                      <button
+                        onClick={handleGerarPortaria}
+                        className={`inline-flex items-center gap-2 px-6 py-3 font-bold rounded-lg transition-all shadow-md ${portariaGerada ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-white hover:bg-slate-800 shadow-slate-900/20'}`}
+                      >
+                        <span className="material-symbols-outlined">{portariaGerada ? 'check_circle' : 'gavel'}</span>
+                        {portariaGerada ? 'Portaria Gerada' : 'Gerar Portaria de Dispensa'}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Cotação Summary */}
@@ -327,6 +320,10 @@ export function SecolEmissaoClient({ sol, userName }: Props) {
                 <div className={`flex items-center gap-2 text-sm ${osGerada ? 'text-emerald-600' : 'text-slate-400'}`}>
                   <span className="material-symbols-outlined text-[18px]">{osGerada ? 'check_circle' : 'radio_button_unchecked'}</span>
                   OS gerada
+                </div>
+                <div className={`flex items-center gap-2 text-sm ${portariaGerada ? 'text-emerald-600' : 'text-slate-400'}`}>
+                  <span className="material-symbols-outlined text-[18px]">{portariaGerada ? 'check_circle' : 'radio_button_unchecked'}</span>
+                  Portaria de Dispensa gerada
                 </div>
                 <div className={`flex items-center gap-2 text-sm ${voucherAereo ? 'text-emerald-600' : 'text-slate-400'}`}>
                   <span className="material-symbols-outlined text-[18px]">{voucherAereo ? 'check_circle' : 'radio_button_unchecked'}</span>
