@@ -510,7 +510,7 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Parecer da SEGOV</label>
                   <textarea
-                    className="w-full rounded-xl border-slate-200 text-sm focus:ring-blue-600 focus:border-blue-600 p-4 min-h-[120px]"
+                    className="w-full border border-slate-200 rounded-xl text-sm focus:ring-blue-600 focus:border-blue-600 p-4 min-h-[120px]"
                     placeholder="Descreva aqui os motivos da sua decisão..."
                     value={observacao}
                     onChange={e => setObservacao(e.target.value)}
@@ -525,13 +525,13 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
                   <button
                     onClick={() => executar('APROVADO')}
                     disabled={loading !== null}
-                    className="md:col-span-2 bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 transition-all disabled:opacity-50"
+                    className="md:col-span-2 w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading === 'APROVADO' ? 'Aprovando...' : 'Aprovar Solicitação'}
                   </button>
-                  <button onClick={() => executar('AJUSTE_SECOL')} disabled={loading !== null} className="border border-slate-200 py-3 rounded-xl font-bold">Voltar para SECOL</button>
-                  <button onClick={() => executar('AJUSTE_DEMANDANTE')} disabled={loading !== null} className="border border-slate-200 py-3 rounded-xl font-bold">Voltar para Demandante</button>
-                  <button onClick={() => executar('REPROVADO')} disabled={loading !== null} className="md:col-span-2 border-2 border-red-500 text-red-500 py-3 rounded-xl font-bold">Reprovar Definitivamente</button>
+                  <button onClick={() => executar('AJUSTE_SECOL')} disabled={loading !== null} className="w-full border border-slate-200 py-3 rounded-xl font-bold hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Voltar para SECOL</button>
+                  <button onClick={() => executar('AJUSTE_DEMANDANTE')} disabled={loading !== null} className="w-full border border-slate-200 py-3 rounded-xl font-bold hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Voltar para Demandante</button>
+                  <button onClick={() => executar('REPROVADO')} disabled={loading !== null} className="md:col-span-2 w-full border-2 border-red-500 text-red-500 py-3 rounded-xl font-bold hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Reprovar Definitivamente</button>
                 </div>
               </div>
             </section>
