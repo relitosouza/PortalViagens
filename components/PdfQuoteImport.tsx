@@ -199,10 +199,10 @@ export default function PdfQuoteImport({ onImport, onClose }: Props) {
     for (const h of hoteis) {
       if (selecionadosHoteis[h.id] !== undefined) {
         toImportHoteis.push({
-          nome: h.nome,
-          quarto: `${h.quarto} (${h.regime})`,
+          nome: h.nome.replace(/[\r\n]+/g, ' ').trim(),
+          quarto: `${h.quarto.replace(/[\r\n]+/g, ' ').trim()} (${h.regime.replace(/[\r\n]+/g, ' ').trim()})`,
           noites: selecionadosHoteis[h.id],
-          precoPorNoite: h.valorTotal
+          precoPorNoite: h.valorTotal.replace(/[\r\n]+/g, ' ').trim()
         })
       }
     }

@@ -227,7 +227,10 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
       hoteis.forEach((h, i) => {
         const preco = parseCurrency(h.precoPorNoite)
         const total = (preco * h.noites).toFixed(2).replace('.', ',')
-        partes.push(`[${i + 1}] ${h.nome} | ${h.quarto} | ${h.noites} noite(s) × R$ ${h.precoPorNoite} = R$ ${total}`)
+        const nome = h.nome.replace(/[\r\n]+/g, ' ').trim()
+        const quarto = h.quarto.replace(/[\r\n]+/g, ' ').trim()
+        const precoPorNoite = h.precoPorNoite.replace(/[\r\n]+/g, ' ').trim()
+        partes.push(`[${i + 1}] ${nome} | ${quarto} | ${h.noites} noite(s) × R$ ${precoPorNoite} = R$ ${total}`)
       })
     }
     if (observacao.trim()) {

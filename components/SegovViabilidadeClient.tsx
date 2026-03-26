@@ -131,7 +131,16 @@ function extrairOpcoesHotel(obs: string | null): OpcaoHotel[] {
 
     if (section === 'HOTEL' && trimmedLine.startsWith('[')) {
       // Formato: [1] Hotel Name | Quarto | 3 noite(s) × R$ 450,00 = R$ 1350,00
-      const parts = trimmedLine.split('|').map(s => s.trim())
+      // Agrupa linhas de continuação (PDF pode gerar nome com quebras de linha)
+      let fullLine = trimmedLine
+      let nextIdx = idx + 1
+      while (nextIdx < lines.length) {
+        const nextLine = lines[nextIdx].trim()
+        if (!nextLine || nextLine.startsWith('[') || nextLine.startsWith('===')) break
+        fullLine += ' ' + nextLine
+        nextIdx++
+      }
+      const parts = fullLine.split('|').map(s => s.trim())
       if (parts.length >= 2) {
         const hotelNomeMatch = trimmedLine.match(/^\[\d+\]\s+([^|]+)/)
         const nome = hotelNomeMatch ? hotelNomeMatch[1].trim() : parts[0].replace(/\[\d+\]\s+/, '')
