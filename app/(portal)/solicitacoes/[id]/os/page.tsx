@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
+import DownloadOSButton from './DownloadOSButton'
 
 export default async function OrdemServicoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -61,15 +62,32 @@ export default async function OrdemServicoPage({ params }: { params: Promise<{ i
 
   return (
     <div className="bg-[#fcf9f8] min-h-screen font-sans text-[#1b1c1c]">
-      {/* Action Bar for Web (Hidden in Print) */}
-      <div className="fixed bottom-8 right-8 flex gap-3 no-print z-50">
-        <Link 
+      {/* Action Bar for Web */}
+      <div className="fixed bottom-8 right-8 flex gap-3 z-50 print:hidden">
+        <Link
           href={`/solicitacoes/${sol.id}`}
           className="bg-white text-[#002745] px-6 py-3 rounded-full flex items-center gap-2 shadow-xl border border-slate-200 hover:bg-slate-50 transition-all font-bold text-sm"
         >
           <span className="material-symbols-outlined">arrow_back</span>
           Voltar
         </Link>
+        <DownloadOSButton sol={{
+          id: sol.id,
+          nomeCompleto: sol.nomeCompleto,
+          matricula: sol.matricula,
+          emailServidor: sol.emailServidor,
+          fichaOrcamentaria: sol.fichaOrcamentaria,
+          destino: sol.destino,
+          dataIda: sol.dataIda.toISOString(),
+          dataVolta: sol.dataVolta.toISOString(),
+          steps: sol.steps.map(s => ({
+            etapa: s.etapa,
+            decisao: s.decisao,
+            observacao: s.observacao,
+            valorPassagem: s.valorPassagem,
+            valorHospedagem: s.valorHospedagem,
+          }))
+        }} />
       </div>
 
       <main className="flex justify-center py-12 px-4 md:px-0">
