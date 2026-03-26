@@ -15,18 +15,18 @@ export function PortalShell({ role, userName, roleLabel, initials, children }: P
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f6f6f8] text-slate-900">
+    <div className="flex h-screen overflow-hidden print:overflow-visible bg-[#f6f6f8] text-slate-900">
       {/* Overlay mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden print:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar: drawer no mobile, fixo no desktop */}
       <div
-        className={`fixed inset-y-0 left-0 z-40 lg:static lg:z-auto transition-transform duration-300 ease-in-out ${
+        className={`fixed inset-y-0 left-0 z-40 lg:static lg:z-auto transition-transform duration-300 ease-in-out print:hidden ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
@@ -35,13 +35,15 @@ export function PortalShell({ role, userName, roleLabel, initials, children }: P
 
       {/* Conteúdo principal */}
       <div className="flex-1 flex flex-col min-w-0">
-        <Header
-          userName={userName}
-          roleLabel={roleLabel}
-          initials={initials}
-          onMenuOpen={() => setSidebarOpen(true)}
-        />
-        <main className="flex-1 overflow-y-auto">
+        <div className="print:hidden">
+          <Header
+            userName={userName}
+            roleLabel={roleLabel}
+            initials={initials}
+            onMenuOpen={() => setSidebarOpen(true)}
+          />
+        </div>
+        <main className="flex-1 overflow-y-auto print:overflow-visible">
           {children}
         </main>
       </div>
