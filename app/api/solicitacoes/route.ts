@@ -8,6 +8,79 @@ import {
   notificarSecretarioParaAprovacao 
 } from '@/lib/email-notifications'
 
+// CRITICAL FIX: Adicionar validação de entrada com schema
+function validateSolicitacaoInput(body: unknown): { valid: boolean; errors: string[] } {
+  const errors: string[] = []
+
+  if (typeof body !== 'object' || body === null) {
+    return { valid: false, errors: ['Corpo da requisição inválido'] }
+  }
+
+  const data = body as Record<string, unknown>
+
+  // Campos obrigatórios
+  const requiredFields = [
+    'nomeCompleto', 'matricula', 'cpf', 'dataNascimento', 'celular',
+    'emailServidor', 'justificativaPublica', 'nexoCargo', 'destino',
+    'dataIda', 'dataVolta', 'justificativaLocal', 'fichaOrcamentaria'
+  ]
+
+  requiredFields.forEach(field => {
+    if (!data[field] || typeof data[field] !== 'string') {
+      errors.push(`Campo obrigatório: ${field}`)
+    }
+  })
+
+  // Validar formato de datas
+  if (data.dataNascimento && isNaN(Date.parse(String(data.dataNascimento)))) {
+    errors.push('dataNascimento: formato de data inválido')
+  }
+  if (data.dataIda && isNaN(Date.parse(String(data.dataIda)))) {
+    errors.push('dataIda: formato de data inválido')
+  }
+  if (data.dataVolta && isNaN(Date.parse(String(data.dataVolta)))) {
+    errors.push('dataVolta: formato de data inválido')
+  }
+
+  // Validar CPF básico (11 dígitos)
+  const cpf = String(data.cpf).replace(/\D/g, '')
+  if (cpf.length !== 11) {
+    errors.push('cpf: deve conter 11 dígitos')
+  }
+
+  // Validar email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (data.emailServidor && !emailRegex.test(String(data.emailServidor))) {
+    errors.push('emailServidor: formato de email inválido')
+  }
+
+  // Validar celular (mínimo 10 dígitos)
+  const celular = String(data.celular).replace(/\D/g, '')
+  if (celular.length < 10) {
+    errors.push('celular: deve conter pelo menos 10 dígitos')
+  }
+
+  // Validar tamanho máximo dos campos de texto
+  const textFields: Record<string, number> = {
+    nomeCompleto: 255,
+    matricula: 50,
+    cpf: 14,
+    destino: 255,
+    nexoCargo: 255,
+    justificativaPublica: 2000,
+    justificativaLocal: 2000,
+    fichaOrcamentaria: 1000
+  }
+
+  Object.entries(textFields).forEach(([field, maxLength]) => {
+    if (data[field] && String(data[field]).length > maxLength) {
+      errors.push(`${field}: máximo ${maxLength} caracteres`)
+    }
+  })
+
+  return { valid: errors.length === 0, errors }
+}
+
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
@@ -28,10 +101,31 @@ export async function POST(req: NextRequest) {
     }, { status: 403 })
   }
 
-  const body = await req.json()
-  const isRascunho = body.rascunho === true
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Formato JSON inválido' }, { status: 400 })
+  }
 
-  const dataIda = new Date(body.dataIda)
+  // CRITICAL FIX: Validar entrada
+  const validation = validateSolicitacaoInput(body)
+  if (!validation.valid) {
+    return NextResponse.json({
+      error: 'Validação falhou',
+      details: validation.errors
+    }, { status: 400 })
+  }
+
+  const bodyData = body as Record<string, unknown>
+  const isRascunho = bodyData.rascunho === true
+
+  let dataIda: Date
+  try {
+    dataIda = new Date(String(bodyData.dataIda))
+  } catch {
+    return NextResponse.json({ error: 'dataIda: data inválida' }, { status: 400 })
+  }
 
   if (!isRascunho) {
     // Validar antecedência de 15 dias úteis (Art. 1º)
@@ -45,21 +139,21 @@ export async function POST(req: NextRequest) {
 
   const solicitacao = await prisma.solicitacao.create({
     data: {
-      nomeCompleto: body.nomeCompleto,
-      matricula: body.matricula,
-      cpf: body.cpf,
-      dataNascimento: new Date(body.dataNascimento),
-      celular: body.celular,
-      emailServidor: body.emailServidor,
-      justificativaPublica: body.justificativaPublica,
-      nexoCargo: body.nexoCargo,
-      destino: body.destino,
+      nomeCompleto: String(bodyData.nomeCompleto),
+      matricula: String(bodyData.matricula),
+      cpf: String(bodyData.cpf),
+      dataNascimento: new Date(String(bodyData.dataNascimento)),
+      celular: String(bodyData.celular),
+      emailServidor: String(bodyData.emailServidor),
+      justificativaPublica: String(bodyData.justificativaPublica),
+      nexoCargo: String(bodyData.nexoCargo),
+      destino: String(bodyData.destino),
       dataIda,
-      dataVolta: new Date(body.dataVolta),
-      justificativaLocal: body.justificativaLocal,
-      fichaOrcamentaria: body.fichaOrcamentaria,
-      indicacaoVoo: body.indicacaoVoo ?? null,
-      indicacaoHospedagem: body.indicacaoHospedagem ?? null,
+      dataVolta: new Date(String(bodyData.dataVolta)),
+      justificativaLocal: String(bodyData.justificativaLocal),
+      fichaOrcamentaria: String(bodyData.fichaOrcamentaria),
+      indicacaoVoo: (bodyData.indicacaoVoo ? String(bodyData.indicacaoVoo) : null),
+      indicacaoHospedagem: (bodyData.indicacaoHospedagem ? String(bodyData.indicacaoHospedagem) : null),
       status: isRascunho ? 'RASCUNHO' : (dbUser.role === 'SECRETARIO' ? 'EM_COTACAO' : 'AGUARDANDO_APROVACAO_PASTA'),
       userId: user.id,
       secretariaId: dbUser.secretariaId,
