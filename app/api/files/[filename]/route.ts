@@ -4,6 +4,8 @@ import { readFile } from 'fs/promises'
 import path from 'path'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+// HIGH PRIORITY FIX: Use safe auth type instead of unsafe casting
+import { getAuthUser } from '@/lib/types/auth'
 
 const CONTENT_TYPES: Record<string, string> = {
   '.pdf': 'application/pdf',
@@ -21,7 +23,11 @@ export async function GET(
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-  const user = session.user as { id: string; role: string }
+  // HIGH PRIORITY FIX: Use safe type extraction
+  const user = getAuthUser(session.user)
+  if (!user) {
+    return NextResponse.json({ error: 'Sessão inválida' }, { status: 401 })
+  }
   const { filename } = await params
 
   // Prevenir path traversal

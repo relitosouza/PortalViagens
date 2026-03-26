@@ -50,8 +50,10 @@ export async function POST(req: NextRequest) {
         }, { status: 400 })
       }
 
+      // HIGH PRIORITY FIX: Use crypto instead of predictable timestamps
       const baseName = path.basename(file.name, ext).replace(/[^a-zA-Z0-9-_]/g, '_')
-      const filename = `${Date.now()}-${baseName}${ext}`
+      const randomSuffix = Math.random().toString(36).substring(2, 15)
+      const filename = `${randomSuffix}-${baseName}${ext}`
 
       const bytes = await file.arrayBuffer()
       const buffer = Buffer.from(bytes)

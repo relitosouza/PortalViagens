@@ -2,12 +2,14 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
+// HIGH PRIORITY FIX: Use safe auth type instead of unsafe casting
+import { getAuthUser, requireAdmin as checkAdmin } from '@/lib/types/auth'
 
 async function requireAdmin() {
   const session = await auth()
   if (!session?.user) return null
-  const user = session.user as { id: string; role: string }
-  if (user.role !== 'ADMIN') return null
+  const user = getAuthUser(session.user)
+  if (!user || !checkAdmin(user)) return null
   return session
 }
 

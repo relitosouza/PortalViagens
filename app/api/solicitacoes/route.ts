@@ -3,10 +3,12 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { calcularDiasUteisAte } from '@/lib/utils/diasUteis'
-import { 
-  notificarNovaSolicitacaoParaSecol, 
-  notificarSecretarioParaAprovacao 
+import {
+  notificarNovaSolicitacaoParaSecol,
+  notificarSecretarioParaAprovacao
 } from '@/lib/email-notifications'
+// HIGH PRIORITY FIX: Use safe auth type instead of unsafe casting
+import { getAuthUser } from '@/lib/types/auth'
 
 // CRITICAL FIX: Adicionar validação de entrada com schema
 function validateSolicitacaoInput(body: unknown): { valid: boolean; errors: string[] } {
@@ -85,8 +87,13 @@ export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-  const user = session.user as { id: string; role: string; name?: string | null; email?: string | null }
-  const PERFIS_AUTORIZADOS = ['DEMANDANTE', 'SECRETARIO', 'ADMIN']
+  // HIGH PRIORITY FIX: Use safe type extraction instead of unsafe casting
+  const user = getAuthUser(session.user)
+  if (!user) {
+    return NextResponse.json({ error: 'Sessão inválida' }, { status: 401 })
+  }
+
+  const PERFIS_AUTORIZADOS: typeof user.role[] = ['DEMANDANTE', 'SECRETARIO', 'ADMIN']
   if (!PERFIS_AUTORIZADOS.includes(user.role)) {
     return NextResponse.json({ error: 'Você não tem permissão para criar solicitações' }, { status: 403 })
   }
@@ -178,7 +185,11 @@ export async function GET() {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-  const user = session.user as { id: string; role: string; name?: string | null; email?: string | null }
+  // HIGH PRIORITY FIX: Use safe type extraction
+  const user = getAuthUser(session.user)
+  if (!user) {
+    return NextResponse.json({ error: 'Sessão inválida' }, { status: 401 })
+  }
   
   let where = {}
   if (user.role === 'DEMANDANTE') {
