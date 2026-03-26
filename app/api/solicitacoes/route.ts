@@ -9,6 +9,9 @@ import {
 } from '@/lib/email-notifications'
 // HIGH PRIORITY FIX: Use safe auth type instead of unsafe casting
 import { getAuthUser } from '@/lib/types/auth'
+// MEDIUM FIX: Add validators
+import { isValidCPF } from '@/lib/validators/cpf'
+import { isValidBirthDate, isValidTravelDate, isValidDateRange } from '@/lib/validators/dates'
 
 // CRITICAL FIX: Adicionar validação de entrada com schema
 function validateSolicitacaoInput(body: unknown): { valid: boolean; errors: string[] } {
@@ -33,21 +36,28 @@ function validateSolicitacaoInput(body: unknown): { valid: boolean; errors: stri
     }
   })
 
-  // Validar formato de datas
-  if (data.dataNascimento && isNaN(Date.parse(String(data.dataNascimento)))) {
-    errors.push('dataNascimento: formato de data inválido')
-  }
-  if (data.dataIda && isNaN(Date.parse(String(data.dataIda)))) {
-    errors.push('dataIda: formato de data inválido')
-  }
-  if (data.dataVolta && isNaN(Date.parse(String(data.dataVolta)))) {
-    errors.push('dataVolta: formato de data inválido')
+  // MEDIUM FIX: Validar CPF com checksum
+  if (data.cpf && !isValidCPF(String(data.cpf))) {
+    errors.push('cpf: CPF inválido (checksum falhou)')
   }
 
-  // Validar CPF básico (11 dígitos)
-  const cpf = String(data.cpf).replace(/\D/g, '')
-  if (cpf.length !== 11) {
-    errors.push('cpf: deve conter 11 dígitos')
+  // MEDIUM FIX: Validar data de nascimento (sanity check)
+  if (data.dataNascimento && !isValidBirthDate(String(data.dataNascimento))) {
+    errors.push('dataNascimento: data de nascimento inválida (deve ser no passado, maior de 18 anos)')
+  }
+
+  // MEDIUM FIX: Validar datas de viagem
+  if (data.dataIda && !isValidTravelDate(String(data.dataIda))) {
+    errors.push('dataIda: data de ida deve ser no futuro')
+  }
+
+  if (data.dataVolta && !isValidTravelDate(String(data.dataVolta))) {
+    errors.push('dataVolta: data de volta deve ser no futuro')
+  }
+
+  // MEDIUM FIX: Validar intervalo de datas
+  if (data.dataIda && data.dataVolta && !isValidDateRange(String(data.dataIda), String(data.dataVolta))) {
+    errors.push('dataVolta: data de volta deve ser após data de ida')
   }
 
   // Validar email

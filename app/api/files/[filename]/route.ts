@@ -66,13 +66,25 @@ export async function GET(
     const ext = path.extname(safeFilename).toLowerCase()
     const contentType = CONTENT_TYPES[ext] ?? 'application/octet-stream'
 
-    // Sanitizar filename para Content-Disposition
-    const sanitizedName = safeFilename.replace(/"/g, '\\"')
+    // MEDIUM FIX: Properly escape and encode filename for Content-Disposition
+    // Use RFC 5987 encoding for non-ASCII characters
+    const isASCII = /^[\x20-\x7E]*$/.test(safeFilename)
+    let dispositionValue: string
+
+    if (isASCII) {
+      // For ASCII filenames, just escape quotes
+      const sanitizedName = safeFilename.replace(/"/g, '\\"')
+      dispositionValue = `inline; filename="${sanitizedName}"`
+    } else {
+      // For non-ASCII, use RFC 5987 encoding
+      const encodedName = encodeURIComponent(safeFilename)
+      dispositionValue = `inline; filename*=UTF-8''${encodedName}; filename="${safeFilename}"`
+    }
 
     return new NextResponse(file, {
       headers: {
         'Content-Type': contentType,
-        'Content-Disposition': `inline; filename="${sanitizedName}"`,
+        'Content-Disposition': dispositionValue,
         'Cache-Control': 'private, max-age=3600',
       }
     })

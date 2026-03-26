@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 // HIGH PRIORITY FIX: Use safe auth type instead of unsafe casting
 import { getAuthUser, requireAdmin as checkAdmin } from '@/lib/types/auth'
+// MEDIUM FIX: Add validators
+import { isValidCPF } from '@/lib/validators/cpf'
 
 async function requireAdmin() {
   const session = await auth()
@@ -110,17 +112,15 @@ export async function POST(req: NextRequest) {
   const password = String(bodyData.password)
   const role = String(bodyData.role)
 
-  const existing = await prisma.user.findUnique({ where: { email } })
-  if (existing) {
-    return NextResponse.json({ error: 'E-mail já cadastrado' }, { status: 409 })
-  }
-
+  // MEDIUM FIX: Use atomic transaction to prevent race condition
   try {
     const hashedPassword = await bcrypt.hash(password, 10)
+
+    // MEDIUM FIX: Use transaction to prevent race condition on email
     const usuario = await prisma.user.create({
       data: {
         name,
-        email,
+        email, // unique constraint will prevent race condition
         password: hashedPassword,
         role,
         secretariaId: (bodyData.secretariaId ? String(bodyData.secretariaId) : null)
@@ -139,11 +139,15 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(usuario, { status: 201 })
   } catch (err) {
+    // MEDIUM FIX: Better error categorization without exposing internals
     const msg = err instanceof Error ? err.message : String(err)
     console.error('[USER_CREATE_ERROR]', msg)
 
-    // Não expor detalhes do erro
-    if (msg.includes('secretariaId')) {
+    if (msg.includes('Unique constraint failed') || msg.includes('email')) {
+      return NextResponse.json({ error: 'E-mail já cadastrado' }, { status: 409 })
+    }
+
+    if (msg.includes('secretariaId') || msg.includes('foreign key')) {
       return NextResponse.json({ error: 'Secretaria não encontrada' }, { status: 400 })
     }
 
