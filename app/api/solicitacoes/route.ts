@@ -12,6 +12,8 @@ import { getAuthUser } from '@/lib/types/auth'
 // MEDIUM FIX: Add validators
 import { isValidCPF } from '@/lib/validators/cpf'
 import { isValidBirthDate, isValidTravelDate, isValidDateRange } from '@/lib/validators/dates'
+// MEDIUM FIX: Add rate limiting
+import { rateLimit } from '@/lib/middleware/rate-limit'
 
 // CRITICAL FIX: Adicionar validação de entrada com schema
 function validateSolicitacaoInput(body: unknown): { valid: boolean; errors: string[] } {
@@ -101,6 +103,14 @@ export async function POST(req: NextRequest) {
   const user = getAuthUser(session.user)
   if (!user) {
     return NextResponse.json({ error: 'Sessão inválida' }, { status: 401 })
+  }
+
+  // MEDIUM FIX: Rate limit: 5 solicitações por hora por usuário
+  if (!rateLimit(user.id, 5, 3600000)) {
+    return NextResponse.json(
+      { error: 'Limite de solicitações excedido. Tente novamente em uma hora.' },
+      { status: 429 }
+    )
   }
 
   const PERFIS_AUTORIZADOS: typeof user.role[] = ['DEMANDANTE', 'SECRETARIO', 'ADMIN']
