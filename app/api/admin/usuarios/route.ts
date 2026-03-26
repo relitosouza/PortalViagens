@@ -6,6 +6,8 @@ import bcrypt from 'bcryptjs'
 import { getAuthUser, requireAdmin as checkAdmin } from '@/lib/types/auth'
 // MEDIUM FIX: Add validators
 import { isValidCPF } from '@/lib/validators/cpf'
+// MEDIUM FIX: Add rate limiting
+import { rateLimit } from '@/lib/middleware/rate-limit'
 
 async function requireAdmin() {
   const session = await auth()
@@ -89,6 +91,15 @@ function validateUsuarioInput(body: unknown): { valid: boolean; errors: string[]
 export async function POST(req: NextRequest) {
   const session = await requireAdmin()
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 403 })
+
+  // MEDIUM FIX: Rate limit: 10 criações de usuário por hora por admin
+  const user = getAuthUser(session.user)
+  if (user && !rateLimit(`admin-user-create-${user.id}`, 10, 3600000)) {
+    return NextResponse.json(
+      { error: 'Limite de criação de usuários excedido. Tente novamente em uma hora.' },
+      { status: 429 }
+    )
+  }
 
   let body: unknown
   try {
