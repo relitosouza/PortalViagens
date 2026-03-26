@@ -43,6 +43,7 @@ type OpcaoHotel = {
   id: string
   nome: string
   quarto: string
+  regime: string
   noites: number
   precoPorNoite: string
   total: number
@@ -83,26 +84,28 @@ function extrairOpcoesVoo(obs: string | null): OpcaoVoo[] {
 
   const lines = section[1].trim().split('\n')
   lines.forEach((line, idx) => {
-    if (line.startsWith('[')) {
-      const parts = line.split('|').map(s => s.trim())
-      if (parts.length >= 4) {
+    const trimmedLine = line.trim()
+    if (trimmedLine.startsWith('[')) {
+      if (trimmedLine.includes('|')) {
+        const parts = trimmedLine.split('|').map(s => s.trim())
         const header = parts[0].replace(/\[\d+\]\s+/, '')
         const sentido: 'ida' | 'volta' = header.toUpperCase().includes('[VOLTA]') ? 'volta' : 'ida'
         const compNum = header.replace(/\[(IDA|VOLTA)\]/gi, '').trim()
         const [comp, ...numArr] = compNum.split(' ')
         
-        const rota = parts[1].split('→')
-        const tarifaMatch = parts[3]?.match(/R\$\s?([\d.,]+)/)
-        const taxaMatch = parts[4]?.match(/R\$\s?([\d.,]+)/)
-        const qtdeMatch = parts[5]?.match(/Qtde:\s?(\d+)/)
+        const rotaMatch = trimmedLine.match(/([^|]+)\s→\s([^|]+)/)
+        const tarifaMatch = trimmedLine.match(/Tarifa: R\$\s?([\d.,]+)/)
+        const taxaMatch = trimmedLine.match(/Taxa: R\$\s?([\d.,]+)/)
+        const qtdeMatch = trimmedLine.match(/Qtde:\s?(\d+)/)
+        const horario = parts[2] || ''
 
         voos.push({
           id: `v-${idx}`,
           companhia: comp || '',
           numeroVoo: numArr.join(' ') || '',
-          origem: rota[0]?.trim() || '',
-          destino: rota[1]?.trim() || '',
-          horario: parts[2] || '',
+          origem: rotaMatch?.[1]?.trim() || '',
+          destino: rotaMatch?.[2]?.trim() || '',
+          horario: horario.includes('→') ? (parts[3] || '') : horario, // fallback se a rota estiver no index 2
           preco: tarifaMatch ? tarifaMatch[1] : '0,00',
           taxa: taxaMatch ? taxaMatch[1] : '0,00',
           passag: qtdeMatch ? parseInt(qtdeMatch[1]) : 1,
@@ -122,11 +125,21 @@ function extrairOpcoesHotel(obs: string | null): OpcaoHotel[] {
 
   const lines = section[1].trim().split('\n')
   lines.forEach((line, idx) => {
-    if (line.startsWith('[')) {
-      const parts = line.split('|').map(s => s.trim())
+    const trimmedLine = line.trim()
+    if (trimmedLine.startsWith('[')) {
+      const parts = trimmedLine.split('|').map(s => s.trim())
       if (parts.length >= 3) {
         const nome = parts[0].replace(/\[\d+\]\s+/, '')
-        const quarto = parts[1]
+        let quarto = parts[1]
+        let regime = '-'
+
+        // Tenta extrair regime se estiver entre parênteses no campo quarto
+        const regimeMatch = quarto.match(/\((.*?)\)/)
+        if (regimeMatch) {
+          regime = regimeMatch[1]
+          quarto = quarto.replace(/\s?\(.*?\)/, '').trim()
+        }
+
         const logistica = parts[2].split('×')
         const noitesMatch = logistica[0]?.match(/\d+/)
         const precoMatch = logistica[1]?.split('=')[0]?.match(/R\$\s?([\d.,]+)/)
@@ -136,6 +149,7 @@ function extrairOpcoesHotel(obs: string | null): OpcaoHotel[] {
           id: `h-${idx}`,
           nome,
           quarto,
+          regime,
           noites: noitesMatch ? parseInt(noitesMatch[0]) : 1,
           precoPorNoite: precoMatch ? precoMatch[1] : '0,00',
           total: totalMatch ? parseCurrency(totalMatch[1]) : 0
@@ -152,7 +166,7 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
   const [loading, setLoading] = useState<string | null>(null)
   const [erro, setErro] = useState('')
 
-  const cotacaoStep = sol.steps.find(s => s.etapa === 'COTACAO')
+  const cotacaoStep = [...sol.steps].reverse().find(s => s.etapa === 'COTACAO')
   const [voos, setVoos] = useState<OpcaoVoo[]>(() => extrairOpcoesVoo(cotacaoStep?.observacao ?? null))
   const [hoteis, setHoteis] = useState<OpcaoHotel[]>(() => extrairOpcoesHotel(cotacaoStep?.observacao ?? null))
   
@@ -174,7 +188,8 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
     if (hoteis.length > 0) {
       partes.push('=== OPÇÕES DE HOSPEDAGEM SELECIONADAS ===')
       hoteis.forEach((h, i) => {
-        partes.push(`[${i + 1}] ${h.nome} | ${h.quarto} | ${h.noites} noite(s) × R$ ${h.precoPorNoite} = R$ ${h.total.toFixed(2).replace('.', ',')}`)
+        const regimeStr = h.regime && h.regime !== '-' ? ` (${h.regime})` : ''
+        partes.push(`[${i + 1}] ${h.nome} | ${h.quarto}${regimeStr} | ${h.noites} noite(s) × R$ ${h.precoPorNoite} = R$ ${h.total.toFixed(2).replace('.', ',')}`)
       })
     }
     partes.push('=== PARECER SEGOV ===')
@@ -426,10 +441,11 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-[13px]">
-                  <thead className="bg-slate-50 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-200">
+                  <thead className="bg-[#f0f9f1] text-[10px] font-black text-emerald-700 uppercase tracking-widest border-b border-emerald-100">
                     <tr>
                       <th className="px-6 py-3">Hotel / Acomodação</th>
-                      <th className="px-6 py-3 text-center">Diárias</th>
+                      <th className="px-6 py-3">Regime</th>
+                      <th className="px-6 py-3 text-center">Diárias/Qtde</th>
                       <th className="px-6 py-3 text-right">Total (R$)</th>
                       <th className="px-6 py-3 text-right">Ação</th>
                     </tr>
@@ -437,14 +453,19 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
                   <tbody className="divide-y divide-slate-100">
                     {hoteis.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-6 py-8 text-center text-slate-400 italic">Nenhuma hospedagem selecionada.</td>
+                        <td colSpan={5} className="px-6 py-8 text-center text-slate-400 italic">Nenhuma hospedagem selecionada.</td>
                       </tr>
                     ) : (
                       hoteis.map((h) => (
-                        <tr key={h.id} className="hover:bg-slate-50 transition-colors border-l-4 border-l-emerald-500">
+                        <tr key={h.id} className="hover:bg-green-50/50 bg-green-50 transition-colors border-l-4 border-l-emerald-500 border-b border-emerald-100/50">
                           <td className="px-6 py-4">
-                            <p className="font-bold">{h.nome}</p>
+                            <p className="font-bold text-slate-900">{h.nome}</p>
                             <p className="text-[11px] text-slate-500">{h.quarto}</p>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold">
+                              {h.regime}
+                            </span>
                           </td>
                           <td className="px-6 py-4 text-center">
                             <p className="font-bold">{h.noites}x</p>
@@ -454,7 +475,7 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
                             R$ {h.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <button onClick={() => setHoteis(hs => hs.filter(x => x.id !== h.id))} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
+                            <button onClick={() => setHoteis(hs => hs.filter(x => x.id !== h.id))} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
                               <span className="material-symbols-outlined text-[20px]">delete</span>
                             </button>
                           </td>

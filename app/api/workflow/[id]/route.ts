@@ -78,7 +78,7 @@ export async function POST(
   }
 
   // Registrar passo do workflow
-  await prisma.workflowStep.create({
+  const newStep = await prisma.workflowStep.create({
     data: {
       solicitacaoId: sol.id,
       etapa: transicao.etapa,
@@ -86,7 +86,7 @@ export async function POST(
       atorNome: userName,
       decisao,
       observacao: observacao || null,
-      ...(transicao.etapa === 'COTACAO' && {
+      ...(['COTACAO', 'VIABILIDADE'].includes(transicao.etapa) && {
         valorPassagem: valorPassagem ?? null,
         valorHospedagem: valorHospedagem ?? null,
       }),
@@ -101,17 +101,8 @@ export async function POST(
 
   // Lógica especial para etapa de VIABILIDADE aprovada (SEGOV) — DÉBITO DE EMPENHOS
   if (transicao.etapa === 'VIABILIDADE' && decisao === 'APROVADO') {
-    const cotacaoStep = await prisma.workflowStep.findFirst({
-      where: { solicitacaoId: sol.id, etapa: 'COTACAO', decisao: 'APROVADO' },
-      orderBy: { createdAt: 'desc' },
-    })
-
-    console.log('[workflow/VIABILIDADE] cotacaoStep:', cotacaoStep
-      ? { id: cotacaoStep.id, valorPassagem: cotacaoStep.valorPassagem, valorHospedagem: cotacaoStep.valorHospedagem }
-      : null)
-
-    const valorPassagem = cotacaoStep?.valorPassagem ?? 0
-    const valorHospedagem = cotacaoStep?.valorHospedagem ?? 0
+    const valorPassagem = newStep.valorPassagem ?? 0
+    const valorHospedagem = newStep.valorHospedagem ?? 0
 
     if (valorPassagem <= 0 && valorHospedagem <= 0) {
       console.warn('[workflow/VIABILIDADE] Débito ignorado: valorPassagem e valorHospedagem são 0 ou null na cotação aprovada')
@@ -184,20 +175,15 @@ export async function POST(
         return { notasDebito, notasAlerta }
       })
 
-      // Atualizar observação do WorkflowStep de VIABILIDADE
-      const viabilidadeStep = await prisma.workflowStep.findFirst({
-        where: { solicitacaoId: sol.id, etapa: 'VIABILIDADE', decisao: 'APROVADO' },
-        orderBy: { createdAt: 'desc' },
-      })
-      if (viabilidadeStep) {
+      if (newStep) {
         let nota = `\n\n[DÉBITO AUTOMÁTICO] ${notasDebito.join(' | ')}`
         if (notasAlerta.length > 0) {
           nota += `\n⚠️ ALERTA: ${notasAlerta.join('; ')} — Secretaria de Finanças notificada para regularização.`
         }
         await prisma.workflowStep.update({
-          where: { id: viabilidadeStep.id },
+          where: { id: newStep.id },
           data: { observacao: (observacao || '') + nota },
-        }).catch((e) => console.error('[workflow] viabilidadeStep annotation failed', e))
+        }).catch((e) => console.error('[workflow] newStep annotation failed', e))
       }
 
       // Notificar SF se houver saldo insuficiente
