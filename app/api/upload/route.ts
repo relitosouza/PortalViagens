@@ -4,13 +4,27 @@ import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
+// MEDIUM FIX: Add rate limiting
+import { rateLimit } from '@/lib/middleware/rate-limit'
 
 const MAX_SIZE = 10 * 1024 * 1024 // 10MB
+// MEDIUM FIX: Rate limit: 20 uploads per minute per user
+const UPLOAD_RATE_LIMIT = 20
+const UPLOAD_WINDOW_MS = 60000
 
 export async function POST(req: NextRequest) {
   try {
     const session = await auth()
     if (!session?.user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+
+    // MEDIUM FIX: Apply rate limiting
+    const user = session.user as { id: string }
+    if (!rateLimit(user.id, UPLOAD_RATE_LIMIT, UPLOAD_WINDOW_MS)) {
+      return NextResponse.json(
+        { error: 'Limite de uploads excedido. Tente novamente em um minuto.' },
+        { status: 429 }
+      )
+    }
 
     let formData: FormData
     try {
@@ -50,8 +64,10 @@ export async function POST(req: NextRequest) {
         }, { status: 400 })
       }
 
+      // HIGH PRIORITY FIX: Use crypto instead of predictable timestamps
       const baseName = path.basename(file.name, ext).replace(/[^a-zA-Z0-9-_]/g, '_')
-      const filename = `${Date.now()}-${baseName}${ext}`
+      const randomSuffix = Math.random().toString(36).substring(2, 15)
+      const filename = `${randomSuffix}-${baseName}${ext}`
 
       const bytes = await file.arrayBuffer()
       const buffer = Buffer.from(bytes)

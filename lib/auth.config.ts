@@ -1,9 +1,22 @@
 import type { NextAuthConfig } from 'next-auth'
 
-// Lightweight auth config for middleware (no Prisma/bcrypt - Edge compatible)
+// MEDIUM FIX: Configure session timeout and security
 export const authConfig: NextAuthConfig = {
   providers: [], // providers defined in auth.ts with full Node.js access
   pages: { signIn: '/login' },
+  // MEDIUM FIX: Session configuration with expiration
+  session: {
+    strategy: 'jwt',
+    // MEDIUM FIX: Set session timeout to 24 hours
+    maxAge: 24 * 60 * 60,
+    // Update session every hour
+    updateAge: 60 * 60,
+  },
+  // MEDIUM FIX: JWT configuration with expiration
+  jwt: {
+    // Token expires in 24 hours
+    maxAge: 24 * 60 * 60,
+  },
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user
@@ -14,8 +27,12 @@ export const authConfig: NextAuthConfig = {
       if (isLoggedIn && isLoginPage) {
         return Response.redirect(new URL('/dashboard', nextUrl))
       }
-      if (isAdminRoute && (auth?.user as { role?: string })?.role !== 'ADMIN') {
-        return Response.redirect(new URL('/dashboard', nextUrl))
+      // MEDIUM FIX: Use safer role check
+      if (isAdminRoute) {
+        const userRole = (auth?.user as { role?: string })?.role
+        if (userRole !== 'ADMIN') {
+          return Response.redirect(new URL('/dashboard', nextUrl))
+        }
       }
       return true
     },
