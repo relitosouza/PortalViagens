@@ -73,7 +73,7 @@ export default async function OrdemServicoPage({ params }: { params: Promise<{ i
       </div>
 
       <main className="flex justify-center py-12 px-4 md:px-0">
-        <div className="w-full max-w-[850px] bg-white p-10 md:p-16 shadow-2xl relative overflow-hidden ring-1 ring-black/5 print:shadow-none print:ring-0">
+        <div className="w-full max-w-[850px] bg-white p-10 md:p-16 shadow-2xl relative overflow-hidden ring-1 ring-black/5">
           
           {/* Official Watermark Backdrop */}
           <div className="absolute top-10 right-10 opacity-[0.03] pointer-events-none -rotate-12">
@@ -269,10 +269,6 @@ export default async function OrdemServicoPage({ params }: { params: Promise<{ i
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           .no-print { display: none !important; }
-          body { background: white !important; }
-          main { padding: 0 !important; }
-          .shadow-2xl { box-shadow: none !important; }
-          .ring-1 { border: none !important; }
         }
         .material-symbols-outlined {
           font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
