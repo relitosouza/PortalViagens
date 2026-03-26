@@ -177,11 +177,14 @@ export function SecolEmissaoClient({ sol, userName }: Props) {
                     
                     <div className="flex flex-wrap gap-3 justify-center">
                       <button
-                        onClick={handleGerarOS}
+                        onClick={() => {
+                          window.open(`/solicitacoes/${sol.id}/os`, '_blank')
+                          setOsGerada(true)
+                        }}
                         className={`inline-flex items-center gap-2 px-6 py-3 font-bold rounded-lg transition-all shadow-md ${osGerada ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20'}`}
                       >
-                        <span className="material-symbols-outlined">{osGerada ? 'check_circle' : 'picture_as_pdf'}</span>
-                        {osGerada ? 'OS Gerada' : 'Gerar Ordem de Serviço (OS)'}
+                        <span className="material-symbols-outlined">{osGerada ? 'check_circle' : 'print'}</span>
+                        {osGerada ? 'OS Visualizada' : 'Visualizar e Imprimir OSV'}
                       </button>
                       
                       <button
