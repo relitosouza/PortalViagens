@@ -2,7 +2,6 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import PrintButton from './PrintButton'
 
 export default async function OrdemServicoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -71,7 +70,6 @@ export default async function OrdemServicoPage({ params }: { params: Promise<{ i
           <span className="material-symbols-outlined">arrow_back</span>
           Voltar
         </Link>
-        <PrintButton />
       </div>
 
       <main className="flex justify-center py-12 px-4 md:px-0">
