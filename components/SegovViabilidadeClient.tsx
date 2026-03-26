@@ -121,34 +121,33 @@ function extrairOpcoesVoo(obs: string | null): OpcaoVoo[] {
 function extrairOpcoesHotel(obs: string | null): OpcaoHotel[] {
   if (!obs) return []
   const hoteis: OpcaoHotel[] = []
-  
-  // Regex ultra flexível para encontrar a seção de hospedagem (Hospedagem, Hospedagen, Hotel, etc)
-  const sectionMatch = obs.match(/===[^=]*(?:HOSPEDAGE[MN]|HOTEL|HOTEIS|ESTADIA)[^=]*===([\s\S]*?)(?:===|$)/i)
-  if (!sectionMatch) return []
+  const lines = obs.split('\n')
+  let section = ''
 
-  const lines = sectionMatch[1].trim().split('\n')
   lines.forEach((line, idx) => {
     const trimmedLine = line.trim()
-    if (trimmedLine.startsWith('[')) {
-      const parts = trimmedLine.split('|').map(s => s.trim())
-      
-      const noitesMatch = trimmedLine.match(/(\d+)\s*noite/i)
-      const precoMatch = trimmedLine.match(/(?:×|x)\s*R\$\s?([\d.,]+)/i)
-      const totalMatch = trimmedLine.match(/=\s*R\$\s?([\d.,]+)/)
-      const hotelNomeMatch = trimmedLine.match(/^\[\d+\]\s+([^|]+)/)
+    if (trimmedLine.includes('=== OPÇÕES DE HOSPEDAGEM')) { section = 'HOTEL'; return }
+    if (trimmedLine.startsWith('===')) { section = ''; return }
 
+    if (section === 'HOTEL' && trimmedLine.startsWith('[')) {
+      // Formato: [1] Hotel Name | Quarto | 3 noite(s) × R$ 450,00 = R$ 1350,00
+      const parts = trimmedLine.split('|').map(s => s.trim())
       if (parts.length >= 2) {
+        const hotelNomeMatch = trimmedLine.match(/^\[\d+\]\s+([^|]+)/)
         const nome = hotelNomeMatch ? hotelNomeMatch[1].trim() : parts[0].replace(/\[\d+\]\s+/, '')
         let quarto = parts[1] || 'Standard'
         let regime = '-'
 
-        // Tenta extrair regime se estiver entre parênteses no campo quarto ou no nome
         const regimeRegex = /\((.*?)\)/
-        const rMatch = (quarto.match(regimeRegex) || nome.match(regimeRegex))
+        const rMatch = quarto.match(regimeRegex) || nome.match(regimeRegex)
         if (rMatch) {
           regime = rMatch[1]
           quarto = quarto.replace(regimeRegex, '').trim()
         }
+
+        const noitesMatch = trimmedLine.match(/(\d+)\s*noite/i)
+        const precoMatch = trimmedLine.match(/(?:×|x)\s*R\$\s?([\d.,]+)/i)
+        const totalMatch = trimmedLine.match(/=\s*R\$\s?([\d.,]+)/)
 
         hoteis.push({
           id: `h-${idx}-${Date.now()}`,
@@ -171,14 +170,7 @@ export function SegovViabilidadeClient({ sol, userName, budgetData }: Props) {
   const [loading, setLoading] = useState<string | null>(null)
   const [erro, setErro] = useState('')
 
-  const cotacaoStep = [...sol.steps].reverse().find(s => 
-    s.observacao && (
-      s.observacao.includes('VOO') || 
-      s.observacao.includes('HOSPEDAGEM') || 
-      s.observacao.includes('HOTEL') ||
-      s.observacao.includes('AÉREO')
-    )
-  )
+  const cotacaoStep = [...sol.steps].reverse().find(s => s.etapa === 'COTACAO' && s.observacao)
   const [voos, setVoos] = useState<OpcaoVoo[]>(() => extrairOpcoesVoo(cotacaoStep?.observacao ?? null))
   const [hoteis, setHoteis] = useState<OpcaoHotel[]>(() => extrairOpcoesHotel(cotacaoStep?.observacao ?? null))
   
