@@ -71,27 +71,11 @@ export default async function OrdemServicoPage({ params }: { params: Promise<{ i
           <span className="material-symbols-outlined">arrow_back</span>
           Voltar
         </Link>
-        <DownloadOSButton sol={{
-          id: sol.id,
-          nomeCompleto: sol.nomeCompleto,
-          matricula: sol.matricula,
-          emailServidor: sol.emailServidor,
-          fichaOrcamentaria: sol.fichaOrcamentaria,
-          destino: sol.destino,
-          dataIda: sol.dataIda.toISOString(),
-          dataVolta: sol.dataVolta.toISOString(),
-          steps: sol.steps.map(s => ({
-            etapa: s.etapa,
-            decisao: s.decisao,
-            observacao: s.observacao,
-            valorPassagem: s.valorPassagem,
-            valorHospedagem: s.valorHospedagem,
-          }))
-        }} />
+        <DownloadOSButton id={sol.id} nomeCompleto={sol.nomeCompleto} />
       </div>
 
       <main className="flex justify-center py-12 px-4 md:px-0">
-        <div className="w-full max-w-[850px] bg-white p-10 md:p-16 shadow-2xl relative overflow-hidden ring-1 ring-black/5">
+        <div id="os-documento" className="w-full max-w-[850px] bg-white p-10 md:p-16 shadow-2xl relative overflow-hidden ring-1 ring-black/5">
           
           {/* Official Watermark Backdrop */}
           <div className="absolute top-10 right-10 opacity-[0.03] pointer-events-none -rotate-12">
