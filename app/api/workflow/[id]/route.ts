@@ -9,6 +9,9 @@ import {
   notificarEmissaoParaSf,
   notificarDemandante,
   notificarRole,
+  notificarSecretarioAprovacaoParaSecol,
+  notificarSecretarioAjusteParaDemandante,
+  notificarSecretarioReprovacaoParaDemandante,
 } from '@/lib/email-notifications'
 import { addDiasUteis } from '@/lib/utils/diasUteis'
 
@@ -96,7 +99,11 @@ export async function POST(
   // Atualizar status da solicitação
   await prisma.solicitacao.update({
     where: { id: sol.id },
-    data: { status: transicao.proximoStatus },
+    data: {
+      status: transicao.proximoStatus,
+      ultimoLembrete: null,
+      qtdLembretes: 0,
+    },
   })
 
   // Lógica especial para etapa de VIABILIDADE aprovada (SEGOV) — DÉBITO DE EMPENHOS
@@ -199,6 +206,21 @@ export async function POST(
   }
 
   // ── Notificações por email ────────────────────────────────────────────────
+
+  // SECRETARIO aprovado → SECOL cota
+  if (transicao.etapa === 'SECRETARIO' && decisao === 'APROVADO') {
+    notificarSecretarioAprovacaoParaSecol(sol).catch(() => {})
+  }
+
+  // SECRETARIO ajuste demandante → demandante corrige
+  if (transicao.etapa === 'SECRETARIO' && decisao === 'AJUSTE_DEMANDANTE') {
+    notificarSecretarioAjusteParaDemandante(sol, observacao)
+  }
+
+  // SECRETARIO reprovado → demandante
+  if (transicao.etapa === 'SECRETARIO' && decisao === 'REPROVADO') {
+    notificarSecretarioReprovacaoParaDemandante(sol, observacao)
+  }
 
   // COTACAO aprovada → demandante (atualização) + SEGOV (próxima ação)
   if (transicao.etapa === 'COTACAO' && decisao === 'APROVADO') {
