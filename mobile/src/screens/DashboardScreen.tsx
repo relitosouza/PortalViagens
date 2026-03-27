@@ -1,32 +1,76 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { useAuthStore } from '@/mobile/src/stores/authStore';
+import { apiClient } from '@/lib/services/api.client';
+import { Button } from '@/mobile/src/components/Button';
+
+interface Solicitacao {
+  id: string;
+  numero: string;
+  titulo?: string;
+  status: string;
+  dataIda: string;
+  dataVolta?: string;
+  createdAt?: string;
+}
 
 const DashboardScreen = () => {
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
+  const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const mockSolicitacoes = [
-    { id: '1', titulo: 'Viagem - São Paulo', status: 'Aprovado', data: '2026-03-20' },
-    { id: '2', titulo: 'Viagem - Rio de Janeiro', status: 'Pendente', data: '2026-03-25' },
-    { id: '3', titulo: 'Viagem - Brasília', status: 'Rejeitado', data: '2026-03-15' },
-  ];
+  useEffect(() => {
+    if (token) {
+      apiClient.setToken(token);
+    }
+    loadSolicitacoes();
+  }, [token]);
 
-  const renderItem = ({ item }: any) => (
+  const loadSolicitacoes = async () => {
+    try {
+      setLoading(true);
+      const data = await apiClient.getSolicitacoes();
+      setSolicitacoes(data);
+    } catch (error) {
+      console.error('Erro ao carregar solicitações:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadSolicitacoes();
+    setRefreshing(false);
+  };
+
+  const getStatusColor = (status: string) => {
+    if (status.includes('APROVADO') || status.includes('APROVACAO')) return styles.approved;
+    if (status.includes('PENDENTE') || status.includes('AGUARDANDO')) return styles.pending;
+    if (status.includes('REJEITADO') || status.includes('RECUSADO')) return styles.rejected;
+    return styles.pending;
+  };
+
+  const renderItem = ({ item }: { item: Solicitacao }) => (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>{item.titulo}</Text>
-      <Text style={styles.cardDate}>{item.data}</Text>
-      <View
-        style={[
-          styles.statusBadge,
-          item.status === 'Aprovado' && styles.approved,
-          item.status === 'Pendente' && styles.pending,
-          item.status === 'Rejeitado' && styles.rejected,
-        ]}
-      >
+      <Text style={styles.cardTitle}>{item.numero}</Text>
+      <Text style={styles.cardDate}>
+        {item.dataIda ? new Date(item.dataIda).toLocaleDateString('pt-BR') : 'Data não definida'}
+      </Text>
+      <View style={[styles.statusBadge, getStatusColor(item.status)]}>
         <Text style={styles.statusText}>{item.status}</Text>
       </View>
     </View>
   );
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color="#3366cc" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -36,10 +80,17 @@ const DashboardScreen = () => {
       </View>
 
       <FlatList
-        data={mockSolicitacoes}
+        data={solicitacoes}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>Nenhuma solicitação encontrada</Text>
+            <Button label="Criar Solicitação" onPress={() => {}} />
+          </View>
+        }
       />
     </View>
   );
@@ -49,6 +100,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     backgroundColor: '#3366cc',
@@ -109,6 +164,16 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  emptyState: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#999',
+    marginBottom: 16,
   },
 });
 

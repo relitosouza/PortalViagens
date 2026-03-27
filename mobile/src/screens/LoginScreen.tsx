@@ -8,7 +8,9 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '@/mobile/src/stores/authStore';
+import { apiClient } from '@/lib/services/api.client';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
@@ -24,30 +26,21 @@ const LoginScreen = () => {
 
     setLoading(true);
     try {
-      // TODO: Chamar API de autenticação
-      // const response = await authService.login({ email, password });
+      // Chamar API de autenticação
+      const response = await apiClient.login({ email, password });
 
-      // Por enquanto, mock para testes
-      const mockUser = {
-        id: '1',
-        email,
-        name: email.split('@')[0],
-        role: 'DEMANDANTE' as const,
-      };
-
-      const mockToken = 'mock-token-' + Date.now();
-
-      // Salvar no store
-      await setToken(mockToken);
-      setUser(mockUser);
+      // Salvar token no store e client
+      const token = response.token || 'token-from-response';
+      await setToken(token);
+      apiClient.setToken(token);
+      setUser(response.user);
 
       // Salvar user no storage
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      await AsyncStorage.setItem('@auth_user', JSON.stringify(mockUser));
+      await AsyncStorage.setItem('@auth_user', JSON.stringify(response.user));
 
       Alert.alert('Sucesso', 'Login realizado com sucesso!');
     } catch (error) {
-      Alert.alert('Erro', 'Falha ao fazer login');
+      Alert.alert('Erro', 'E-mail ou senha inválidos');
     } finally {
       setLoading(false);
     }
