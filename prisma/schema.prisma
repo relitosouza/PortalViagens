@@ -51,6 +51,8 @@ model Solicitacao {
   status               String         @default("RASCUNHO")
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
+  ultimoLembrete       DateTime?
+  qtdLembretes         Int            @default(0)
   userId               String
   user                 User           @relation(fields: [userId], references: [id])
   secretariaId         String?
