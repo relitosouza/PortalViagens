@@ -11,6 +11,8 @@ import DashboardScreen from '@/mobile/src/screens/DashboardScreen';
 import FilasScreen from '@/mobile/src/screens/FilasScreen';
 import PrestacaoScreen from '@/mobile/src/screens/PrestacaoScreen';
 import PerfilScreen from '@/mobile/src/screens/PerfilScreen';
+import SolicitacaoDetailScreen from '@/mobile/src/screens/SolicitacaoDetailScreen';
+import NovaSolicitacaoScreen from '@/mobile/src/screens/NovasolicitacaoScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -30,58 +32,83 @@ const DashboardNavigator = () => {
   const { user } = useAuthStore();
 
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: true,
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName = 'home';
-          if (route.name === 'Dashboard') iconName = 'home';
-          else if (route.name === 'Filas') iconName = 'clipboard-check';
-          else if (route.name === 'Prestacoes') iconName = 'file-document';
-          else if (route.name === 'Perfil') iconName = 'account';
+    <Stack.Navigator>
+      {/* Tab Navigator */}
+      <Stack.Screen
+        name="MainTabs"
+        options={{ headerShown: false }}
+      >
+        {() => (
+          <Tab.Navigator
+            screenOptions={({ route }) => ({
+              headerShown: true,
+              tabBarIcon: ({ focused, color, size }) => {
+                let iconName = 'home';
+                if (route.name === 'Dashboard') iconName = 'home';
+                else if (route.name === 'Filas') iconName = 'clipboard-check';
+                else if (route.name === 'Prestacoes') iconName = 'file-document';
+                else if (route.name === 'Perfil') iconName = 'account';
 
-          return (
-            <MaterialCommunityIcons
-              name={iconName as any}
-              size={size}
-              color={color}
+                return (
+                  <MaterialCommunityIcons
+                    name={iconName as any}
+                    size={size}
+                    color={color}
+                  />
+                );
+              },
+              tabBarActiveTintColor: '#3366cc',
+              tabBarInactiveTintColor: '#999',
+              headerStyle: { backgroundColor: '#3366cc' },
+              headerTintColor: '#fff',
+              headerTitleStyle: { fontWeight: 'bold' },
+            })}
+          >
+            <Tab.Screen
+              name="Dashboard"
+              component={DashboardScreen}
+              options={{ title: 'Meus Pedidos' }}
             />
-          );
-        },
-        tabBarActiveTintColor: '#3366cc',
-        tabBarInactiveTintColor: '#999',
-        headerStyle: { backgroundColor: '#3366cc' },
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontWeight: 'bold' },
-      })}
-    >
-      <Tab.Screen
-        name="Dashboard"
-        component={DashboardScreen}
-        options={{ title: 'Meus Pedidos' }}
-      />
 
-      {/* Mostrar Filas só para SECOL, SEGOV, SF */}
-      {user?.role !== 'DEMANDANTE' && (
-        <Tab.Screen
-          name="Filas"
-          component={FilasScreen}
-          options={{ title: 'Fila de Aprovação' }}
+            {/* Mostrar Filas só para SECOL, SEGOV, SF */}
+            {user?.role !== 'DEMANDANTE' && (
+              <Tab.Screen
+                name="Filas"
+                component={FilasScreen}
+                options={{ title: 'Fila de Aprovação' }}
+              />
+            )}
+
+            <Tab.Screen
+              name="Prestacoes"
+              component={PrestacaoScreen}
+              options={{ title: 'Prestações' }}
+            />
+
+            <Tab.Screen
+              name="Perfil"
+              component={PerfilScreen}
+              options={{ title: 'Perfil' }}
+            />
+          </Tab.Navigator>
+        )}
+      </Stack.Screen>
+
+      {/* Detail Screens (Modal style) */}
+      <Stack.Group screenOptions={{ presentation: 'modal' }}>
+        <Stack.Screen
+          name="SolicitacaoDetail"
+          component={SolicitacaoDetailScreen}
+          options={{ title: 'Detalhes da Solicitação', headerBackTitle: 'Voltar' }}
         />
-      )}
 
-      <Tab.Screen
-        name="Prestacoes"
-        component={PrestacaoScreen}
-        options={{ title: 'Prestações' }}
-      />
-
-      <Tab.Screen
-        name="Perfil"
-        component={PerfilScreen}
-        options={{ title: 'Perfil' }}
-      />
-    </Tab.Navigator>
+        <Stack.Screen
+          name="NovaSolicitacao"
+          component={NovaSolicitacaoScreen}
+          options={{ title: 'Nova Solicitação', headerBackTitle: 'Cancelar' }}
+        />
+      </Stack.Group>
+    </Stack.Navigator>
   );
 };
 

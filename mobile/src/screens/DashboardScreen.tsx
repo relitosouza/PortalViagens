@@ -1,5 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  RefreshControl,
+  TouchableOpacity,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '@/mobile/src/stores/authStore';
 import { apiClient } from '@/lib/services/api.client';
 import { Button } from '@/mobile/src/components/Button';
@@ -15,6 +24,7 @@ interface Solicitacao {
 }
 
 const DashboardScreen = () => {
+  const navigation = useNavigation();
   const { user, token } = useAuthStore();
   const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +63,14 @@ const DashboardScreen = () => {
   };
 
   const renderItem = ({ item }: { item: Solicitacao }) => (
-    <View style={styles.card}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() =>
+        (navigation as any).navigate('SolicitacaoDetail', {
+          solicitacaoId: item.id,
+        })
+      }
+    >
       <Text style={styles.cardTitle}>{item.numero}</Text>
       <Text style={styles.cardDate}>
         {item.dataIda ? new Date(item.dataIda).toLocaleDateString('pt-BR') : 'Data não definida'}
@@ -61,7 +78,7 @@ const DashboardScreen = () => {
       <View style={[styles.statusBadge, getStatusColor(item.status)]}>
         <Text style={styles.statusText}>{item.status}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   if (loading) {
@@ -75,8 +92,17 @@ const DashboardScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.greeting}>Olá, {user?.name}! 👋</Text>
-        <Text style={styles.role}>Perfil: {user?.role}</Text>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.greeting}>Olá, {user?.name}! 👋</Text>
+            <Text style={styles.role}>Perfil: {user?.role}</Text>
+          </View>
+          <TouchableOpacity onPress={() => (navigation as any).navigate('NovaSolicitacao')}>
+            <View style={styles.fabButton}>
+              <Text style={styles.fabText}>+ Nova</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <FlatList
@@ -88,7 +114,10 @@ const DashboardScreen = () => {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>Nenhuma solicitação encontrada</Text>
-            <Button label="Criar Solicitação" onPress={() => {}} />
+            <Button
+              label="+ Criar Solicitação"
+              onPress={() => (navigation as any).navigate('NovaSolicitacao')}
+            />
           </View>
         }
       />
@@ -110,6 +139,11 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 0,
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
   greeting: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -119,6 +153,17 @@ const styles = StyleSheet.create({
   role: {
     fontSize: 14,
     color: '#e0e0e0',
+  },
+  fabButton: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  fabText: {
+    color: '#3366cc',
+    fontWeight: '600',
+    fontSize: 12,
   },
   list: {
     padding: 16,
