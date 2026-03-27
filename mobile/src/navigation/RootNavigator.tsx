@@ -8,6 +8,9 @@ import { ActivityIndicator, View } from 'react-native';
 import { useAuthStore } from '@/mobile/src/stores/authStore';
 import LoginScreen from '@/mobile/src/screens/LoginScreen';
 import DashboardScreen from '@/mobile/src/screens/DashboardScreen';
+import FilasScreen from '@/mobile/src/screens/FilasScreen';
+import PrestacaoScreen from '@/mobile/src/screens/PrestacaoScreen';
+import PerfilScreen from '@/mobile/src/screens/PerfilScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -23,54 +26,64 @@ const AuthNavigator = () => (
   </Stack.Navigator>
 );
 
-const DashboardNavigator = () => (
-  <Tab.Navigator
-    screenOptions={({ route }) => ({
-      headerShown: true,
-      tabBarIcon: ({ focused, color, size }) => {
-        let iconName = 'home';
-        if (route.name === 'Dashboard') iconName = 'home';
-        else if (route.name === 'Solicitacoes') iconName = 'airplane';
-        else if (route.name === 'Prestacoes') iconName = 'file-document';
-        else if (route.name === 'Perfil') iconName = 'account';
+const DashboardNavigator = () => {
+  const { user } = useAuthStore();
 
-        return (
-          <MaterialCommunityIcons
-            name={iconName as any}
-            size={size}
-            color={color}
-          />
-        );
-      },
-      tabBarActiveTintColor: '#3366cc',
-      tabBarInactiveTintColor: '#999',
-      headerStyle: { backgroundColor: '#3366cc' },
-      headerTintColor: '#fff',
-      headerTitleStyle: { fontWeight: 'bold' },
-    })}
-  >
-    <Tab.Screen
-      name="Dashboard"
-      component={DashboardScreen}
-      options={{ title: 'Dashboard' }}
-    />
-    <Tab.Screen
-      name="Solicitacoes"
-      component={DashboardScreen}
-      options={{ title: 'Solicitações' }}
-    />
-    <Tab.Screen
-      name="Prestacoes"
-      component={DashboardScreen}
-      options={{ title: 'Prestações' }}
-    />
-    <Tab.Screen
-      name="Perfil"
-      component={DashboardScreen}
-      options={{ title: 'Perfil' }}
-    />
-  </Tab.Navigator>
-);
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: true,
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName = 'home';
+          if (route.name === 'Dashboard') iconName = 'home';
+          else if (route.name === 'Filas') iconName = 'clipboard-check';
+          else if (route.name === 'Prestacoes') iconName = 'file-document';
+          else if (route.name === 'Perfil') iconName = 'account';
+
+          return (
+            <MaterialCommunityIcons
+              name={iconName as any}
+              size={size}
+              color={color}
+            />
+          );
+        },
+        tabBarActiveTintColor: '#3366cc',
+        tabBarInactiveTintColor: '#999',
+        headerStyle: { backgroundColor: '#3366cc' },
+        headerTintColor: '#fff',
+        headerTitleStyle: { fontWeight: 'bold' },
+      })}
+    >
+      <Tab.Screen
+        name="Dashboard"
+        component={DashboardScreen}
+        options={{ title: 'Meus Pedidos' }}
+      />
+
+      {/* Mostrar Filas só para SECOL, SEGOV, SF */}
+      {user?.role !== 'DEMANDANTE' && (
+        <Tab.Screen
+          name="Filas"
+          component={FilasScreen}
+          options={{ title: 'Fila de Aprovação' }}
+        />
+      )}
+
+      <Tab.Screen
+        name="Prestacoes"
+        component={PrestacaoScreen}
+        options={{ title: 'Prestações' }}
+      />
+
+      <Tab.Screen
+        name="Perfil"
+        component={PerfilScreen}
+        options={{ title: 'Perfil' }}
+      />
+    </Tab.Navigator>
+  );
+};
 
 export const RootNavigator = () => {
   const { isAuthenticated, isLoading, hydrate } = useAuthStore();
