@@ -137,3 +137,117 @@ export async function notificarEmissaoParaSf(
     'EXECUCAO_SF'
   )
 }
+
+/** SECRETARIO aprovou → notificar SECOL para iniciar cotação */
+export async function notificarSecretarioAprovacaoParaSecol(
+  sol: SolicitacaoComUser
+): Promise<void> {
+  await notificarRole(
+    'SECOL',
+    '[Viagens Osasco] Nova solicitação aguardando cotação',
+    `A solicitação de viagem para ${sol.destino} de ${sol.nomeCompleto} foi aprovada pelo Secretário e aguarda cotação.\n\nAcesse: ${APP_URL}/solicitacoes/${sol.id}`,
+    'SECRETARIO_APROVACAO_SECOL'
+  )
+}
+
+/** SECRETARIO pediu ajuste → notificar DEMANDANTE */
+export function notificarSecretarioAjusteParaDemandante(
+  sol: SolicitacaoComUser,
+  observacao: string | null
+): void {
+  notificarDemandante(
+    sol,
+    '[Viagens Osasco] Ajuste necessário na sua solicitação',
+    `Prezado(a) ${sol.nomeCompleto},\n\nO Secretário solicitou ajuste na sua viagem para ${sol.destino}.\n\nMotivo: ${observacao ?? 'Não informado'}\n\nAcesse: ${APP_URL}/solicitacoes/${sol.id}`,
+    'SECRETARIO_AJUSTE_DEMANDANTE'
+  )
+}
+
+/** SECRETARIO reprovou → notificar DEMANDANTE */
+export function notificarSecretarioReprovacaoParaDemandante(
+  sol: SolicitacaoComUser,
+  observacao: string | null
+): void {
+  notificarDemandante(
+    sol,
+    '[Viagens Osasco] ❌ Solicitação reprovada pelo Secretário',
+    `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} foi REPROVADA pelo Secretário.\n\nMotivo: ${observacao ?? 'Não informado'}\n\nAcesse: ${APP_URL}/solicitacoes/${sol.id}`,
+    'SECRETARIO_REPROVACAO_DEMANDANTE'
+  )
+}
+
+const FASE_LABELS: Record<string, string> = {
+  AGUARDANDO_APROVACAO_PASTA: 'aprovação do Secretário',
+  EM_COTACAO: 'cotação pela SECOL',
+  AGUARDANDO_VIABILIDADE: 'análise de viabilidade pela SEGOV',
+  AGUARDANDO_EMISSAO: 'emissão de vouchers pela SECOL',
+  AGUARDANDO_EXECUCAO: 'confirmação de execução pela SF',
+  DEVOLVIDO_SECRETARIO: 'correção pelo servidor demandante',
+}
+
+const FASE_ROLE_MAP: Record<string, string> = {
+  EM_COTACAO: 'SECOL',
+  AGUARDANDO_VIABILIDADE: 'SEGOV',
+  AGUARDANDO_EMISSAO: 'SECOL',
+  AGUARDANDO_EXECUCAO: 'SF',
+}
+
+/** Lembrete diário para o responsável da fase atual */
+export async function notificarLembreteFase(
+  sol: SolicitacaoComUser
+): Promise<void> {
+  const dias = sol.qtdLembretes + 1
+  const faseLabel = FASE_LABELS[sol.status] ?? sol.status
+  const link = `${APP_URL}/solicitacoes/${sol.id}`
+
+  if (sol.status === 'DEVOLVIDO_SECRETARIO') {
+    notificarDemandante(
+      sol,
+      `[Viagens Osasco] Lembrete: sua solicitação aguarda correção (dia ${dias})`,
+      `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} aguarda correção há ${dias} dia(s).\n\nPor favor, realize os ajustes solicitados.\n\nAcesse: ${link}`,
+      'LEMBRETE_DEMANDANTE'
+    )
+    return
+  }
+
+  if (sol.status === 'AGUARDANDO_APROVACAO_PASTA') {
+    if (!sol.secretariaId) return
+    const usuarios = await prisma.user.findMany({
+      where: { role: 'SECRETARIO', secretariaId: sol.secretariaId, ativo: true },
+    })
+    for (const u of usuarios) {
+      try {
+        logEmail({
+          para: u.email,
+          assunto: `[Viagens Osasco] Lembrete: solicitação aguardando sua aprovação (dia ${dias})`,
+          corpo: `Prezado(a) Secretário(a),\n\nA solicitação de viagem para ${sol.destino} de ${sol.nomeCompleto} aguarda sua aprovação há ${dias} dia(s).\n\nAcesse: ${link}`,
+          tipo: 'LEMBRETE_SECRETARIO',
+        })
+      } catch { /* silent */ }
+    }
+    return
+  }
+
+  const role = FASE_ROLE_MAP[sol.status]
+  if (!role) return
+
+  await notificarRole(
+    role,
+    `[Viagens Osasco] Lembrete: solicitação aguardando ${faseLabel} (dia ${dias})`,
+    `A solicitação de viagem para ${sol.destino} de ${sol.nomeCompleto} aguarda ${faseLabel} há ${dias} dia(s).\n\nAcesse: ${link}`,
+    `LEMBRETE_${role}`
+  )
+}
+
+/** Escalonamento para SEGOV após 5 dias sem ação */
+export async function notificarEscalonamento(
+  sol: SolicitacaoComUser
+): Promise<void> {
+  const faseLabel = FASE_LABELS[sol.status] ?? sol.status
+  await notificarRole(
+    'SEGOV',
+    '[Viagens Osasco] ⚠️ Escalonamento: solicitação parada há 5 dias',
+    `A solicitação de viagem para ${sol.destino} de ${sol.nomeCompleto} está aguardando ${faseLabel} há 5 dias sem ação.\n\nStatus atual: ${sol.status}\n\nAcesse: ${APP_URL}/solicitacoes/${sol.id}`,
+    'ESCALAMENTO_SEGOV'
+  )
+}
