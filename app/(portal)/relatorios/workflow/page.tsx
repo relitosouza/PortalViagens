@@ -66,7 +66,7 @@ export default async function WorkflowPage() {
       {/* W1 — Por Status */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm">
         <div className="p-5 border-b border-slate-100">
-          <span className="text-xs font-black text-indigo-600 uppercase tracking-wider">W1</span>
+          
           <h3 className="font-bold text-slate-900">Solicitações por Status</h3>
         </div>
         <div className="p-5 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -91,7 +91,7 @@ export default async function WorkflowPage() {
       {/* W3 — Tempo Médio */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-5 border-b border-slate-100">
-          <span className="text-xs font-black text-indigo-600 uppercase tracking-wider">W3</span>
+          
           <h3 className="font-bold text-slate-900">Tempo Médio de Aprovação por Etapa (dias)</h3>
         </div>
         <div className="overflow-x-auto">
@@ -134,7 +134,7 @@ export default async function WorkflowPage() {
       {/* W4 — Rejeitadas */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-5 border-b border-slate-100">
-          <span className="text-xs font-black text-indigo-600 uppercase tracking-wider">W4</span>
+          
           <h3 className="font-bold text-slate-900">Solicitações Rejeitadas / Devolvidas</h3>
         </div>
         <div className="overflow-x-auto">
@@ -176,7 +176,7 @@ export default async function WorkflowPage() {
           <div className="p-5 border-b border-amber-200 flex items-center gap-2">
             <span className="material-symbols-outlined text-amber-600">warning</span>
             <div>
-              <span className="text-xs font-black text-amber-700 uppercase tracking-wider">W6</span>
+              
               <h3 className="font-bold text-amber-900">Solicitações com Urgência (viagem em até 3 dias)</h3>
             </div>
           </div>

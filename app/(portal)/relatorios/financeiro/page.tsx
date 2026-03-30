@@ -43,7 +43,7 @@ export default async function FinanceiroPage() {
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-5 border-b border-slate-100 flex items-center justify-between">
           <div>
-            <span className="text-xs font-black text-blue-600 uppercase tracking-wider">F1</span>
+            
             <h3 className="font-bold text-slate-900">Gastos por Secretaria</h3>
           </div>
           <ExportGastosPorSecretaria dados={gastos} />
@@ -88,7 +88,7 @@ export default async function FinanceiroPage() {
       {/* F2 — Orçado vs Executado */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm">
         <div className="p-5 border-b border-slate-100">
-          <span className="text-xs font-black text-blue-600 uppercase tracking-wider">F2</span>
+          
           <h3 className="font-bold text-slate-900">Orçado vs Executado</h3>
         </div>
         <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -129,7 +129,7 @@ export default async function FinanceiroPage() {
       {/* F6 — Top 10 */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm">
         <div className="p-5 border-b border-slate-100">
-          <span className="text-xs font-black text-blue-600 uppercase tracking-wider">F6</span>
+          
           <h3 className="font-bold text-slate-900">Top 10 Secretarias por Gasto Total</h3>
         </div>
         <div className="p-5 space-y-3">

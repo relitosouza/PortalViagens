@@ -71,7 +71,7 @@ export default async function PrestacaoRelatorioPage() {
           <div className="p-5 border-b border-amber-100 flex items-center gap-2">
             <span className="material-symbols-outlined text-amber-600">timer</span>
             <div>
-              <span className="text-xs font-black text-amber-700 uppercase tracking-wider">P5</span>
+              
               <h3 className="font-bold text-amber-900">Vencendo em até 10 dias</h3>
             </div>
           </div>
@@ -103,7 +103,7 @@ export default async function PrestacaoRelatorioPage() {
           <div className="p-5 border-b border-slate-100 flex items-center gap-2">
             <span className="material-symbols-outlined text-rose-500 text-[20px]">assignment_late</span>
             <div>
-              <span className="text-xs font-black text-amber-600 uppercase tracking-wider">P1</span>
+              
               <h3 className="font-bold text-slate-900">Prestações em Atraso</h3>
             </div>
           </div>
@@ -140,7 +140,7 @@ export default async function PrestacaoRelatorioPage() {
       {/* P2 — Pendentes */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-5 border-b border-slate-100">
-          <span className="text-xs font-black text-amber-600 uppercase tracking-wider">P2</span>
+          
           <h3 className="font-bold text-slate-900">Prestações Pendentes</h3>
         </div>
         <div className="overflow-x-auto">

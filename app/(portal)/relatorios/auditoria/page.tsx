@@ -79,7 +79,7 @@ export default async function AuditoriaPage() {
 
       {/* A4 — Funil */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-        <span className="text-xs font-black text-rose-600 uppercase tracking-wider">A4</span>
+        
         <h3 className="font-bold text-slate-900 mb-4">Funil do Workflow</h3>
         <div className="grid grid-cols-3 gap-4 text-center">
           {[
@@ -100,7 +100,7 @@ export default async function AuditoriaPage() {
 
       {/* A3 — Atividade por perfil */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-        <span className="text-xs font-black text-rose-600 uppercase tracking-wider">A3</span>
+        
         <h3 className="font-bold text-slate-900 mb-4">Atividade por Perfil</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Object.entries(atividadePorAtor)
@@ -120,7 +120,7 @@ export default async function AuditoriaPage() {
       {/* A5 — Gargalos */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-5 border-b border-slate-100">
-          <span className="text-xs font-black text-rose-600 uppercase tracking-wider">A5</span>
+          
           <h3 className="font-bold text-slate-900">Gargalos por Etapa (Tempo Médio)</h3>
         </div>
         <div className="overflow-x-auto">
@@ -166,7 +166,7 @@ export default async function AuditoriaPage() {
           <div className="p-5 border-b border-rose-100 flex items-center gap-2">
             <span className="material-symbols-outlined text-rose-600">gpp_bad</span>
             <div>
-              <span className="text-xs font-black text-rose-700 uppercase tracking-wider">A2</span>
+              
               <h3 className="font-bold text-rose-900">Aprovações Acima do Teto Orçamentário</h3>
             </div>
           </div>
@@ -198,7 +198,7 @@ export default async function AuditoriaPage() {
       {/* A1 — Log de Ações */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-5 border-b border-slate-100">
-          <span className="text-xs font-black text-rose-600 uppercase tracking-wider">A1</span>
+          
           <h3 className="font-bold text-slate-900">Log de Ações (últimas 100)</h3>
         </div>
         <div className="overflow-x-auto">

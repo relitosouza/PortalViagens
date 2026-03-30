@@ -46,7 +46,7 @@ export default async function ServidoresPage() {
       {/* S1/S2 — Mais viagens */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-5 border-b border-slate-100">
-          <span className="text-xs font-black text-violet-600 uppercase tracking-wider">S1 / S2</span>
+          
           <h3 className="font-bold text-slate-900">Servidores com Mais Viagens</h3>
         </div>
         <div className="overflow-x-auto">
@@ -85,7 +85,7 @@ export default async function ServidoresPage() {
       {/* S3 — Destinos */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm">
         <div className="p-5 border-b border-slate-100">
-          <span className="text-xs font-black text-violet-600 uppercase tracking-wider">S3</span>
+          
           <h3 className="font-bold text-slate-900">Destinos Mais Frequentes</h3>
         </div>
         <div className="p-5 space-y-2">
@@ -115,7 +115,7 @@ export default async function ServidoresPage() {
         <div className="p-5 border-b border-slate-100 flex items-center gap-2">
           <span className="material-symbols-outlined text-rose-500 text-[20px]">block</span>
           <div>
-            <span className="text-xs font-black text-violet-600 uppercase tracking-wider">S4</span>
+            
             <h3 className="font-bold text-slate-900">Servidores com CPF Bloqueado</h3>
           </div>
         </div>

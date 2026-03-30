@@ -83,14 +83,7 @@ export default async function RelatoriosPage() {
                 <span className={`material-symbols-outlined text-[28px] ${colors.icon}`}>{cat.icon}</span>
                 <h3 className="font-bold text-slate-900 text-sm">{cat.label}</h3>
               </div>
-              <p className="text-xs text-slate-600 mb-3">{cat.descricao}</p>
-              <div className="flex flex-wrap gap-1">
-                {cat.relatorios.map(r => (
-                  <span key={r} className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${colors.badge}`}>
-                    {r}
-                  </span>
-                ))}
-              </div>
+              <p className="text-xs text-slate-600">{cat.descricao}</p>
             </Link>
           )
         })}
