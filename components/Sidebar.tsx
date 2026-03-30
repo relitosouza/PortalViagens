@@ -67,10 +67,18 @@ export function Sidebar({ role, onClose }: SidebarProps) {
             <span className="text-sm font-medium">Solicitações</span>
           </Link>
 
-          <a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 cursor-not-allowed" href="#">
-            <span className="material-symbols-outlined text-[20px]">description</span>
+          <Link
+            href="/relatorios"
+            onClick={onClose}
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+              isActive('/relatorios')
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[20px]">bar_chart</span>
             <span className="text-sm font-medium">Relatórios</span>
-          </a>
+          </Link>
 
           <a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 cursor-not-allowed" href="#">
             <span className="material-symbols-outlined text-[20px]">settings</span>
