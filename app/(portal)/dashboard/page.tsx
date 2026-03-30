@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import BudgetTetoInfo from '@/components/BudgetTetoInfo'
+import { getKpisDashboard } from '@/lib/reports/queries'
 
 const STATUS_LABELS: Record<string, string> = {
   RASCUNHO: 'Rascunho',
@@ -51,11 +52,13 @@ export default async function DashboardPage() {
   const userId: string = user.id
 
   let where: Record<string, any> = {}
+  let secretariaIdForKpis: string | undefined
   if (role === 'DEMANDANTE') {
     where = { userId, status: { in: ROLE_STATUS_MAP[role] } }
   } else if (role === 'SECRETARIO') {
     const dbUser = await prisma.user.findUnique({ where: { id: userId } })
-    where = { 
+    secretariaIdForKpis = dbUser?.secretariaId ?? undefined
+    where = {
       secretariaId: dbUser?.secretariaId,
       status: { in: ROLE_STATUS_MAP[role] }
     }
@@ -94,6 +97,8 @@ export default async function DashboardPage() {
     })
     pendentesCount = pendentes.length
   }
+
+  const kpis = await getKpisDashboard(role, userId, secretariaIdForKpis)
 
   return (
     <div className="p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto w-full">
@@ -216,6 +221,30 @@ export default async function DashboardPage() {
             {solicitacoes.filter(s => s.status === 'CONCLUIDA').length}
           </p>
         </div>
+
+        {(role === 'ADMIN' || role === 'SF' || role === 'SECRETARIO') && (
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2 bg-rose-100 rounded-lg">
+                <span className="material-symbols-outlined text-rose-600 text-[24px]">assignment_late</span>
+              </div>
+            </div>
+            <p className="text-slate-500 text-sm font-medium">Prestações em Atraso</p>
+            <p className="text-3xl font-bold mt-1 text-slate-900">{kpis.prestAtrasadas}</p>
+          </div>
+        )}
+
+        {(role === 'ADMIN' || role === 'SECRETARIO') && (
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2 bg-slate-100 rounded-lg">
+                <span className="material-symbols-outlined text-slate-600 text-[24px]">flight</span>
+              </div>
+            </div>
+            <p className="text-slate-500 text-sm font-medium">Total de Viagens</p>
+            <p className="text-3xl font-bold mt-1 text-slate-900">{kpis.total}</p>
+          </div>
+        )}
       </div>
 
       {/* Requests Table */}
@@ -278,6 +307,15 @@ export default async function DashboardPage() {
           </div>
         )}
       </div>
+
+      {(role === 'ADMIN' || role === 'SECRETARIO' || role === 'SF' || role === 'SECOL' || role === 'SEGOV') && (
+        <div className="flex justify-end">
+          <Link href="/relatorios" className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+            <span className="material-symbols-outlined text-[16px]">bar_chart</span>
+            Ver Relatórios Completos
+          </Link>
+        </div>
+      )}
 
       {/* Bottom Action Cards */}
       {role === 'DEMANDANTE' && (
