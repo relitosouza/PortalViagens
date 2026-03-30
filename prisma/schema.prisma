@@ -15,7 +15,7 @@ model User {
   name         String
   email        String        @unique
   password     String
-  role         String        // DEMANDANTE | SECOL | SEGOV | SF | ADMIN | SECRETARIO
+  role         String // DEMANDANTE | SECOL | SEGOV | SF | ADMIN | SECRETARIO
   cpfBloqueado Boolean       @default(false)
   ativo        Boolean       @default(true)
   secretariaId String?
