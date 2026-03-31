@@ -1,5 +1,3 @@
-Aqui está o manual formatado com emojis para facilitar a leitura e tornar a navegação mais intuitiva.
-
 ---
 
 # 📘 Manual do Usuário — Portal de Viagens
