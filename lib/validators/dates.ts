@@ -48,10 +48,11 @@ export function isValidTravelDate(dateString: string): boolean {
   }
 
   const date = new Date(dateString)
-  const now = new Date()
+  // Compare date-only: strip time so today is still valid
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
 
-  // Travel date must be in the future
-  return date > now
+  return date >= today
 }
 
 export function isValidDateRange(startDate: string, endDate: string): boolean {

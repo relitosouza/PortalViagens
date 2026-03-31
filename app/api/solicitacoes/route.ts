@@ -25,10 +25,11 @@ function validateSolicitacaoInput(body: unknown): { valid: boolean; errors: stri
 
   const data = body as Record<string, unknown>
 
-  // Campos obrigatórios
+  // Campos obrigatórios pelo DEMANDANTE
+  // justificativaPublica e nexoCargo são preenchidos pelo SECRETARIO em etapa posterior
   const requiredFields = [
     'nomeCompleto', 'matricula', 'cpf', 'dataNascimento', 'celular',
-    'emailServidor', 'justificativaPublica', 'nexoCargo', 'destino',
+    'emailServidor', 'destino',
     'dataIda', 'dataVolta', 'justificativaLocal', 'fichaOrcamentaria'
   ]
 
