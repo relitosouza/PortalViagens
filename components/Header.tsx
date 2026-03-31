@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { NotificationBell } from './NotificationBell'
 
 type HeaderProps = {
   userName: string
@@ -30,6 +31,7 @@ export function Header({ userName, roleLabel, initials, onMenuOpen }: HeaderProp
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0">
+          <NotificationBell />
           <div className="h-8 w-px bg-slate-200 hidden sm:block"></div>
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">

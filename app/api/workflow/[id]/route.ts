@@ -13,6 +13,7 @@ import {
   notificarSecretarioAjusteParaDemandante,
   notificarSecretarioReprovacaoParaDemandante,
 } from '@/lib/email-notifications'
+import { criarNotificacao, criarNotificacaoPorRole } from '@/lib/notifications'
 import { addDiasUteis } from '@/lib/utils/diasUteis'
 
 // Tabela de transições de estado — REGRA DE SEGREGAÇÃO DE FUNÇÕES implementada aqui
@@ -205,21 +206,42 @@ export async function POST(
     }
   }
 
-  // ── Notificações por email ────────────────────────────────────────────────
+  // ── Notificações por email + in-app ──────────────────────────────────────
 
   // SECRETARIO aprovado → SECOL cota
   if (transicao.etapa === 'SECRETARIO' && decisao === 'APROVADO') {
     notificarSecretarioAprovacaoParaSecol(sol).catch(() => {})
+    criarNotificacaoPorRole({
+      role: 'SECOL',
+      titulo: 'Nova solicitação para cotar',
+      descricao: `${sol.nomeCompleto} — ${sol.destino}`,
+      tipo: 'APROVADO',
+      solicitacaoId: sol.id,
+    }).catch(() => {})
   }
 
   // SECRETARIO ajuste demandante → demandante corrige
   if (transicao.etapa === 'SECRETARIO' && decisao === 'AJUSTE_DEMANDANTE') {
     notificarSecretarioAjusteParaDemandante(sol, observacao)
+    criarNotificacao({
+      userId: sol.userId,
+      titulo: 'Ajuste solicitado pelo Secretário',
+      descricao: observacao || `Viagem para ${sol.destino}`,
+      tipo: 'AJUSTE',
+      solicitacaoId: sol.id,
+    }).catch(() => {})
   }
 
   // SECRETARIO reprovado → demandante
   if (transicao.etapa === 'SECRETARIO' && decisao === 'REPROVADO') {
     notificarSecretarioReprovacaoParaDemandante(sol, observacao)
+    criarNotificacao({
+      userId: sol.userId,
+      titulo: 'Solicitação reprovada pelo Secretário',
+      descricao: observacao || `Viagem para ${sol.destino}`,
+      tipo: 'REPROVADO',
+      solicitacaoId: sol.id,
+    }).catch(() => {})
   }
 
   // COTACAO aprovada → demandante (atualização) + SEGOV (próxima ação)
@@ -231,21 +253,56 @@ export async function POST(
       'COTACAO_CONCLUIDA'
     )
     notificarCotacaoParaSegov(sol).catch(() => {})
+    criarNotificacao({
+      userId: sol.userId,
+      titulo: 'Cotação concluída',
+      descricao: `Viagem para ${sol.destino} aguarda análise de viabilidade`,
+      tipo: 'APROVADO',
+      solicitacaoId: sol.id,
+    }).catch(() => {})
+    criarNotificacaoPorRole({
+      role: 'SEGOV',
+      titulo: 'Nova solicitação para análise de viabilidade',
+      descricao: `${sol.nomeCompleto} — ${sol.destino}`,
+      tipo: 'APROVADO',
+      solicitacaoId: sol.id,
+    }).catch(() => {})
   }
 
   // VIABILIDADE aprovada → SECOL (emitir vouchers)
   if (transicao.etapa === 'VIABILIDADE' && decisao === 'APROVADO') {
     notificarViabilidadeAprovadaParaSecol(sol).catch(() => {})
+    criarNotificacaoPorRole({
+      role: 'SECOL',
+      titulo: 'Viabilidade aprovada — emitir Ordem de Serviço',
+      descricao: `${sol.nomeCompleto} — ${sol.destino}`,
+      tipo: 'APROVADO',
+      solicitacaoId: sol.id,
+    }).catch(() => {})
   }
 
   // VIABILIDADE ajuste SECOL → SECOL recota
   if (transicao.etapa === 'VIABILIDADE' && decisao === 'AJUSTE_SECOL') {
     notificarAjusteParaSecol(sol, observacao).catch(() => {})
+    criarNotificacaoPorRole({
+      role: 'SECOL',
+      titulo: 'Ajuste de cotação solicitado pela SEGOV',
+      descricao: observacao || `${sol.nomeCompleto} — ${sol.destino}`,
+      tipo: 'AJUSTE',
+      solicitacaoId: sol.id,
+    }).catch(() => {})
   }
 
   // VIABILIDADE ajuste demandante → demandante corrige rascunho
   if (transicao.etapa === 'VIABILIDADE' && decisao === 'AJUSTE_DEMANDANTE') {
     notificarAjusteParaDemandante(sol, observacao)
+    criarNotificacao({
+      userId: sol.userId,
+      titulo: 'Ajuste solicitado pela SEGOV',
+      descricao: observacao || `Viagem para ${sol.destino}`,
+      tipo: 'AJUSTE',
+      solicitacaoId: sol.id,
+    }).catch(() => {})
   }
 
   // VIABILIDADE reprovada → demandante
@@ -256,11 +313,25 @@ export async function POST(
       `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} foi REPROVADA.\n\nMotivo: ${observacao || 'Não informado'}\n\nPara mais informações, acesse: ${process.env.APP_URL ?? 'http://localhost:3000'}/solicitacoes/${sol.id}`,
       'REPROVACAO'
     )
+    criarNotificacao({
+      userId: sol.userId,
+      titulo: 'Solicitação reprovada pela SEGOV',
+      descricao: observacao || `Viagem para ${sol.destino}`,
+      tipo: 'REPROVADO',
+      solicitacaoId: sol.id,
+    }).catch(() => {})
   }
 
   // EMISSAO aprovada → SF executa
   if (transicao.etapa === 'EMISSAO' && decisao === 'APROVADO') {
     notificarEmissaoParaSf(sol).catch(() => {})
+    criarNotificacaoPorRole({
+      role: 'SF',
+      titulo: 'OS emitida — confirmar execução orçamentária',
+      descricao: `${sol.nomeCompleto} — ${sol.destino}`,
+      tipo: 'APROVADO',
+      solicitacaoId: sol.id,
+    }).catch(() => {})
   }
 
   // EXECUCAO aprovada → demandante (vouchers + prestação de contas)
@@ -279,6 +350,13 @@ export async function POST(
       `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} foi APROVADA e os vouchers estão disponíveis no sistema.\n\nPrazo para prestação de contas: ${prazoFinal.toLocaleDateString('pt-BR')} (5 dias úteis após o retorno).\n\nAcesse o sistema: ${process.env.APP_URL ?? 'http://localhost:3000'}/solicitacoes/${sol.id}`,
       'VOUCHER_APROVACAO'
     )
+    criarNotificacao({
+      userId: sol.userId,
+      titulo: 'Viagem aprovada — vouchers disponíveis',
+      descricao: `Prazo para prestação de contas: ${prazoFinal.toLocaleDateString('pt-BR')}`,
+      tipo: 'APROVADO',
+      solicitacaoId: sol.id,
+    }).catch(() => {})
   }
 
   return NextResponse.json({

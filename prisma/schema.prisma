@@ -11,17 +11,18 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  name         String
-  email        String        @unique
-  password     String
-  role         String // DEMANDANTE | SECOL | SEGOV | SF | ADMIN | SECRETARIO
-  cpfBloqueado Boolean       @default(false)
-  ativo        Boolean       @default(true)
-  secretariaId String?
-  secretaria   Secretaria?   @relation(fields: [secretariaId], references: [id])
-  createdAt    DateTime      @default(now())
-  solicitacoes Solicitacao[]
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  password      String
+  role          String // DEMANDANTE | SECOL | SEGOV | SF | ADMIN | SECRETARIO
+  cpfBloqueado  Boolean        @default(false)
+  ativo         Boolean        @default(true)
+  secretariaId  String?
+  secretaria    Secretaria?    @relation(fields: [secretariaId], references: [id])
+  createdAt     DateTime       @default(now())
+  solicitacoes  Solicitacao[]
+  notifications Notification[]
 }
 
 model ConfiguracaoSistema {
@@ -29,6 +30,23 @@ model ConfiguracaoSistema {
   valor     String
   descricao String
   updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id])
+  titulo        String
+  descricao     String?
+  tipo          String
+  solicitacaoId String?
+  solicitacao   Solicitacao? @relation(fields: [solicitacaoId], references: [id])
+  lido          Boolean      @default(false)
+  leidoEm       DateTime?
+  createdAt     DateTime     @default(now())
+
+  @@index([userId, lido])
+  @@index([solicitacaoId])
 }
 
 model Solicitacao {
@@ -60,6 +78,7 @@ model Solicitacao {
   anexos               Anexo[]
   steps                WorkflowStep[]
   prestacao            Prestacao?
+  notifications        Notification[]
 }
 
 model WorkflowStep {
