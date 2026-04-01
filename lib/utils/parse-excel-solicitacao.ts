@@ -26,8 +26,6 @@ const COLUMN_MAP: Record<string, keyof FormData> = {
   'Data de Nascimento': 'dataNascimento',
   'Telefone/WhatsApp': 'celular',
   'E-mail Institucional': 'emailServidor',
-  'Justificativa do Interesse Público': 'justificativaPublica',
-  'Nexo com as Atribuições do Cargo': 'nexoCargo',
   'Destino': 'destino',
   'Data de Ida': 'dataIda',
   'Data de Volta': 'dataVolta',

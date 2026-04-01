@@ -60,6 +60,13 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
     try {
       const buffer = await file.arrayBuffer()
       const dados = await parseExcelSolicitacao(buffer)
+      
+      // Se não for secretário/admin em fase de aprovação, ignorar campos reservados
+      if (userRole !== 'SECRETARIO' && userRole !== 'ADMIN') {
+        delete dados.justificativaPublica
+        delete dados.nexoCargo
+      }
+
       setForm(f => ({ ...f, ...dados }))
 
       const FIELD_LABELS: Partial<Record<keyof FormData, string>> = {
@@ -69,8 +76,6 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
         dataNascimento: 'Data de Nascimento',
         celular: 'Telefone/WhatsApp',
         emailServidor: 'E-mail Institucional',
-        justificativaPublica: 'Justificativa do Interesse Público',
-        nexoCargo: 'Nexo com as Atribuições do Cargo',
         destino: 'Destino',
         dataIda: 'Data de Ida',
         dataVolta: 'Data de Volta',
