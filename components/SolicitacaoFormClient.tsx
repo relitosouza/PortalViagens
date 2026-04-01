@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { parseExcelSolicitacao } from '@/lib/utils/parse-excel-solicitacao'
+import { isValidCPF, formatCPF } from '@/lib/validators/cpf'
 
 type FormData = {
   id?: string
@@ -39,7 +40,11 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
 
   const update = (field: keyof FormData) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      setForm(f => ({ ...f, [field]: e.target.value }))
+      let val = e.target.value
+      if (field === 'cpf') {
+        val = formatCPF(val)
+      }
+      setForm(f => ({ ...f, [field]: val }))
       if (fieldErrors[field]) {
         setFieldErrors(prev => {
           const next = { ...prev }
@@ -99,6 +104,10 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
       })
       if (hasError) {
         setErro('Preencha todos os campos obrigatórios na seção "Dados do Servidor"')
+      } else if (form.cpf && !isValidCPF(form.cpf)) {
+        errors.cpf = true
+        hasError = true
+        setErro('CPF inválido. Verifique o número digitado.')
       }
     }
     

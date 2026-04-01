@@ -4,8 +4,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 // HIGH PRIORITY FIX: Use safe auth type instead of unsafe casting
 import { getAuthUser, requireAdmin as checkAdmin } from '@/lib/types/auth'
-// MEDIUM FIX: Add validators
-import { isValidCPF } from '@/lib/validators/cpf'
 // MEDIUM FIX: Add rate limiting
 import { rateLimit } from '@/lib/middleware/rate-limit'
 
