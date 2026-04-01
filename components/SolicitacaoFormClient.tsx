@@ -24,6 +24,7 @@ type Props = {
 export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMANDANTE', status = 'RASCUNHO' }: Props) {
   const router = useRouter()
   const [erro, setErro] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({})
   const [enviando, setEnviando] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [importWarning, setImportWarning] = useState('')
@@ -37,8 +38,16 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
   })
 
   const update = (field: keyof FormData) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setForm(f => ({ ...f, [field]: e.target.value }))
+      if (fieldErrors[field]) {
+        setFieldErrors(prev => {
+          const next = { ...prev }
+          delete next[field]
+          return next
+        })
+      }
+    }
 
   async function handleImport(file: File) {
     setImportWarning('')
@@ -64,7 +73,7 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
         fichaOrcamentaria: 'Ficha Orçamentária',
       }
       const obrigatorios = Object.keys(FIELD_LABELS) as (keyof FormData)[]
-      const faltando = obrigatorios.filter(k => !dados[k]).map(k => FIELD_LABELS[k] ?? k)
+      const faltando = obrigatorios.filter(k => !dados[k as keyof typeof dados]).map(k => FIELD_LABELS[k] ?? k)
       if (faltando.length > 0) {
         setImportWarning(`Preencha manualmente: ${faltando.join(', ')}.`)
       }
@@ -77,28 +86,61 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
 
   function validar(): boolean {
     setErro('')
-    if ((status === 'RASCUNHO' || status === 'DEVOLVIDO_SECRETARIO') && (!form.nomeCompleto || !form.matricula || !form.cpf || !form.dataNascimento || !form.celular || !form.emailServidor)) {
-      setErro('Preencha todos os campos obrigatórios na seção "Dados do Servidor"')
-      return false
+    const errors: Record<string, boolean> = {}
+    let hasError = false
+
+    if (status === 'RASCUNHO' || status === 'DEVOLVIDO_SECRETARIO' || !form.id) {
+      const servidorCampos = ['nomeCompleto', 'matricula', 'cpf', 'dataNascimento', 'celular', 'emailServidor']
+      servidorCampos.forEach(field => {
+        if (!form[field as keyof FormData]) {
+          errors[field] = true
+          hasError = true
+        }
+      })
+      if (hasError) {
+        setErro('Preencha todos os campos obrigatórios na seção "Dados do Servidor"')
+      }
     }
     
     // Na etapa do secretário, estes campos são obrigatórios
     if (status === 'AGUARDANDO_APROVACAO_PASTA' && (userRole === 'SECRETARIO' || userRole === 'ADMIN')) {
-      if (!form.justificativaPublica || !form.nexoCargo) {
+      if (!form.justificativaPublica) {
+        errors.justificativaPublica = true
+        hasError = true
+      }
+      if (!form.nexoCargo) {
+        errors.nexoCargo = true
+        hasError = true
+      }
+      if (hasError) {
         setErro('Atenção: Para prosseguir com a aprovação, é obrigatório preencher a Justificativa de Interesse Público e o Nexo com as Atribuições do Cargo.')
-        return false
       }
     }
 
-    if ((status === 'RASCUNHO' || status === 'DEVOLVIDO_SECRETARIO') && (!form.destino || !form.dataIda || !form.dataVolta || !form.justificativaLocal || !form.fichaOrcamentaria)) {
-      setErro('Preencha todos os campos obrigatórios na seção "Logística"')
-      return false
+    if ((status === 'RASCUNHO' || status === 'DEVOLVIDO_SECRETARIO' || !form.id)) {
+      const logisticaCampos = ['destino', 'dataIda', 'dataVolta', 'justificativaLocal', 'fichaOrcamentaria']
+      let logisticaMissing = false
+      logisticaCampos.forEach(field => {
+        if (!form[field as keyof FormData]) {
+          errors[field] = true
+          hasError = true
+          logisticaMissing = true
+        }
+      })
+      if (logisticaMissing && !erro) {
+        setErro('Preencha todos os campos obrigatórios na seção "Logística" e "Orçamento"')
+      }
     }
-    if (new Date(form.dataVolta) <= new Date(form.dataIda)) {
+
+    if (form.dataIda && form.dataVolta && new Date(form.dataVolta) <= new Date(form.dataIda)) {
+      errors.dataIda = true
+      errors.dataVolta = true
       setErro('Data de volta deve ser após a data de ida')
-      return false
+      hasError = true
     }
-    return true
+
+    setFieldErrors(errors)
+    return !hasError
   }
 
   async function enviar(rascunho: boolean) {
@@ -173,8 +215,14 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
     }
   }
 
-  const inputCls = "w-full rounded-lg border-slate-300 bg-[#f6f6f8] focus:ring-blue-600 focus:border-blue-600 text-slate-900 h-10 px-4 text-sm"
-  const textareaCls = "w-full rounded-lg border-slate-300 bg-[#f6f6f8] focus:ring-blue-600 focus:border-blue-600 text-slate-900 px-4 py-3 text-sm"
+  const getInputCls = (hasError?: boolean) => 
+    `w-full rounded-lg border transition-all bg-[#f6f6f8] focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-slate-900 h-10 px-4 text-sm ${
+      hasError ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'
+    }`
+  const getTextareaCls = (hasError?: boolean) => 
+    `w-full rounded-lg border transition-all bg-[#f6f6f8] focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-slate-900 px-4 py-3 text-sm ${
+      hasError ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'
+    }`
   const labelCls = "block text-xs font-bold text-slate-600 mb-1.5 uppercase"
 
   return (
@@ -239,27 +287,27 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="md:col-span-2">
               <label className={labelCls}>Nome Completo</label>
-              <input className={inputCls} value={form.nomeCompleto} onChange={update('nomeCompleto')} placeholder="Nome como consta no crachá" type="text" />
+              <input className={getInputCls(fieldErrors.nomeCompleto)} value={form.nomeCompleto} onChange={update('nomeCompleto')} placeholder="Nome como consta no crachá" type="text" />
             </div>
             <div>
               <label className={labelCls}>Matrícula</label>
-              <input className={inputCls} value={form.matricula} onChange={update('matricula')} placeholder="000.000-0" type="text" />
+              <input className={getInputCls(fieldErrors.matricula)} value={form.matricula} onChange={update('matricula')} placeholder="000.000-0" type="text" />
             </div>
             <div>
               <label className={labelCls}>CPF</label>
-              <input className={inputCls} value={form.cpf} onChange={update('cpf')} placeholder="000.000.000-00" type="text" />
+              <input className={getInputCls(fieldErrors.cpf)} value={form.cpf} onChange={update('cpf')} placeholder="000.000.000-00" type="text" />
             </div>
             <div>
               <label className={labelCls}>Data de Nascimento</label>
-              <input className={inputCls} value={form.dataNascimento} onChange={update('dataNascimento')} type="date" />
+              <input className={getInputCls(fieldErrors.dataNascimento)} value={form.dataNascimento} onChange={update('dataNascimento')} type="date" />
             </div>
             <div>
               <label className={labelCls}>Telefone / WhatsApp</label>
-              <input className={inputCls} value={form.celular} onChange={update('celular')} placeholder="(11) 90000-0000" type="tel" />
+              <input className={getInputCls(fieldErrors.celular)} value={form.celular} onChange={update('celular')} placeholder="(11) 90000-0000" type="tel" />
             </div>
             <div className="md:col-span-2 lg:col-span-1">
               <label className={labelCls}>E-mail Institucional</label>
-              <input className={inputCls} value={form.emailServidor} onChange={update('emailServidor')} placeholder="servidor@osasco.sp.gov.br" type="email" />
+              <input className={getInputCls(fieldErrors.emailServidor)} value={form.emailServidor} onChange={update('emailServidor')} placeholder="servidor@osasco.sp.gov.br" type="email" />
             </div>
           </div>
         </section>
@@ -277,7 +325,7 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
                 {(userRole === 'SECRETARIO' || userRole === 'ADMIN') && status === 'AGUARDANDO_SECRETARIO' && <span className="text-red-500 ml-1">*</span>}
               </label>
               <textarea 
-                className={textareaCls} 
+                className={getTextareaCls(fieldErrors.justificativaPublica)} 
                 rows={4} 
                 value={form.justificativaPublica} 
                 onChange={update('justificativaPublica')}
@@ -294,7 +342,7 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
                 {(userRole === 'SECRETARIO' || userRole === 'ADMIN') && status === 'AGUARDANDO_SECRETARIO' && <span className="text-red-500 ml-1">*</span>}
               </label>
               <textarea 
-                className={textareaCls} 
+                className={getTextareaCls(fieldErrors.nexoCargo)} 
                 rows={3} 
                 value={form.nexoCargo} 
                 onChange={update('nexoCargo')}
@@ -317,31 +365,31 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
               <label className={labelCls}>Destino (Cidade / Estado / País)</label>
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">location_on</span>
-                <input className="w-full pl-10 pr-4 rounded-lg border border-slate-300 bg-[#f6f6f8] focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-slate-900 h-10 text-sm"
+                <input className={`w-full pl-10 pr-4 rounded-lg border transition-all bg-[#f6f6f8] focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-slate-900 h-10 text-sm ${fieldErrors.destino ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'}`}
                   value={form.destino} onChange={update('destino')} placeholder="Ex: Brasília, DF" type="text" />
               </div>
             </div>
             <div>
               <label className={labelCls}>Data de Ida</label>
-              <input className={inputCls} value={form.dataIda} onChange={update('dataIda')} type="date" />
+              <input className={getInputCls(fieldErrors.dataIda)} value={form.dataIda} onChange={update('dataIda')} type="date" />
             </div>
             <div>
               <label className={labelCls}>Data de Volta</label>
-              <input className={inputCls} value={form.dataVolta} onChange={update('dataVolta')} type="date" />
+              <input className={getInputCls(fieldErrors.dataVolta)} value={form.dataVolta} onChange={update('dataVolta')} type="date" />
             </div>
             <div className="md:col-span-2">
               <label className={labelCls}>Justificativa de Localização (Escolha do Destino)</label>
-              <textarea className={textareaCls} rows={2} value={form.justificativaLocal} onChange={update('justificativaLocal')}
+              <textarea className={getTextareaCls(fieldErrors.justificativaLocal)} rows={2} value={form.justificativaLocal} onChange={update('justificativaLocal')}
                 placeholder="Por que o evento ocorre neste local específico?" />
             </div>
             <div className="md:col-span-2">
               <label className={labelCls}>Indicação de Voo (Preferência)</label>
-              <input className={inputCls} value={form.indicacaoVoo} onChange={update('indicacaoVoo')}
+              <input className={getInputCls(fieldErrors.indicacaoVoo)} value={form.indicacaoVoo} onChange={update('indicacaoVoo')}
                 placeholder="Sugira horários ou números de voo de sua preferência" type="text" />
             </div>
             <div className="md:col-span-2">
               <label className={labelCls}>Indicação de Hospedagem (Preferência)</label>
-              <input className={inputCls} value={form.indicacaoHospedagem} onChange={update('indicacaoHospedagem')}
+              <input className={getInputCls(fieldErrors.indicacaoHospedagem)} value={form.indicacaoHospedagem} onChange={update('indicacaoHospedagem')}
                 placeholder="Sugira um hotel específico ou região de interesse" type="text" />
             </div>
           </div>
@@ -378,7 +426,7 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
           </div>
           <div>
             <label className={labelCls}>Indicação da Ficha Orçamentária</label>
-            <input className={inputCls} value={form.fichaOrcamentaria} onChange={update('fichaOrcamentaria')}
+            <input className={getInputCls(fieldErrors.fichaOrcamentaria)} value={form.fichaOrcamentaria} onChange={update('fichaOrcamentaria')}
               placeholder="Número da ficha ou dotação orçamentária" type="text" />
           </div>
         </section>
