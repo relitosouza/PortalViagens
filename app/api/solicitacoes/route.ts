@@ -7,6 +7,7 @@ import {
   notificarNovaSolicitacaoParaSecol,
   notificarSecretarioParaAprovacao
 } from '@/lib/email-notifications'
+import { criarNotificacaoPorRole } from '@/lib/notifications'
 // HIGH PRIORITY FIX: Use safe auth type instead of unsafe casting
 import { getAuthUser } from '@/lib/types/auth'
 // MEDIUM FIX: Add validators
@@ -192,8 +193,23 @@ export async function POST(req: NextRequest) {
   if (!isRascunho) {
     if (solicitacao.status === 'EM_COTACAO') {
       notificarNovaSolicitacaoParaSecol(solicitacao).catch(() => {})
+      criarNotificacaoPorRole({
+        role: 'SECOL',
+        titulo: 'Nova solicitação para cotar',
+        descricao: `${solicitacao.nomeCompleto} — ${solicitacao.destino}`,
+        tipo: 'APROVADO',
+        solicitacaoId: solicitacao.id,
+      }).catch(() => {})
     } else if (solicitacao.status === 'AGUARDANDO_APROVACAO_PASTA') {
       notificarSecretarioParaAprovacao(solicitacao).catch(() => {})
+      criarNotificacaoPorRole({
+        role: 'SECRETARIO',
+        secretariaId: solicitacao.secretariaId || undefined,
+        titulo: 'Nova solicitação aguardando sua validação',
+        descricao: `${solicitacao.nomeCompleto} — ${solicitacao.destino}`,
+        tipo: 'URGENTE',
+        solicitacaoId: solicitacao.id,
+      }).catch(() => {})
     }
   }
 

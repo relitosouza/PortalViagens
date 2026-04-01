@@ -2,6 +2,7 @@
 import { prisma } from '@/lib/prisma'
 import { logEmail } from '@/lib/email-log'
 import { Solicitacao, User } from '@prisma/client'
+import { criarNotificacao, criarNotificacaoPorRole } from '@/lib/notifications'
 
 type SolicitacaoComUser = Solicitacao & { user: User }
 
@@ -207,6 +208,13 @@ export async function notificarLembreteFase(
       `Prezado(a) ${sol.nomeCompleto},\n\nSua solicitação de viagem para ${sol.destino} aguarda correção há ${dias} dia(s).\n\nPor favor, realize os ajustes solicitados.\n\nAcesse: ${link}`,
       'LEMBRETE_DEMANDANTE'
     )
+    criarNotificacao({
+      userId: sol.userId,
+      titulo: `Lembrete: sua solicitação precisa de correção (dia ${dias})`,
+      descricao: `Referente à viagem para ${sol.destino}`,
+      tipo: 'LEMBRETE',
+      solicitacaoId: sol.id
+    }).catch(() => {})
     return
   }
 
@@ -225,6 +233,14 @@ export async function notificarLembreteFase(
         })
       } catch { /* silent */ }
     }
+    criarNotificacaoPorRole({
+      role: 'SECRETARIO',
+      secretariaId: sol.secretariaId || undefined,
+      titulo: `Lembrete: aguardando sua aprovação (dia ${dias})`,
+      descricao: `${sol.nomeCompleto} — ${sol.destino}`,
+      tipo: 'LEMBRETE',
+      solicitacaoId: sol.id
+    }).catch(() => {})
     return
   }
 
@@ -237,6 +253,13 @@ export async function notificarLembreteFase(
     `A solicitação de viagem para ${sol.destino} de ${sol.nomeCompleto} aguarda ${faseLabel} há ${dias} dia(s).\n\nAcesse: ${link}`,
     `LEMBRETE_${role}`
   )
+  criarNotificacaoPorRole({
+    role,
+    titulo: `Lembrete: aguardando ${faseLabel} (dia ${dias})`,
+    descricao: `${sol.nomeCompleto} — ${sol.destino}`,
+    tipo: 'LEMBRETE',
+    solicitacaoId: sol.id
+  }).catch(() => {})
 }
 
 /** Escalonamento para SEGOV após 5 dias sem ação */
@@ -250,4 +273,11 @@ export async function notificarEscalonamento(
     `A solicitação de viagem para ${sol.destino} de ${sol.nomeCompleto} está aguardando ${faseLabel} há 5 dias sem ação.\n\nStatus atual: ${sol.status}\n\nAcesse: ${APP_URL}/solicitacoes/${sol.id}`,
     'ESCALAMENTO_SEGOV'
   )
+  criarNotificacaoPorRole({
+    role: 'SEGOV',
+    titulo: '⚠️ Escalonamento: Solicitação parada há 5 dias',
+    descricao: `${sol.nomeCompleto} — ${sol.destino} (Status: ${sol.status})`,
+    tipo: 'URGENTE',
+    solicitacaoId: sol.id
+  }).catch(() => {})
 }

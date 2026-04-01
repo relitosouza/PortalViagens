@@ -2,6 +2,8 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { calcularDiasUteisAte } from '@/lib/utils/diasUteis'
+import { notificarSecretarioParaAprovacao, notificarNovaSolicitacaoParaSecol } from '@/lib/email-notifications'
+import { criarNotificacaoPorRole } from '@/lib/notifications'
 
 export async function PATCH(
   req: NextRequest,
@@ -62,18 +64,42 @@ export async function PATCH(
     }
   })
 
-  // Se o Secretário aprovou (não é rascunho e ele tem permissão de secretário), registra o passo do workflow
-  if (!isRascunho && canEditAsSecretario) {
+  // Se o Secretário aprovou diretamente nesta edição, logar no workflow
+  if (!isRascunho && canEditAsSecretario && updated.status === 'EM_COTACAO') {
     await prisma.workflowStep.create({
       data: {
         solicitacaoId: id,
         etapa: 'SECRETARIO',
         atorRole: user.role,
-        atorNome: session.user.name || user.role,
+        atorNome: (session.user as any).name || user.role,
         decisao: 'APROVADO',
         observacao: 'Aprovado e Justificado pelo Secretário.'
       }
     })
+  }
+
+  // Notificações nas alterações de status (Resubmissão ou Aprovação)
+  if (!isRascunho) {
+    if (updated.status === 'AGUARDANDO_APROVACAO_PASTA' && sol.status !== 'AGUARDANDO_APROVACAO_PASTA') {
+      notificarSecretarioParaAprovacao(updated as any).catch(() => {})
+      criarNotificacaoPorRole({
+        role: 'SECRETARIO',
+        secretariaId: updated.secretariaId || undefined,
+        titulo: 'Solicitação reenviada para análise',
+        descricao: `${updated.nomeCompleto} realizou os ajustes solicitados.`,
+        tipo: 'URGENTE',
+        solicitacaoId: updated.id,
+      }).catch(() => {})
+    } else if (updated.status === 'EM_COTACAO' && sol.status !== 'EM_COTACAO') {
+        notificarNovaSolicitacaoParaSecol(updated as any).catch(() => {})
+        criarNotificacaoPorRole({
+            role: 'SECOL',
+            titulo: 'Solicitação aprovada — realizar cotação',
+            descricao: `${updated.nomeCompleto} — ${updated.destino}`,
+            tipo: 'APROVADO',
+            solicitacaoId: updated.id,
+        }).catch(() => {})
+    }
   }
 
   return NextResponse.json(updated)
