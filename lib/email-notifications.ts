@@ -4,7 +4,7 @@ import { logEmail } from '@/lib/email-log'
 import { Solicitacao, User } from '@prisma/client'
 import { criarNotificacao, criarNotificacaoPorRole } from '@/lib/notifications'
 
-type SolicitacaoComUser = Solicitacao & { user: User }
+export type SolicitacaoComUser = Solicitacao & { user: User }
 
 const APP_URL = process.env.APP_URL ?? 'http://localhost:3000'
 
@@ -21,8 +21,8 @@ export async function notificarRole(
   for (const u of usuarios) {
     try {
       logEmail({ para: u.email, assunto, corpo, tipo })
-    } catch {
-      // silent: email failure must not block workflow
+    } catch (err) {
+      console.error(`Falha ao notificar role ${role} (user ${u.email}):`, err)
     }
   }
 }
@@ -36,8 +36,8 @@ export function notificarDemandante(
 ): void {
   try {
     logEmail({ para: sol.emailServidor, assunto, corpo, tipo })
-  } catch {
-    // silent: email failure must not block workflow
+  } catch (err) {
+    console.error(`Falha ao notificar demandante (${sol.emailServidor}):`, err)
   }
 }
 
@@ -71,8 +71,8 @@ export async function notificarSecretarioParaAprovacao(
         corpo: `Prezado(a) Secretário(a),\n\nUma nova solicitação de viagem para ${sol.destino} de ${sol.nomeCompleto} foi submetida por um servidor da sua pasta e aguarda sua validação de mérito e aprovação hierárquica.\n\nAcesse o sistema: ${APP_URL}/solicitacoes/${sol.id}`,
         tipo: 'VALIDACAO_SECRETARIO'
       })
-    } catch {
-      // silent
+    } catch (err) {
+      console.error(`Falha ao notificar secretário (${u.email}):`, err)
     }
   }
 }

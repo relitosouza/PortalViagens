@@ -15,87 +15,10 @@ import { isValidCPF } from '@/lib/validators/cpf'
 import { isValidBirthDate, isValidTravelDate, isValidDateRange } from '@/lib/validators/dates'
 // MEDIUM FIX: Add rate limiting
 import { rateLimit } from '@/lib/middleware/rate-limit'
+import { validateSolicitacaoInput } from '@/lib/validators/solicitacao'
 
-// CRITICAL FIX: Adicionar validação de entrada com schema
-function validateSolicitacaoInput(body: unknown): { valid: boolean; errors: string[] } {
-  const errors: string[] = []
 
-  if (typeof body !== 'object' || body === null) {
-    return { valid: false, errors: ['Corpo da requisição inválido'] }
-  }
 
-  const data = body as Record<string, unknown>
-
-  // Campos obrigatórios pelo DEMANDANTE
-  // justificativaPublica e nexoCargo são preenchidos pelo SECRETARIO em etapa posterior
-  const requiredFields = [
-    'nomeCompleto', 'matricula', 'cpf', 'dataNascimento', 'celular',
-    'emailServidor', 'destino',
-    'dataIda', 'dataVolta', 'justificativaLocal', 'fichaOrcamentaria'
-  ]
-
-  requiredFields.forEach(field => {
-    if (!data[field] || typeof data[field] !== 'string') {
-      errors.push(`Campo obrigatório: ${field}`)
-    }
-  })
-
-  // MEDIUM FIX: Validar CPF com checksum
-  if (data.cpf && !isValidCPF(String(data.cpf))) {
-    errors.push('cpf: CPF inválido (checksum falhou)')
-  }
-
-  // MEDIUM FIX: Validar data de nascimento (sanity check)
-  if (data.dataNascimento && !isValidBirthDate(String(data.dataNascimento))) {
-    errors.push('dataNascimento: data de nascimento inválida (deve ser no passado, maior de 18 anos)')
-  }
-
-  // MEDIUM FIX: Validar datas de viagem
-  if (data.dataIda && !isValidTravelDate(String(data.dataIda))) {
-    errors.push('dataIda: data de ida deve ser no futuro')
-  }
-
-  if (data.dataVolta && !isValidTravelDate(String(data.dataVolta))) {
-    errors.push('dataVolta: data de volta deve ser no futuro')
-  }
-
-  // MEDIUM FIX: Validar intervalo de datas
-  if (data.dataIda && data.dataVolta && !isValidDateRange(String(data.dataIda), String(data.dataVolta))) {
-    errors.push('dataVolta: data de volta deve ser após data de ida')
-  }
-
-  // Validar email
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (data.emailServidor && !emailRegex.test(String(data.emailServidor))) {
-    errors.push('emailServidor: formato de email inválido')
-  }
-
-  // Validar celular (mínimo 10 dígitos)
-  const celular = String(data.celular).replace(/\D/g, '')
-  if (celular.length < 10) {
-    errors.push('celular: deve conter pelo menos 10 dígitos')
-  }
-
-  // Validar tamanho máximo dos campos de texto
-  const textFields: Record<string, number> = {
-    nomeCompleto: 255,
-    matricula: 50,
-    cpf: 14,
-    destino: 255,
-    nexoCargo: 255,
-    justificativaPublica: 2000,
-    justificativaLocal: 2000,
-    fichaOrcamentaria: 1000
-  }
-
-  Object.entries(textFields).forEach(([field, maxLength]) => {
-    if (data[field] && String(data[field]).length > maxLength) {
-      errors.push(`${field}: máximo ${maxLength} caracteres`)
-    }
-  })
-
-  return { valid: errors.length === 0, errors }
-}
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -192,16 +115,22 @@ export async function POST(req: NextRequest) {
 
   if (!isRascunho) {
     if (solicitacao.status === 'EM_COTACAO') {
-      notificarNovaSolicitacaoParaSecol(solicitacao).catch(() => {})
+      notificarNovaSolicitacaoParaSecol(solicitacao).catch(err => {
+        console.error('Falha ao notificar SECOL:', err)
+      })
       criarNotificacaoPorRole({
         role: 'SECOL',
         titulo: 'Nova solicitação para cotar',
         descricao: `${solicitacao.nomeCompleto} — ${solicitacao.destino}`,
         tipo: 'APROVADO',
         solicitacaoId: solicitacao.id,
-      }).catch(() => {})
+      }).catch(err => {
+        console.error('Falha ao criar notificação in-app para SECOL:', err)
+      })
     } else if (solicitacao.status === 'AGUARDANDO_APROVACAO_PASTA') {
-      notificarSecretarioParaAprovacao(solicitacao).catch(() => {})
+      notificarSecretarioParaAprovacao(solicitacao).catch(err => {
+        console.error('Falha ao notificar SECRETARIO:', err)
+      })
       criarNotificacaoPorRole({
         role: 'SECRETARIO',
         secretariaId: solicitacao.secretariaId || undefined,
@@ -209,7 +138,9 @@ export async function POST(req: NextRequest) {
         descricao: `${solicitacao.nomeCompleto} — ${solicitacao.destino}`,
         tipo: 'URGENTE',
         solicitacaoId: solicitacao.id,
-      }).catch(() => {})
+      }).catch(err => {
+        console.error('Falha ao criar notificação in-app para SECRETARIO:', err)
+      })
     }
   }
 

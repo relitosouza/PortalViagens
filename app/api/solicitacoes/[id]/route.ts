@@ -2,8 +2,14 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { calcularDiasUteisAte } from '@/lib/utils/diasUteis'
-import { notificarSecretarioParaAprovacao, notificarNovaSolicitacaoParaSecol } from '@/lib/email-notifications'
+import { 
+  notificarSecretarioParaAprovacao, 
+  notificarNovaSolicitacaoParaSecol,
+  SolicitacaoComUser
+} from '@/lib/email-notifications'
 import { criarNotificacaoPorRole } from '@/lib/notifications'
+import { getAuthUser } from '@/lib/types/auth'
+import { validateSolicitacaoInput } from '@/lib/validators/solicitacao'
 
 export async function PATCH(
   req: NextRequest,
@@ -13,7 +19,8 @@ export async function PATCH(
   if (!session?.user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   const { id } = await params
-  const user = session.user as { id: string; role: string }
+  const user = getAuthUser(session.user)
+  if (!user) return NextResponse.json({ error: 'Sessão inválida' }, { status: 401 })
   
   const sol = await prisma.solicitacao.findUnique({ where: { id } })
   if (!sol) return NextResponse.json({ error: 'Não encontrada' }, { status: 404 })
@@ -27,8 +34,24 @@ export async function PATCH(
   }
 
   const body = await req.json()
+  
+  // Validate input
+  const validation = validateSolicitacaoInput(body)
+  if (!validation.valid) {
+    return NextResponse.json({
+      error: 'Validação falhou',
+      details: validation.errors
+    }, { status: 400 })
+  }
+
   const isRascunho = body.rascunho === true
-  const dataIda = new Date(body.dataIda)
+  let dataIda: Date
+  try {
+    dataIda = new Date(body.dataIda)
+    if (isNaN(dataIda.getTime())) throw new Error()
+  } catch {
+    return NextResponse.json({ error: 'dataIda: data inválida' }, { status: 400 })
+  }
 
   if (!isRascunho) {
     const diasUteis = calcularDiasUteisAte(dataIda)
@@ -46,14 +69,14 @@ export async function PATCH(
       nomeCompleto: body.nomeCompleto,
       matricula: body.matricula,
       cpf: body.cpf,
-      dataNascimento: new Date(body.dataNascimento),
+      dataNascimento: body.dataNascimento ? new Date(body.dataNascimento) : undefined,
       celular: body.celular,
       emailServidor: body.emailServidor,
       justificativaPublica: body.justificativaPublica,
       nexoCargo: body.nexoCargo,
       destino: body.destino,
       dataIda,
-      dataVolta: new Date(body.dataVolta),
+      dataVolta: body.dataVolta ? new Date(body.dataVolta) : undefined,
       justificativaLocal: body.justificativaLocal,
       fichaOrcamentaria: body.fichaOrcamentaria,
       indicacaoVoo: body.indicacaoVoo ?? null,
@@ -61,7 +84,8 @@ export async function PATCH(
       status: isRascunho 
         ? sol.status === 'DEVOLVIDO_SECRETARIO' ? 'DEVOLVIDO_SECRETARIO' : 'RASCUNHO'
         : canEditAsSecretario ? 'EM_COTACAO' : 'AGUARDANDO_APROVACAO_PASTA',
-    }
+    },
+    include: { user: true }
   })
 
   // Se o Secretário aprovou diretamente nesta edição, logar no workflow
@@ -71,7 +95,7 @@ export async function PATCH(
         solicitacaoId: id,
         etapa: 'SECRETARIO',
         atorRole: user.role,
-        atorNome: (session.user as any).name || user.role,
+        atorNome: session.user.name || user.role,
         decisao: 'APROVADO',
         observacao: 'Aprovado e Justificado pelo Secretário.'
       }
@@ -81,7 +105,9 @@ export async function PATCH(
   // Notificações nas alterações de status (Resubmissão ou Aprovação)
   if (!isRascunho) {
     if (updated.status === 'AGUARDANDO_APROVACAO_PASTA' && sol.status !== 'AGUARDANDO_APROVACAO_PASTA') {
-      notificarSecretarioParaAprovacao(updated as any).catch(() => {})
+      notificarSecretarioParaAprovacao(updated as SolicitacaoComUser).catch(err => {
+        console.error('Falha ao notificar SECRETARIO:', err)
+      })
       criarNotificacaoPorRole({
         role: 'SECRETARIO',
         secretariaId: updated.secretariaId || undefined,
@@ -89,16 +115,22 @@ export async function PATCH(
         descricao: `${updated.nomeCompleto} realizou os ajustes solicitados.`,
         tipo: 'URGENTE',
         solicitacaoId: updated.id,
-      }).catch(() => {})
+      }).catch(err => {
+        console.error('Falha ao criar notificação in-app para SECRETARIO:', err)
+      })
     } else if (updated.status === 'EM_COTACAO' && sol.status !== 'EM_COTACAO') {
-        notificarNovaSolicitacaoParaSecol(updated as any).catch(() => {})
+        notificarNovaSolicitacaoParaSecol(updated as SolicitacaoComUser).catch(err => {
+            console.error('Falha ao notificar SECOL:', err)
+        })
         criarNotificacaoPorRole({
             role: 'SECOL',
             titulo: 'Solicitação aprovada — realizar cotação',
             descricao: `${updated.nomeCompleto} — ${updated.destino}`,
             tipo: 'APROVADO',
             solicitacaoId: updated.id,
-        }).catch(() => {})
+        }).catch(err => {
+            console.error('Falha ao criar notificação in-app para SECOL:', err)
+        })
     }
   }
 
