@@ -5,12 +5,15 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --background-light: #f6f6f8;
+  --layout-max-width: 960px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --background-light: #101622;
   }
 }
 
@@ -18,4 +21,31 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(0.875rem, 0.8rem + 0.25vw, 1rem); /* 14px -> 16px */
+}
+
+/* Fluid Typography Utilities */
+@layer utilities {
+  .text-fluid-xl {
+    font-size: clamp(1.25rem, 1rem + 1.25vw, 2rem); /* 20px -> 32px */
+    line-height: 1.1;
+  }
+  .text-fluid-lg {
+    font-size: clamp(1.125rem, 0.95rem + 0.8vw, 1.5rem); /* 18px -> 24px */
+    line-height: 1.2;
+  }
+  .text-fluid-base {
+    font-size: clamp(0.875rem, 0.8rem + 0.25vw, 1rem);
+  }
+
+  /* Manual Container Query Utilities */
+  .grid-container-2 {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  @container (min-width: 600px) {
+    .grid-container-2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
 }

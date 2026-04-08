@@ -32,13 +32,13 @@ export function Header({ userName, roleLabel, initials, onMenuOpen }: HeaderProp
 
         <div className="flex items-center gap-3 flex-shrink-0">
           <NotificationBell />
-          <div className="h-8 w-px bg-slate-200 hidden sm:block"></div>
+          <div className="h-8 w-px bg-slate-200 hidden sm:block" aria-hidden="true"></div>
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
               <p className="text-sm font-bold text-slate-900 leading-tight">{userName}</p>
               <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wide">{roleLabel}</p>
             </div>
-            <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-blue-600 border-2 border-blue-100 flex items-center justify-center text-white text-sm font-black shadow-sm flex-shrink-0">
+            <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-blue-600 border-2 border-blue-100 flex items-center justify-center text-white text-sm font-black shadow-sm flex-shrink-0" aria-label={`Perfil de ${userName}`}>
               {initials}
             </div>
           </div>

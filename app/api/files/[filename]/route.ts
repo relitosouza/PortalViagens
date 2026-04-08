@@ -35,19 +35,19 @@ export async function GET(
 
   try {
     // CRITICAL FIX: Verificar se o arquivo pertence ao usuário
-    const anexo = await prisma.anexo.findUnique({
+    const anexo = await (prisma.anexo as any).findFirst({
       where: { path: safeFilename },
       include: {
         solicitacao: true,
         prestacao: { include: { solicitacao: true } }
       }
-    })
+    }) as any
 
     if (!anexo) {
       return NextResponse.json({ error: 'Arquivo não encontrado' }, { status: 404 })
     }
 
-    // Verificar permissão: usuário só pode acessar seus próprios arquivos
+    // Verificar permissão
     const isOwner =
       (anexo.solicitacao?.userId === user.id) ||
       (anexo.prestacao?.solicitacao?.userId === user.id)
@@ -55,7 +55,18 @@ export async function GET(
     // Admin pode acessar qualquer arquivo
     const isAdmin = user.role === 'ADMIN'
 
-    if (!isOwner && !isAdmin) {
+    // Papéis técnicos podem acessar arquivos de solicitações em estados que lhes competem
+    let isTechnicalAllowed = false
+    const solStatus = anexo.solicitacao?.status || anexo.prestacao?.solicitacao?.status
+    
+    if (solStatus) {
+      if (user.role === 'SECOL' && ['EM_COTACAO', 'AGUARDANDO_EMISSAO', 'CONCLUIDA'].includes(solStatus)) isTechnicalAllowed = true
+      if (user.role === 'SEGOV' && ['AGUARDANDO_VIABILIDADE', 'CONCLUIDA'].includes(solStatus)) isTechnicalAllowed = true
+      if (user.role === 'SF' && ['AGUARDANDO_EXECUCAO', 'CONCLUIDA'].includes(solStatus)) isTechnicalAllowed = true
+      if (user.role === 'SECRETARIO' && solStatus === 'AGUARDANDO_APROVACAO_PASTA') isTechnicalAllowed = true
+    }
+
+    if (!isOwner && !isAdmin && !isTechnicalAllowed) {
       return NextResponse.json({ error: 'Acesso negado a este arquivo' }, { status: 403 })
     }
 

@@ -40,48 +40,51 @@ export function Sidebar({ role, onClose }: SidebarProps) {
         </div>
 
         {/* Nav */}
-        <nav className="flex flex-col gap-1 grow">
+        <nav className="flex flex-col gap-1 grow" aria-label="Menu principal">
           <Link
             href="/dashboard"
             onClick={onClose}
+            aria-current={isActive('/dashboard') ? 'page' : undefined}
             className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
               isActive('/dashboard')
                 ? 'bg-blue-600 text-white'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            <span className="material-symbols-outlined text-[20px]">dashboard</span>
+            <span className="material-symbols-outlined text-[20px]" aria-hidden="true">dashboard</span>
             <span className="text-sm font-medium">Dashboard</span>
           </Link>
 
           <Link
             href="/dashboard"
             onClick={onClose}
+            aria-current={isActive('/solicitacoes') ? 'page' : undefined}
             className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
               isActive('/solicitacoes')
                 ? 'bg-blue-600 text-white'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            <span className="material-symbols-outlined text-[20px]">flight_takeoff</span>
+            <span className="material-symbols-outlined text-[20px]" aria-hidden="true">flight_takeoff</span>
             <span className="text-sm font-medium">Solicitações</span>
           </Link>
 
           <Link
             href="/relatorios"
             onClick={onClose}
+            aria-current={isActive('/relatorios') ? 'page' : undefined}
             className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
               isActive('/relatorios')
                 ? 'bg-blue-600 text-white'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            <span className="material-symbols-outlined text-[20px]">bar_chart</span>
+            <span className="material-symbols-outlined text-[20px]" aria-hidden="true">bar_chart</span>
             <span className="text-sm font-medium">Relatórios</span>
           </Link>
 
-          <a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 cursor-not-allowed" href="#">
-            <span className="material-symbols-outlined text-[20px]">settings</span>
+          <a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 cursor-not-allowed" href="#" aria-disabled="true">
+            <span className="material-symbols-outlined text-[20px]" aria-hidden="true">settings</span>
             <span className="text-sm font-medium">Configurações</span>
           </a>
 
@@ -89,9 +92,10 @@ export function Sidebar({ role, onClose }: SidebarProps) {
             <Link
               href="/admin"
               onClick={onClose}
+              aria-current={isActive('/admin') ? 'page' : undefined}
               className="flex items-center gap-3 px-3 py-2 mt-4 rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
             >
-              <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+              <span className="material-symbols-outlined text-[20px]" aria-hidden="true">admin_panel_settings</span>
               <span className="text-sm font-bold">Painel Admin</span>
             </Link>
           )}
@@ -105,7 +109,7 @@ export function Sidebar({ role, onClose }: SidebarProps) {
               onClick={onClose}
               className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2.5 text-sm font-bold transition-all shadow-sm"
             >
-              <span className="material-symbols-outlined text-[18px]">add</span>
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span>
               <span>Nova Viagem</span>
             </Link>
           )}
@@ -114,7 +118,7 @@ export function Sidebar({ role, onClose }: SidebarProps) {
               type="submit"
               className="w-full flex items-center justify-center gap-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg py-2 text-sm transition-colors"
             >
-              <span className="material-symbols-outlined text-[18px]">logout</span>
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">logout</span>
               <span>Sair</span>
             </button>
           </form>

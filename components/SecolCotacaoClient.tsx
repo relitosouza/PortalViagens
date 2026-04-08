@@ -309,41 +309,43 @@ export function SecolCotacaoClient({ sol, userName, initialQuotes, budgetData }:
               <h1 className="text-3xl font-black tracking-tight mb-2">Cotação Técnica de Viagem</h1>
               <p className="text-slate-500">Gestão de opções de transporte e hospedagem para análise de viabilidade.</p>
             </div>
-            <div className="flex gap-3">
-              <button
-                onClick={salvarRascunho}
-                disabled={salvando}
-                className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-sm">save</span>
-                {salvando ? 'Salvando...' : 'Salvar Rascunho'}
-              </button>
-              <button
-                onClick={enviar}
-                disabled={loading}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-sm">send</span>
-                {loading ? 'Enviando...' : 'Enviar para Análise'}
-              </button>
+            <div className="flex flex-col md:flex-row items-center gap-4">
+              <div className="hidden lg:block">
+                <BudgetTetoInfo
+                  numeroEmpenho={budgetData?.numeroEmpenho}
+                  valorEmpenho={budgetData?.valorEmpenho}
+                  saldoEmpenho={budgetData?.saldoEmpenho}
+                  numeroEmpenhoPassagem={budgetData?.numeroEmpenhoPassagem}
+                  valorEmpenhoPassagem={budgetData?.valorEmpenhoPassagem}
+                  saldoEmpenhoPassagem={budgetData?.saldoEmpenhoPassagem}
+                  numeroEmpenhoHospedagem={budgetData?.numeroEmpenhoHospedagem}
+                  valorEmpenhoHospedagem={budgetData?.valorEmpenhoHospedagem}
+                  saldoEmpenhoHospedagem={budgetData?.saldoEmpenhoHospedagem}
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={salvarRascunho}
+                  disabled={salvando}
+                  className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-sm">save</span>
+                  {salvando ? 'Salvando...' : 'Salvar Rascunho'}
+                </button>
+                <button
+                  onClick={enviar}
+                  disabled={loading}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-sm">send</span>
+                  {loading ? 'Enviando...' : 'Enviar para Análise'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="mb-8">
-          <BudgetTetoInfo
-            destacado
-            numeroEmpenho={budgetData?.numeroEmpenho}
-            valorEmpenho={budgetData?.valorEmpenho}
-            saldoEmpenho={budgetData?.saldoEmpenho}
-            numeroEmpenhoPassagem={budgetData?.numeroEmpenhoPassagem}
-            valorEmpenhoPassagem={budgetData?.valorEmpenhoPassagem}
-            saldoEmpenhoPassagem={budgetData?.saldoEmpenhoPassagem}
-            numeroEmpenhoHospedagem={budgetData?.numeroEmpenhoHospedagem}
-            valorEmpenhoHospedagem={budgetData?.valorEmpenhoHospedagem}
-            saldoEmpenhoHospedagem={budgetData?.saldoEmpenhoHospedagem}
-          />
-        </div>
+
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 

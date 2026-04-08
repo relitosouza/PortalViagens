@@ -44,6 +44,42 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Nenhum arquivo enviado' }, { status: 400 })
     }
 
+    // SECURITY FIX: Verificar se o usuário tem permissão para anexar nesta solicitação/prestação
+    if (solicitacaoId) {
+      const sol = await prisma.solicitacao.findUnique({ where: { id: solicitacaoId } })
+      if (!sol) return NextResponse.json({ error: 'Solicitação não encontrada' }, { status: 404 })
+      
+      const isOwner = sol.userId === user.id
+      const isAdmin = session.user.role === 'ADMIN'
+      const isTechnical = ['SECOL', 'SEGOV', 'SF'].includes(session.user.role)
+      
+      // Se não for dono nem admin, só pode se for papel técnico no status correto
+      if (!isOwner && !isAdmin) {
+        let canAttach = false
+        if (session.user.role === 'SECOL' && (sol.status === 'EM_COTACAO' || sol.status === 'AGUARDANDO_EMISSAO')) canAttach = true
+        if (session.user.role === 'SEGOV' && sol.status === 'AGUARDANDO_VIABILIDADE') canAttach = true
+        
+        if (!canAttach) {
+          return NextResponse.json({ error: 'Você não tem permissão para anexar arquivos nesta solicitação' }, { status: 403 })
+        }
+      }
+    }
+
+    if (prestacaoId) {
+      const prest = await prisma.prestacao.findUnique({ 
+        where: { id: prestacaoId },
+        include: { solicitacao: true }
+      })
+      if (!prest) return NextResponse.json({ error: 'Prestação de contas não encontrada' }, { status: 404 })
+      
+      const isOwner = prest.solicitacao?.userId === user.id
+      const isAdmin = session.user.role === 'ADMIN'
+      
+      if (!isOwner && !isAdmin) {
+        return NextResponse.json({ error: 'Você não tem permissão para anexar arquivos nesta prestação de contas' }, { status: 403 })
+      }
+    }
+
     const uploadDir = process.env.UPLOAD_DIR ?? path.join(process.cwd(), 'uploads')
     await mkdir(uploadDir, { recursive: true })
 

@@ -145,7 +145,7 @@ export function AcoesWorkflow({ solicitacaoId, status, userRole }: Props) {
       />
 
       {erro && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm mb-4">
+        <div role="alert" className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm mb-4">
           {erro}
         </div>
       )}

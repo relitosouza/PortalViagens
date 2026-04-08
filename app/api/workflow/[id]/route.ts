@@ -109,8 +109,15 @@ export async function POST(
 
   // Lógica especial para etapa de VIABILIDADE aprovada (SEGOV) — DÉBITO DE EMPENHOS
   if (transicao.etapa === 'VIABILIDADE' && decisao === 'APROVADO') {
-    const valorPassagem = newStep.valorPassagem ?? 0
-    const valorHospedagem = newStep.valorHospedagem ?? 0
+    // SECURITY HARDENING: Não confiar nos valores passados no 'body' para o débito orçamentário.
+    // Buscamos os valores da cotação oficial registrada pela SECOL no histórico da solicitação.
+    const ultimaCotacao = await prisma.workflowStep.findFirst({
+      where: { solicitacaoId: sol.id, etapa: 'COTACAO', decisao: 'APROVADO' },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    const valorPassagem = ultimaCotacao?.valorPassagem ?? 0
+    const valorHospedagem = ultimaCotacao?.valorHospedagem ?? 0
 
     if (valorPassagem <= 0 && valorHospedagem <= 0) {
       console.warn('[workflow/VIABILIDADE] Débito ignorado: valorPassagem e valorHospedagem são 0 ou null na cotação aprovada')

@@ -15,7 +15,7 @@ export function PortalShell({ role, userName, roleLabel, initials, children }: P
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen overflow-hidden print:overflow-visible bg-[#f6f6f8] text-slate-900">
+    <div className="flex h-screen overflow-hidden print:overflow-visible bg-background-light text-slate-900">
       {/* Overlay mobile */}
       {sidebarOpen && (
         <div
@@ -43,7 +43,7 @@ export function PortalShell({ role, userName, roleLabel, initials, children }: P
             onMenuOpen={() => setSidebarOpen(true)}
           />
         </div>
-        <main className="flex-1 overflow-y-auto print:overflow-visible">
+        <main className="flex-1 overflow-y-auto print:overflow-visible @container">
           {children}
         </main>
       </div>

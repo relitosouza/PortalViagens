@@ -12,8 +12,11 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
         primary: "#135bec",
-        "background-light": "#f6f6f8",
+        "background-light": "var(--background-light)",
         "background-dark": "#101622",
+      },
+      maxWidth: {
+        content: "var(--layout-max-width)",
       },
       fontFamily: {
         sans: ['Public Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],

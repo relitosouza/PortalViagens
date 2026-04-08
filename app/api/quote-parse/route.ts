@@ -248,9 +248,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error(">>> [PDF PARSER] CRASH:", error);
     return NextResponse.json({ 
-      error: "Erro ao processar PDF.", 
-      message: error.message,
-      stack: error.stack 
+      error: "Falha ao processar o arquivo PDF. Verifique se o formato é válido."
     }, { status: 500 });
   }
 }

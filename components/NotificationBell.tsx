@@ -109,11 +109,16 @@ export function NotificationBell() {
       <button
         onClick={handleOpen}
         className="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
-        aria-label="Notificações"
+        aria-label={`Notificações, ${count || 'nenhuma'} nova${count > 0 ? 's' : ''}`}
+        aria-haspopup="true"
+        aria-expanded={open}
       >
-        <span className="material-symbols-outlined text-[22px]">notifications</span>
+        <span className="material-symbols-outlined text-[22px]" aria-hidden="true">notifications</span>
         {count > 0 && (
-          <span className="absolute top-1 right-1 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center leading-none">
+          <span 
+            role="status"
+            className="absolute top-1 right-1 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center leading-none"
+          >
             {count > 99 ? '99+' : count}
           </span>
         )}

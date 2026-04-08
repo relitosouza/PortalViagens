@@ -104,7 +104,7 @@ export default async function DashboardPage() {
     <div className="p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto w-full">
       <header className="flex items-center justify-between border-b border-slate-200 pb-4 mb-6 sticky top-0 bg-[#f6f6f8]/80 backdrop-blur-md z-10 -mx-4 md:-mx-8 px-4 md:px-8 -mt-4 md:-mt-8">
         <div className="flex items-center gap-4">
-          <h2 className="text-xl font-bold text-slate-900 leading-none">Dashboard Principal</h2>
+          <h2 className="text-fluid-xl font-bold text-slate-900 leading-none">Dashboard Principal</h2>
           <span className="px-2 py-1 rounded bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-widest">
             {role}
           </span>
@@ -126,24 +126,6 @@ export default async function DashboardPage() {
           </div>
         )}
       </header>
-
-      {/* Budget Highlight for SEGOV and SECOL */}
-      {(role === 'SEGOV' || role === 'SECOL' || role === 'SF') && (
-        <div className="mb-8">
-          <BudgetTetoInfo
-            destacado
-            numeroEmpenho={parametros.find(p => p.chave === 'NUMERO_EMPENHO')?.valor}
-            valorEmpenho={parametros.find(p => p.chave === 'VALOR_EMPENHO')?.valor}
-            saldoEmpenho={parametros.find(p => p.chave === 'SALDO_EMPENHO')?.valor}
-            numeroEmpenhoPassagem={parametros.find(p => p.chave === 'NUMERO_EMPENHO_PASSAGEM')?.valor}
-            valorEmpenhoPassagem={parametros.find(p => p.chave === 'VALOR_EMPENHO_PASSAGEM')?.valor}
-            saldoEmpenhoPassagem={parametros.find(p => p.chave === 'SALDO_EMPENHO_PASSAGEM')?.valor}
-            numeroEmpenhoHospedagem={parametros.find(p => p.chave === 'NUMERO_EMPENHO_HOSPEDAGEM')?.valor}
-            valorEmpenhoHospedagem={parametros.find(p => p.chave === 'VALOR_EMPENHO_HOSPEDAGEM')?.valor}
-            saldoEmpenhoHospedagem={parametros.find(p => p.chave === 'SALDO_EMPENHO_HOSPEDAGEM')?.valor}
-          />
-        </div>
-      )}
 
       {/* Alert Banner — pending prestações */}
       {role === 'DEMANDANTE' && pendentesCount > 0 && (
@@ -175,7 +157,7 @@ export default async function DashboardPage() {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-6">
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="p-2 bg-blue-600/10 rounded-lg">
@@ -264,47 +246,91 @@ export default async function DashboardPage() {
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-50">
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Solicitante</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Destino</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Data</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {solicitacoes.map(s => (
-                  <tr key={s.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-slate-900">{s.user.name}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-[18px] text-slate-400">location_on</span>
-                        <span className="text-sm text-slate-600">{s.destino}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">
-                      {new Date(s.dataIda).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                      {' — '}
-                      {new Date(s.dataVolta).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[s.status] ?? 'bg-slate-100 text-slate-800'}`}>
-                        {STATUS_LABELS[s.status] ?? s.status}
+          <>
+            {/* Versão Mobile: Cards */}
+            <div className="grid grid-cols-1 gap-4 p-4 md:hidden">
+              {solicitacoes.map(s => (
+                <Link 
+                  href={`/solicitacoes/${s.id}`} 
+                  key={s.id}
+                  className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm active:bg-slate-50 transition-colors block"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <span className="text-sm font-bold text-slate-900 truncate pr-2">{s.user.name}</span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${STATUS_BADGE[s.status] ?? 'bg-slate-100 text-slate-800'}`}>
+                      {STATUS_LABELS[s.status] ?? s.status}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <span className="material-symbols-outlined text-[18px]">location_on</span>
+                      <span className="text-xs">{s.destino}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <span className="material-symbols-outlined text-[18px]">calendar_today</span>
+                      <span className="text-xs">
+                        {new Date(s.dataIda).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                        {' a '}
+                        {new Date(s.dataVolta).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Link href={`/solicitacoes/${s.id}`} className="text-slate-400 hover:text-blue-600 transition-colors">
-                        <span className="material-symbols-outlined text-[20px]">{getStatusActionIcon(s.status)}</span>
-                      </Link>
-                    </td>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center">
+                    <span className="text-[10px] text-slate-400 font-medium">ID: {s.id.slice(0, 8)}...</span>
+                    <span className="text-blue-600 text-xs font-bold flex items-center gap-1">
+                      {getStatusActionIcon(s.status) === 'edit' ? 'Continuar Edição' : 'Ver Detalhes'}
+                      <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Versão Desktop: Tabela */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-slate-50">
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Solicitante</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Destino</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Data</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Ações</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {solicitacoes.map(s => (
+                    <tr key={s.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4 text-sm font-medium text-slate-900">{s.user.name}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-[18px] text-slate-400">location_on</span>
+                          <span className="text-sm text-slate-600">{s.destino}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        {new Date(s.dataIda).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                        {' — '}
+                        {new Date(s.dataVolta).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[s.status] ?? 'bg-slate-100 text-slate-800'}`}>
+                          {STATUS_LABELS[s.status] ?? s.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Link href={`/solicitacoes/${s.id}`} className="text-slate-400 hover:text-blue-600 transition-colors">
+                          <span className="material-symbols-outlined text-[20px]">{getStatusActionIcon(s.status)}</span>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

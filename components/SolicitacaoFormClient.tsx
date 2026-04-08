@@ -230,20 +230,20 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
   }
 
   const getInputCls = (hasError?: boolean) => 
-    `w-full rounded-lg border transition-all bg-[#f6f6f8] focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-slate-900 h-10 px-4 text-sm ${
+    `w-full rounded-lg border transition-all bg-background-light focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-slate-900 h-10 px-4 text-sm ${
       hasError ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'
     }`
   const getTextareaCls = (hasError?: boolean) => 
-    `w-full rounded-lg border transition-all bg-[#f6f6f8] focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-slate-900 px-4 py-3 text-sm ${
+    `w-full rounded-lg border transition-all bg-background-light focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-slate-900 px-4 py-3 text-sm ${
       hasError ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'
     }`
   const labelCls = "block text-xs font-bold text-slate-600 mb-1.5 uppercase"
 
   return (
-    <div className="p-8 space-y-8 max-w-[960px] mx-auto w-full">
-      <header className="flex items-center justify-between border-b border-slate-200 pb-4 mb-6 sticky top-0 bg-[#f6f6f8]/80 backdrop-blur-md z-10 -mx-8 px-8 -mt-8">
+    <div className="p-8 space-y-8 max-w-content mx-auto w-full">
+      <header className="flex items-center justify-between border-b border-slate-200 pb-4 mb-6 sticky top-0 bg-background-light/80 backdrop-blur-md z-10 -mx-8 px-8 -mt-8">
         <div className="flex items-center gap-4">
-          <h2 className="text-xl font-bold text-slate-900 leading-none">
+          <h2 className="text-fluid-xl font-bold text-slate-900 leading-none">
             {form.id ? 'Editar Solicitação' : 'Requisição de Viagem'}
           </h2>
           <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest ${form.id ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
@@ -295,33 +295,33 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
         {/* 1. Dados do Servidor */}
         <section>
           <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-3">
-            <span className="material-symbols-outlined text-blue-600">person</span>
+            <span className="material-symbols-outlined text-blue-600" aria-hidden="true">person</span>
             <h2 className="text-slate-900 text-lg font-bold">1. Dados do Servidor</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="md:col-span-2">
-              <label className={labelCls}>Nome Completo</label>
-              <input className={getInputCls(fieldErrors.nomeCompleto)} value={form.nomeCompleto} onChange={update('nomeCompleto')} placeholder="Nome como consta no crachá" type="text" />
+              <label htmlFor="nomeCompleto" className={labelCls}>Nome Completo</label>
+              <input id="nomeCompleto" className={getInputCls(fieldErrors.nomeCompleto)} value={form.nomeCompleto} onChange={update('nomeCompleto')} placeholder="Nome como consta no crachá" type="text" aria-invalid={!!fieldErrors.nomeCompleto} />
             </div>
             <div>
-              <label className={labelCls}>Matrícula</label>
-              <input className={getInputCls(fieldErrors.matricula)} value={form.matricula} onChange={update('matricula')} placeholder="000.000-0" type="text" />
+              <label htmlFor="matricula" className={labelCls}>Matrícula</label>
+              <input id="matricula" className={getInputCls(fieldErrors.matricula)} value={form.matricula} onChange={update('matricula')} placeholder="000.000-0" type="text" aria-invalid={!!fieldErrors.matricula} />
             </div>
             <div>
-              <label className={labelCls}>CPF</label>
-              <input className={getInputCls(fieldErrors.cpf)} value={form.cpf} onChange={update('cpf')} placeholder="000.000.000-00" type="text" />
+              <label htmlFor="cpf" className={labelCls}>CPF</label>
+              <input id="cpf" className={getInputCls(fieldErrors.cpf)} value={form.cpf} onChange={update('cpf')} placeholder="000.000.000-00" type="text" aria-invalid={!!fieldErrors.cpf} />
             </div>
             <div>
-              <label className={labelCls}>Data de Nascimento</label>
-              <input className={getInputCls(fieldErrors.dataNascimento)} value={form.dataNascimento} onChange={update('dataNascimento')} type="date" />
+              <label htmlFor="dataNascimento" className={labelCls}>Data de Nascimento</label>
+              <input id="dataNascimento" className={getInputCls(fieldErrors.dataNascimento)} value={form.dataNascimento} onChange={update('dataNascimento')} type="date" aria-invalid={!!fieldErrors.dataNascimento} />
             </div>
             <div>
-              <label className={labelCls}>Telefone / WhatsApp</label>
-              <input className={getInputCls(fieldErrors.celular)} value={form.celular} onChange={update('celular')} placeholder="(11) 90000-0000" type="tel" />
+              <label htmlFor="celular" className={labelCls}>Telefone / WhatsApp</label>
+              <input id="celular" className={getInputCls(fieldErrors.celular)} value={form.celular} onChange={update('celular')} placeholder="(11) 90000-0000" type="tel" aria-invalid={!!fieldErrors.celular} />
             </div>
             <div className="md:col-span-2 lg:col-span-1">
-              <label className={labelCls}>E-mail Institucional</label>
-              <input className={getInputCls(fieldErrors.emailServidor)} value={form.emailServidor} onChange={update('emailServidor')} placeholder="servidor@osasco.sp.gov.br" type="email" />
+              <label htmlFor="emailServidor" className={labelCls}>E-mail Institucional</label>
+              <input id="emailServidor" className={getInputCls(fieldErrors.emailServidor)} value={form.emailServidor} onChange={update('emailServidor')} placeholder="servidor@osasco.sp.gov.br" type="email" aria-invalid={!!fieldErrors.emailServidor} />
             </div>
           </div>
         </section>
@@ -329,39 +329,45 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
         {/* 2. Detalhes da Missão */}
         <section>
           <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-3">
-            <span className="material-symbols-outlined text-blue-600">assignment</span>
+            <span className="material-symbols-outlined text-blue-600" aria-hidden="true">assignment</span>
             <h2 className="text-slate-900 text-lg font-bold">2. Detalhes da Missão</h2>
           </div>
           <div className="space-y-6">
             <div>
-              <label className={labelCls}>
+              <label htmlFor="justificativaPublica" className={labelCls}>
                 Justificativa do Interesse Público
-                {(userRole === 'SECRETARIO' || userRole === 'ADMIN') && status === 'AGUARDANDO_SECRETARIO' && <span className="text-red-500 ml-1">*</span>}
+                {(userRole === 'SECRETARIO' || userRole === 'ADMIN') && status === 'AGUARDANDO_SECRETARIO' && <span className="text-red-500 ml-1" aria-hidden="true">*</span>}
               </label>
               <textarea 
+                id="justificativaPublica"
                 className={getTextareaCls(fieldErrors.justificativaPublica)} 
                 rows={4} 
                 value={form.justificativaPublica} 
                 onChange={update('justificativaPublica')}
                 disabled={!(userRole === 'SECRETARIO' || userRole === 'ADMIN') || status !== 'AGUARDANDO_APROVACAO_PASTA'}
                 placeholder={status === 'AGUARDANDO_APROVACAO_PASTA' ? "Preencha a justificativa de mérito público para o município..." : "A ser preenchido pelo Secretário..."} 
+                aria-invalid={!!fieldErrors.justificativaPublica}
+                aria-required={(userRole === 'SECRETARIO' || userRole === 'ADMIN') && status === 'AGUARDANDO_SECRETARIO'}
               />
               {status === 'AGUARDANDO_APROVACAO_PASTA' && userRole === 'DEMANDANTE' && (
                 <p className="text-[10px] text-indigo-600 mt-1 italic font-medium">Aguardando preenchimento do Secretário</p>
               )}
             </div>
             <div>
-              <label className={labelCls}>
+              <label htmlFor="nexoCargo" className={labelCls}>
                 Nexo com as Atribuições do Cargo
-                {(userRole === 'SECRETARIO' || userRole === 'ADMIN') && status === 'AGUARDANDO_SECRETARIO' && <span className="text-red-500 ml-1">*</span>}
+                {(userRole === 'SECRETARIO' || userRole === 'ADMIN') && status === 'AGUARDANDO_SECRETARIO' && <span className="text-red-500 ml-1" aria-hidden="true">*</span>}
               </label>
               <textarea 
+                id="nexoCargo"
                 className={getTextareaCls(fieldErrors.nexoCargo)} 
                 rows={3} 
                 value={form.nexoCargo} 
                 onChange={update('nexoCargo')}
                 disabled={!(userRole === 'SECRETARIO' || userRole === 'ADMIN') || status !== 'AGUARDANDO_APROVACAO_PASTA'}
                 placeholder={status === 'AGUARDANDO_APROVACAO_PASTA' ? "Explique como o evento se relaciona com o cargo..." : "A ser preenchido pelo Secretário..."} 
+                aria-invalid={!!fieldErrors.nexoCargo}
+                aria-required={(userRole === 'SECRETARIO' || userRole === 'ADMIN') && status === 'AGUARDANDO_SECRETARIO'}
               />
             </div>
           </div>
@@ -370,41 +376,41 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
         {/* 3. Logística */}
         <section>
           <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-3">
-            <span className="material-symbols-outlined text-blue-600">flight_takeoff</span>
+            <span className="material-symbols-outlined text-blue-600" aria-hidden="true">flight_takeoff</span>
             <h2 className="text-slate-900 text-lg font-bold">3. Logística</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-              <label className={labelCls}>Destino (Cidade / Estado / País)</label>
+              <label htmlFor="destino" className={labelCls}>Destino (Cidade / Estado / País)</label>
               <div className="relative">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">location_on</span>
-                <input className={`w-full pl-10 pr-4 rounded-lg border transition-all bg-[#f6f6f8] focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-slate-900 h-10 text-sm ${fieldErrors.destino ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'}`}
-                  value={form.destino} onChange={update('destino')} placeholder="Ex: Brasília, DF" type="text" />
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true">location_on</span>
+                <input id="destino" className={`w-full pl-10 pr-4 rounded-lg border transition-all bg-background-light focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-slate-900 h-10 text-sm ${fieldErrors.destino ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'}`}
+                  value={form.destino} onChange={update('destino')} placeholder="Ex: Brasília, DF" type="text" aria-invalid={!!fieldErrors.destino} />
               </div>
             </div>
             <div>
-              <label className={labelCls}>Data de Ida</label>
-              <input className={getInputCls(fieldErrors.dataIda)} value={form.dataIda} onChange={update('dataIda')} type="date" />
+              <label htmlFor="dataIda" className={labelCls}>Data de Ida</label>
+              <input id="dataIda" className={getInputCls(fieldErrors.dataIda)} value={form.dataIda} onChange={update('dataIda')} type="date" aria-invalid={!!fieldErrors.dataIda} />
             </div>
             <div>
-              <label className={labelCls}>Data de Volta</label>
-              <input className={getInputCls(fieldErrors.dataVolta)} value={form.dataVolta} onChange={update('dataVolta')} type="date" />
+              <label htmlFor="dataVolta" className={labelCls}>Data de Volta</label>
+              <input id="dataVolta" className={getInputCls(fieldErrors.dataVolta)} value={form.dataVolta} onChange={update('dataVolta')} type="date" aria-invalid={!!fieldErrors.dataVolta} />
             </div>
             <div className="md:col-span-2">
-              <label className={labelCls}>Justificativa de Localização (Escolha do Destino)</label>
-              <textarea className={getTextareaCls(fieldErrors.justificativaLocal)} rows={2} value={form.justificativaLocal} onChange={update('justificativaLocal')}
-                placeholder="Por que o evento ocorre neste local específico?" />
+              <label htmlFor="justificativaLocal" className={labelCls}>Justificativa de Localização (Escolha do Destino)</label>
+              <textarea id="justificativaLocal" className={getTextareaCls(fieldErrors.justificativaLocal)} rows={2} value={form.justificativaLocal} onChange={update('justificativaLocal')}
+                placeholder="Por que o evento ocorre neste local específico?" aria-invalid={!!fieldErrors.justificativaLocal} />
             </div>
             <div className="md:col-span-2">
-              <label className={labelCls}>Indicação de Voo (Preferência)</label>
-              <input className={getInputCls(fieldErrors.indicacaoVoo)} value={form.indicacaoVoo} onChange={update('indicacaoVoo')}
-                placeholder="Sugira horários ou números de voo de sua preferência" type="text" />
+              <label htmlFor="indicacaoVoo" className={labelCls}>Indicação de Voo (Preferência)</label>
+              <input id="indicacaoVoo" className={getInputCls(fieldErrors.indicacaoVoo)} value={form.indicacaoVoo} onChange={update('indicacaoVoo')}
+                placeholder="Sugira horários ou números de voo de sua preferência" type="text" aria-invalid={!!fieldErrors.indicacaoVoo} />
             </div>
             <div className="md:col-span-2">
-              <label className={labelCls}>Indicação de Hospedagem (Preferência)</label>
-              <input className={getInputCls(fieldErrors.indicacaoHospedagem)} value={form.indicacaoHospedagem} onChange={update('indicacaoHospedagem')}
-                placeholder="Sugira um hotel específico ou região de interesse" type="text" />
+              <label htmlFor="indicacaoHospedagem" className={labelCls}>Indicação de Hospedagem (Preferência)</label>
+              <input id="indicacaoHospedagem" className={getInputCls(fieldErrors.indicacaoHospedagem)} value={form.indicacaoHospedagem} onChange={update('indicacaoHospedagem')}
+                placeholder="Sugira um hotel específico ou região de interesse" type="text" aria-invalid={!!fieldErrors.indicacaoHospedagem} />
             </div>
           </div>
         </section>
@@ -435,13 +441,13 @@ export function SolicitacaoFormClient({ initialData, userName, userRole = 'DEMAN
         {/* 5. Orçamento */}
         <section>
           <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-3">
-            <span className="material-symbols-outlined text-blue-600">payments</span>
+            <span className="material-symbols-outlined text-blue-600" aria-hidden="true">payments</span>
             <h2 className="text-slate-900 text-lg font-bold">5. Orçamento</h2>
           </div>
           <div>
-            <label className={labelCls}>Indicação da Ficha Orçamentária</label>
-            <input className={getInputCls(fieldErrors.fichaOrcamentaria)} value={form.fichaOrcamentaria} onChange={update('fichaOrcamentaria')}
-              placeholder="Número da ficha ou dotação orçamentária" type="text" />
+            <label htmlFor="fichaOrcamentaria" className={labelCls}>Indicação da Ficha Orçamentária</label>
+            <input id="fichaOrcamentaria" className={getInputCls(fieldErrors.fichaOrcamentaria)} value={form.fichaOrcamentaria} onChange={update('fichaOrcamentaria')}
+              placeholder="Número da ficha ou dotação orçamentária" type="text" aria-invalid={!!fieldErrors.fichaOrcamentaria} />
           </div>
         </section>
 
